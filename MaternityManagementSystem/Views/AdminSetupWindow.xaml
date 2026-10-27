@@ -1,0 +1,58 @@
+﻿<Window x:Class="MaternityManagementSystem.Views.AdminSetupWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Initial Administrator Setup"
+        Height="480"
+        Width="420"
+        WindowStartupLocation="CenterScreen"
+        ResizeMode="NoResize">
+
+    <Grid Margin="32">
+        <StackPanel VerticalAlignment="Center">
+
+            <TextBlock Text="Golddie"
+                       FontSize="30"
+                       FontWeight="Bold"
+                       HorizontalAlignment="Center"
+                       Margin="0,0,0,8"/>
+
+            <TextBlock Text="Create your administrator account"
+                       FontSize="16"
+                       HorizontalAlignment="Center"
+                       TextWrapping="Wrap"
+                       Margin="0,0,0,24"/>
+
+            <TextBlock Text="Username" Margin="0,0,0,6"/>
+
+            <TextBox x:Name="UsernameInput"
+                     Height="36"
+                     Padding="8"
+                     Margin="0,0,0,16"/>
+
+            <TextBlock Text="Password" Margin="0,0,0,6"/>
+
+            <PasswordBox x:Name="PasswordInput"
+                         Height="36"
+                         Padding="8"
+                         Margin="0,0,0,16"/>
+
+            <TextBlock Text="Confirm password" Margin="0,0,0,6"/>
+
+            <PasswordBox x:Name="ConfirmPasswordInput"
+                         Height="36"
+                         Padding="8"
+                         Margin="0,0,0,16"/>
+
+            <TextBlock x:Name="MessageText"
+                       Foreground="Firebrick"
+                       TextWrapping="Wrap"
+                       Margin="0,0,0,12"/>
+
+            <Button x:Name="CreateAdminButton"
+                    Content="Create Administrator"
+                    Height="42"
+                    Click="CreateAdminButton_Click"/>
+
+        </StackPanel>
+    </Grid>
+</Window>
