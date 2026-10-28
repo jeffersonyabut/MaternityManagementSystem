@@ -1,4 +1,4 @@
-
+using MaternityManagementSystem.Services;
 using System;
 using System.Threading.Tasks;
 using System.Windows;
@@ -9,6 +9,8 @@ namespace MaternityManagementSystem;
 
 public partial class App : Application
 {
+    public SessionService SessionService { get; } = new();
+
     protected override async void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);

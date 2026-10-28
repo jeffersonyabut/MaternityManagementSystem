@@ -1,0 +1,202 @@
+<Window x:Class="MaternityManagementSystem.Views.DashboardWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Golddie | Clinic Management"
+        Height="720"
+        Width="1200"
+        MinHeight="600"
+        MinWidth="950"
+        WindowStartupLocation="CenterScreen"
+        Background="#F5F6FA">
+
+
+    <Window.Resources>
+        <Style x:Key="SidebarButtonStyle" TargetType="{x:Type Button}">
+            <Setter Property="Foreground" Value="#E4E2F0"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="HorizontalContentAlignment" Value="Left"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="Padding" Value="20,14"/>
+            <Setter Property="Margin" Value="12,2"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type Button}">
+                        <Border x:Name="ButtonBorder"
+                            Background="{TemplateBinding Background}"
+                            CornerRadius="8"
+                            Padding="{TemplateBinding Padding}">
+                            <ContentPresenter
+                            HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                            VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+                            RecognizesAccessKey="True"/>
+                        </Border>
+
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="ButtonBorder"
+                                    Property="Background"
+                                    Value="#393750"/>
+                            </Trigger>
+
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="ButtonBorder"
+                                    Property="Background"
+                                    Value="#4A456B"/>
+                            </Trigger>
+
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Opacity" Value="0.5"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
+
+
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="240"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+
+        <!-- Persistent sidebar -->
+        <Border Grid.Column="0"
+                Background="#25243A">
+            <DockPanel LastChildFill="True">
+
+                <StackPanel DockPanel.Dock="Top"
+                            Margin="24,28,24,32">
+
+                    <TextBlock Text="GOLDDIE"
+                               FontSize="25"
+                               FontWeight="Bold"
+                               Foreground="White"/>
+
+                    <TextBlock Text="MATERNITY CLINIC"
+                               FontSize="10"
+                               FontWeight="SemiBold"
+                               Foreground="#B9B7D1"
+                               Margin="2,6,0,0"/>
+                </StackPanel>
+
+                <StackPanel>
+                    <TextBlock Text="WORKSPACE"
+                               FontSize="11"
+                               FontWeight="SemiBold"
+                               Foreground="#A7A5BF"
+                               Margin="24,0,0,12"/>
+
+
+
+
+                    <!-- Dashboard Navigation Button -->
+                    <Button Content="Dashboard"
+                        Click="DashboardButton_Click">
+                        <Button.Style>
+                            <Style TargetType="{x:Type Button}"
+                        BasedOn="{StaticResource SidebarButtonStyle}">
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding CurrentPage}"
+                             Value="DashboardView">
+                                        <Setter Property="Background"
+                            Value="#6554C0"/>
+                                        <Setter Property="Foreground"
+                            Value="White"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Button.Style>
+                    </Button>
+
+                    <!-- Patients Navigation Button -->
+                    <Button Content="Patients"
+                        Click="PatientsButton_Click">
+                        <Button.Style>
+                            <Style TargetType="{x:Type Button}"
+                        BasedOn="{StaticResource SidebarButtonStyle}">
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding CurrentPage}"
+                             Value="PatientsView">
+                                        <Setter Property="Background"
+                            Value="#6554C0"/>
+                                        <Setter Property="Foreground"
+                            Value="White"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Button.Style>
+                    </Button>
+
+
+                </StackPanel>
+
+                <TextBlock DockPanel.Dock="Bottom"
+                           Text="Golddie · Clinic System"
+                           Foreground="#A7A5BF"
+                           FontSize="11"
+                           Margin="24,20,24,24"
+                           VerticalAlignment="Bottom"/>
+            </DockPanel>
+        </Border>
+
+        <!-- Main application area -->
+        <Grid Grid.Column="1">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="76"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+
+            <!-- Top bar -->
+            <Border Grid.Row="0"
+                    Background="White"
+                    Padding="28,0"
+                    BorderBrush="#E8E7EF"
+                    BorderThickness="0,0,0,1">
+
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <TextBlock Grid.Column="0"
+                               Text="Clinic Management"
+                               FontSize="18"
+                               FontWeight="SemiBold"
+                               Foreground="#25243A"
+                               VerticalAlignment="Center"/>
+
+                    <StackPanel Grid.Column="1"
+                                VerticalAlignment="Center"
+                                HorizontalAlignment="Right">
+
+                        <TextBlock x:Name="UserInfoText"
+                                   Text="Signed in"
+                                   FontSize="13"
+                                   FontWeight="SemiBold"
+                                   Foreground="#25243A"
+                                   HorizontalAlignment="Right"/>
+
+                        <TextBlock Text="Active session"
+                                   FontSize="11"
+                                   Foreground="#77758B"
+                                   HorizontalAlignment="Right"
+                                   Margin="0,3,0,0"/>
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <!-- Swappable content -->
+            <ContentControl Grid.Row="1"
+                            x:Name="ContentArea"
+                            Content="{Binding CurrentView}"/>
+        </Grid>
+    </Grid>
+</Window>
+    
