@@ -1,3 +1,4 @@
 <Solution>
+  <Project Path="MaternityManagementSystem.Tests/MaternityManagementSystem.Tests.csproj" Id="55155a18-9246-48e1-abf4-3fbc884b4d3f" />
   <Project Path="MaternityManagementSystem/MaternityManagementSystem.csproj" />
 </Solution>

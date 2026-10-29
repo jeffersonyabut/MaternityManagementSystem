@@ -77,6 +77,21 @@ public partial class DashboardWindow : Window
         _navigationService.NavigateToView(editView);
     }
 
+    public void ShowPregnancyRegistration(int patientId)
+    {
+        var registrationView = new PregnancyRegistrationView(patientId);
+
+        _navigationService.NavigateToView(registrationView);
+    }
+
+
+    public void ShowPregnancyEdit(
+        MaternityManagementSystem.Models.Pregnancy pregnancy)
+    {
+        var editView = new PregnancyEditView(pregnancy);
+        _navigationService.NavigateToView(editView);
+    }
+
 
 
 

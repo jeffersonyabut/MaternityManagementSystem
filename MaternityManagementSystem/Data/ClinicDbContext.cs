@@ -10,6 +10,18 @@ public class ClinicDbContext : DbContext
     public DbSet<Staff> StaffMembers => Set<Staff>();
     public DbSet<Patient> Patients => Set<Patient>();
 
+    public DbSet<Pregnancy> Pregnancies => Set<Pregnancy>();
+
+    public ClinicDbContext()
+    {
+    }
+
+    public ClinicDbContext(
+        DbContextOptions<ClinicDbContext> options)
+        : base(options)
+    {
+    }
+
 
 
     protected override void OnConfiguring(
@@ -107,6 +119,25 @@ public class ClinicDbContext : DbContext
 
             entity.Property(patient => patient.UpdatedAtUtc)
                   .IsRequired(false);
+        });
+
+        modelBuilder.Entity<Pregnancy>(entity =>
+        {
+            entity.HasKey(p => p.Id);
+
+            entity.Property(p => p.Status)
+                .HasMaxLength(30)
+                .IsRequired();
+
+            entity.Property(p => p.Notes)
+                .HasMaxLength(2000);
+
+            entity.HasOne(p => p.Patient)
+                .WithMany()
+                .HasForeignKey(p => p.PatientId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasIndex(p => p.PatientId);
         });
 
     }

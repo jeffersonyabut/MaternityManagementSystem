@@ -3,6 +3,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using MaternityManagementSystem.Models;
 using MaternityManagementSystem.Repositories;
 using System;
+using System.Collections.ObjectModel;
 using System.Threading.Tasks;
 
 namespace MaternityManagementSystem.ViewModels;
@@ -10,13 +11,16 @@ namespace MaternityManagementSystem.ViewModels;
 public partial class PatientProfileViewModel : ObservableObject
 {
     private readonly PatientRepository _patientRepository;
+    private readonly PregnancyRepository _pregnancyRepository;
     private readonly int _patientId;
 
     public PatientProfileViewModel(
         PatientRepository patientRepository,
+        PregnancyRepository pregnancyRepository,
         int patientId)
     {
         ArgumentNullException.ThrowIfNull(patientRepository);
+        ArgumentNullException.ThrowIfNull(pregnancyRepository);
 
         if (patientId <= 0)
         {
@@ -24,11 +28,15 @@ public partial class PatientProfileViewModel : ObservableObject
         }
 
         _patientRepository = patientRepository;
+        _pregnancyRepository = pregnancyRepository;
         _patientId = patientId;
     }
 
     [ObservableProperty]
     private Patient? patient;
+
+    [ObservableProperty]
+    private ObservableCollection<Pregnancy> pregnancies = new();
 
     [ObservableProperty]
     private bool isBusy;
@@ -53,7 +61,11 @@ public partial class PatientProfileViewModel : ObservableObject
             if (Patient is null)
             {
                 StatusMessage = "This patient record could not be found.";
+                Pregnancies.Clear();
+                return;
             }
+
+            await LoadPregnanciesAsync();
         }
         catch (Exception)
         {
@@ -62,6 +74,18 @@ public partial class PatientProfileViewModel : ObservableObject
         finally
         {
             IsBusy = false;
+        }
+    }
+
+    private async Task LoadPregnanciesAsync()
+    {
+        var records = await _pregnancyRepository.GetByPatientIdAsync(_patientId);
+
+        Pregnancies.Clear();
+
+        foreach (var pregnancy in records)
+        {
+            Pregnancies.Add(pregnancy);
         }
     }
 }

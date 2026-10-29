@@ -6,13 +6,39 @@ namespace MaternityManagementSystem.Repositories;
 
 public class PatientRepository
 {
+    private readonly IDbContextFactory<ClinicDbContext>? _contextFactory;
+
+    public PatientRepository()
+    {
+    }
+
+    public PatientRepository(
+        IDbContextFactory<ClinicDbContext> contextFactory)
+    {
+        ArgumentNullException.ThrowIfNull(contextFactory);
+        _contextFactory = contextFactory;
+    }
+
+    private async Task<ClinicDbContext> CreateDbContextAsync(
+        CancellationToken cancellationToken)
+    {
+        if (_contextFactory is not null)
+        {
+            return await _contextFactory.CreateDbContextAsync(
+                cancellationToken);
+        }
+
+        return new ClinicDbContext();
+    }
+
     public async Task<Patient> AddAsync(
         Patient patient,
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(patient);
 
-        await using var dbContext = new ClinicDbContext();
+        await using var dbContext =
+        await CreateDbContextAsync(cancellationToken);
 
         dbContext.Patients.Add(patient);
 
@@ -25,7 +51,9 @@ public class PatientRepository
         int patientId,
         CancellationToken cancellationToken = default)
     {
-        await using var dbContext = new ClinicDbContext();
+
+        await using var dbContext =
+        await CreateDbContextAsync(cancellationToken);
 
         return await dbContext.Patients
             .AsNoTracking()
@@ -40,7 +68,8 @@ public class PatientRepository
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(patientNumber);
 
-        await using var dbContext = new ClinicDbContext();
+        await using var dbContext =
+        await CreateDbContextAsync(cancellationToken);
 
         return await dbContext.Patients
             .AsNoTracking()
@@ -52,7 +81,8 @@ public class PatientRepository
     public async Task<List<Patient>> GetAllAsync(
         CancellationToken cancellationToken = default)
     {
-        await using var dbContext = new ClinicDbContext();
+        await using var dbContext =
+        await CreateDbContextAsync(cancellationToken);
 
         return await dbContext.Patients
             .AsNoTracking()
@@ -69,7 +99,8 @@ public class PatientRepository
 
         string normalizedSearchTerm = searchTerm.Trim();
 
-        await using var dbContext = new ClinicDbContext();
+        await using var dbContext =
+        await CreateDbContextAsync(cancellationToken);
 
         if (normalizedSearchTerm.Length == 0)
         {
@@ -118,8 +149,8 @@ public class PatientRepository
         string normalizedSearchTerm = searchTerm.Trim();
         string search = normalizedSearchTerm.ToLowerInvariant();
 
-
-        await using var dbContext = new ClinicDbContext();
+        await using var dbContext =
+        await CreateDbContextAsync(cancellationToken);
 
         var query = dbContext.Patients
             .AsNoTracking();
@@ -156,7 +187,8 @@ public class PatientRepository
         string normalizedSearchTerm = searchTerm.Trim();
         string search = normalizedSearchTerm.ToLowerInvariant();
 
-        await using var dbContext = new ClinicDbContext();
+        await using var dbContext =
+        await CreateDbContextAsync(cancellationToken);
 
         if (normalizedSearchTerm.Length == 0)
         {
@@ -186,7 +218,8 @@ public class PatientRepository
     {
         ArgumentNullException.ThrowIfNull(patient);
 
-        await using var dbContext = new ClinicDbContext();
+        await using var dbContext =
+        await CreateDbContextAsync(cancellationToken);
 
         bool patientExists = await dbContext.Patients
             .AnyAsync(

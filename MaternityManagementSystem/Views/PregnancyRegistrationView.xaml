@@ -1,0 +1,94 @@
+<UserControl x:Class="MaternityManagementSystem.Views.PregnancyRegistrationView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Background="Transparent">
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <Grid Margin="28">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+
+            <!-- Header -->
+            <StackPanel Grid.Row="0" Margin="0,0,0,24">
+                <Button Content="← Back to Patient Profile"
+                        Padding="12,7"
+                        HorizontalAlignment="Left"
+                        Margin="0,0,0,20"
+                        Click="CancelButton_Click"/>
+
+                <TextBlock Text="Add Pregnancy Record"
+                           FontSize="28"
+                           FontWeight="SemiBold"/>
+
+                <TextBlock Text="Record pregnancy information for the selected patient."
+                           Margin="0,6,0,0"
+                           FontSize="14"
+                           Opacity="0.7"/>
+            </StackPanel>
+
+            <!-- Form -->
+            <Border Grid.Row="1"
+                    Padding="24"
+                    CornerRadius="10"
+                    Background="{DynamicResource MaterialDesignPaper}">
+
+                <StackPanel>
+                    <TextBlock Text="Pregnancy Information"
+                               FontSize="18"
+                               FontWeight="SemiBold"
+                               Margin="0,0,0,20"/>
+
+                    <TextBlock Text="Pregnancy Status"/>
+                    <ComboBox SelectedValue="{Binding Status, UpdateSourceTrigger=PropertyChanged}"
+                              SelectedValuePath="Content"
+                              Margin="0,4,0,20">
+                        <ComboBoxItem Content="Current"/>
+                        <ComboBoxItem Content="Completed"/>
+                        <ComboBoxItem Content="Other"/>
+                    </ComboBox>
+
+                    <TextBlock Text="Last Menstrual Period (LMP)"/>
+                    <DatePicker SelectedDate="{Binding LastMenstrualPeriod, UpdateSourceTrigger=PropertyChanged}"
+                                Margin="0,4,0,16"/>
+
+                    <TextBlock Text="Estimated Due Date (EDD)"/>
+                    <DatePicker SelectedDate="{Binding EstimatedDueDate, UpdateSourceTrigger=PropertyChanged}"
+                                Margin="0,4,0,16"/>
+
+                    <TextBlock Text="Pregnancy End Date"/>
+                    <DatePicker SelectedDate="{Binding PregnancyEndDate, UpdateSourceTrigger=PropertyChanged}"
+                                Margin="0,4,0,20"/>
+
+                    <TextBlock Text="Notes"/>
+                    <TextBox Text="{Binding Notes, UpdateSourceTrigger=PropertyChanged}"
+                             MaxLength="2000"
+                             AcceptsReturn="True"
+                             TextWrapping="Wrap"
+                             MinHeight="100"
+                             VerticalScrollBarVisibility="Auto"
+                             Margin="0,4,0,20"/>
+
+                    <TextBlock Text="{Binding StatusMessage}"
+                               TextWrapping="Wrap"
+                               Margin="0,0,0,16"
+                               Opacity="0.8"/>
+
+                    <StackPanel Orientation="Horizontal"
+                                HorizontalAlignment="Right">
+                        <Button Content="Cancel"
+                                Padding="18,10"
+                                Margin="0,0,12,0"
+                                Click="CancelButton_Click"/>
+
+                        <Button Content="Save Pregnancy"
+                                Padding="18,10"
+                                Command="{Binding SaveCommand}"/>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+        </Grid>
+    </ScrollViewer>
+</UserControl>

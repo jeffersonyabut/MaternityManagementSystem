@@ -87,6 +87,46 @@ namespace MaternityManagementSystem.Migrations
                     b.ToTable("Patients");
                 });
 
+            modelBuilder.Entity("MaternityManagementSystem.Models.Pregnancy", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateOnly?>("EstimatedDueDate")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateOnly?>("LastMenstrualPeriod")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(2000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("PatientId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateOnly?>("PregnancyEndDate")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("UpdatedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PatientId");
+
+                    b.ToTable("Pregnancies");
+                });
+
             modelBuilder.Entity("MaternityManagementSystem.Models.Staff", b =>
                 {
                     b.Property<int>("Id")
@@ -119,6 +159,17 @@ namespace MaternityManagementSystem.Migrations
                         .IsUnique();
 
                     b.ToTable("StaffMembers");
+                });
+
+            modelBuilder.Entity("MaternityManagementSystem.Models.Pregnancy", b =>
+                {
+                    b.HasOne("MaternityManagementSystem.Models.Patient", "Patient")
+                        .WithMany()
+                        .HasForeignKey("PatientId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Patient");
                 });
 #pragma warning restore 612, 618
         }

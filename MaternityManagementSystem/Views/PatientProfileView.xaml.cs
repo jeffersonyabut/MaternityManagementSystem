@@ -16,6 +16,7 @@ public partial class PatientProfileView : UserControl
 
         _viewModel = new PatientProfileViewModel(
             new PatientRepository(),
+            new PregnancyRepository(),
             patientId);
 
         DataContext = _viewModel;
@@ -60,6 +61,44 @@ public partial class PatientProfileView : UserControl
             dashboardWindow.ShowPatientEdit(_viewModel.Patient);
         }
     }
+
+    private void AddPregnancyButton_Click(
+    object sender, System.Windows.RoutedEventArgs e)
+    {
+        var parentWindow = System.Windows.Window.GetWindow(this);
+
+        if (parentWindow is DashboardWindow dashboardWindow &&
+            _viewModel.Patient is not null)
+        {
+            dashboardWindow.ShowPregnancyRegistration(
+                _viewModel.Patient.Id);
+        }
+    }
+
+
+
+    private void EditPregnancyButton_Click(
+        object sender,
+        System.Windows.RoutedEventArgs e)
+    {
+        if (sender is not System.Windows.Controls.Button button)
+        {
+            return;
+        }
+
+        if (button.DataContext is not MaternityManagementSystem.Models.Pregnancy pregnancy)
+        {
+            return;
+        }
+
+        var parentWindow = System.Windows.Window.GetWindow(this);
+
+        if (parentWindow is DashboardWindow dashboardWindow)
+        {
+            dashboardWindow.ShowPregnancyEdit(pregnancy);
+        }
+    }
+
 
 
 }

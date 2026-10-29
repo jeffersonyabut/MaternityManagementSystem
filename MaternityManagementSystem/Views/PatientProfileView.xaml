@@ -9,6 +9,7 @@
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
 
 
@@ -173,6 +174,111 @@
                     </Grid>
                 </StackPanel>
             </Border>
+
+
+            <!-- Pregnancy History -->
+            <Border Grid.Row="3"
+        Margin="0,20,0,0"
+        Padding="24"
+        CornerRadius="10"
+        Background="{DynamicResource MaterialDesignPaper}">
+
+                
+                <StackPanel>
+
+                    <Button Content="+ Add Pregnancy Record"
+                    Padding="12,7"
+                    HorizontalAlignment="Right"
+                    Click="AddPregnancyButton_Click"/>
+                    
+                    <TextBlock Text="Pregnancy History"
+                   FontSize="20"
+                   FontWeight="SemiBold"/>
+
+                    <TextBlock Text="Pregnancy records associated with this patient."
+                   Margin="0,6,0,18"
+                   Opacity="0.7"/>
+
+                    <TextBlock Text="No pregnancy records found."
+                   Opacity="0.7"
+                   Margin="0,0,0,12">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="Visibility" Value="Collapsed"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding Pregnancies.Count}"
+                                     Value="0">
+                                        <Setter Property="Visibility" Value="Visible"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
+
+                    <ItemsControl ItemsSource="{Binding Pregnancies}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border BorderBrush="#DDDDDD"
+                            BorderThickness="1"
+                            CornerRadius="8"
+                            Padding="16"
+                            Margin="0,0,0,12">
+
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+
+                                        <StackPanel Grid.Column="0">
+                                            <TextBlock Text="{Binding Status}"
+                                           FontSize="16"
+                                           FontWeight="SemiBold"/>
+
+                                            <TextBlock Margin="0,8,0,0">
+                                    <Run Text="Last menstrual period: "/>
+                                    <Run Text="{Binding LastMenstrualPeriod,
+                                        TargetNullValue='Not recorded',
+                                        StringFormat={}{0:MMM dd, yyyy}}"/>
+                                            </TextBlock>
+
+                                            <TextBlock Margin="0,4,0,0">
+                                    <Run Text="Estimated due date: "/>
+                                    <Run Text="{Binding EstimatedDueDate,
+                                        TargetNullValue='Not recorded',
+                                        StringFormat={}{0:MMM dd, yyyy}}"/>
+                                            </TextBlock>
+
+                                            <TextBlock Margin="0,4,0,0">
+                                    <Run Text="Pregnancy end date: "/>
+                                    <Run Text="{Binding PregnancyEndDate,
+                                        TargetNullValue='Not recorded',
+                                        StringFormat={}{0:MMM dd, yyyy}}"/>
+                                            </TextBlock>
+
+                                            <TextBlock Text="{Binding Notes,
+                                                   TargetNullValue='No notes'}"
+                                           Margin="0,8,0,0"
+                                           TextWrapping="Wrap"
+                                           Opacity="0.75"/>
+                                        </StackPanel>
+
+                                        <Button Grid.Column="1"
+                                                Content="Edit"
+                                                Padding="12,6"
+                                                Margin="16,0,0,0"
+                                                VerticalAlignment="Top"
+                                                Click="EditPregnancyButton_Click"/>
+
+                                        
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+            </Border>
+
 
             <!-- Loading / error status -->
             <TextBlock Grid.Row="2"
