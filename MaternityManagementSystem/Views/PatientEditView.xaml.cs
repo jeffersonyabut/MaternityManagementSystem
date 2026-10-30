@@ -5,6 +5,7 @@ using MaternityManagementSystem.Models;
 using MaternityManagementSystem.Repositories;
 using MaternityManagementSystem.Services;
 using MaternityManagementSystem.ViewModels;
+using System.Windows;
 
 namespace MaternityManagementSystem.Views;
 
@@ -21,8 +22,15 @@ public partial class PatientEditView : UserControl
 
         _patientId = patient.Id;
 
+        var app = (App)Application.Current;
+
+        var authorizationService = new AuthorizationService(
+            app.SessionService);
+
         var patientService = new PatientService(
-            new PatientRepository());
+            new PatientRepository(),
+            authorizationService,
+            app.SessionService);
 
         _viewModel = new PatientEditViewModel(
             patientService,

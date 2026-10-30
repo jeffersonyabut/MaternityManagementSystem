@@ -1,4 +1,3 @@
-
 using System;
 using System.Windows;
 using System.Windows.Controls;
@@ -22,9 +21,16 @@ public partial class PregnancyEditView : UserControl
 
         _patientId = pregnancy.PatientId;
 
+        var app = (App)Application.Current;
+
+        var authorizationService = new AuthorizationService(
+            app.SessionService);
+
         var pregnancyService = new PregnancyService(
             new PregnancyRepository(),
-            new PatientRepository());
+            new PatientRepository(),
+            authorizationService,
+            app.SessionService);
 
         _viewModel = new PregnancyEditViewModel(
             pregnancyService,

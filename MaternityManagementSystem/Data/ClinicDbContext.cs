@@ -8,9 +8,11 @@ namespace MaternityManagementSystem.Data;
 public class ClinicDbContext : DbContext
 {
     public DbSet<Staff> StaffMembers => Set<Staff>();
+    public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
     public DbSet<Patient> Patients => Set<Patient>();
-
     public DbSet<Pregnancy> Pregnancies => Set<Pregnancy>();
+    public DbSet<PrenatalVisit> PrenatalVisits => Set<PrenatalVisit>();
+    public DbSet<VitalSign> VitalSigns => Set<VitalSign>();
 
     public ClinicDbContext()
     {
@@ -138,6 +140,104 @@ public class ClinicDbContext : DbContext
                 .OnDelete(DeleteBehavior.Restrict);
 
             entity.HasIndex(p => p.PatientId);
+        });
+
+        modelBuilder.Entity<PrenatalVisit>(entity =>
+        {
+            entity.HasKey(pv => pv.Id);
+
+            entity.Property(pv => pv.Notes)
+                .HasMaxLength(2000);
+
+            entity.HasOne(pv => pv.Pregnancy)
+                .WithMany()
+                .HasForeignKey(pv => pv.PregnancyId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasIndex(pv => pv.PregnancyId);
+        });
+
+        modelBuilder.Entity<VitalSign>(entity =>
+        {
+            entity.HasKey(vs => vs.Id);
+
+            entity.Property(vs => vs.TemperatureCelsius)
+                .HasPrecision(5, 2);
+
+            entity.Property(vs => vs.OxygenSaturation)
+                .HasPrecision(5, 2);
+
+            entity.Property(vs => vs.WeightKg)
+                .HasPrecision(6, 2);
+
+            entity.Property(vs => vs.Notes)
+                .HasMaxLength(2000);
+
+            entity.HasOne(vs => vs.PrenatalVisit)
+                .WithMany(pv => pv.VitalSigns)
+                .HasForeignKey(vs => vs.PrenatalVisitId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasIndex(vs => vs.PrenatalVisitId);
+
+            entity.Property(vs => vs.RecordedAtUtc)
+                .IsRequired();
+
+            entity.Property(vs => vs.CreatedAtUtc)
+                .IsRequired();
+
+            entity.Property(vs => vs.UpdatedAtUtc)
+                .IsRequired(false);
+
+            entity.Property(vs => vs.IsArchived)
+                .HasDefaultValue(false)
+                .IsRequired();
+
+            entity.Property(vs => vs.ArchivedAtUtc)
+                .IsRequired(false);
+
+            entity.Property(vs => vs.ArchiveReason)
+                .HasMaxLength(1000)
+                .IsRequired(false);
+        });
+
+
+        modelBuilder.Entity<AuditLog>(entity =>
+        {
+            entity.HasKey(a => a.Id);
+
+            entity.Property(a => a.Username)
+                .HasMaxLength(100)
+                .IsRequired();
+
+            entity.Property(a => a.Action)
+                .HasMaxLength(100)
+                .IsRequired();
+
+            entity.Property(a => a.EntityType)
+                .HasMaxLength(100)
+                .IsRequired();
+
+            entity.Property(a => a.Details)
+                .HasMaxLength(2000)
+                .IsRequired(false);
+
+            entity.Property(a => a.Reason)
+                .HasMaxLength(1000)
+                .IsRequired(false);
+
+            entity.Property(a => a.OccurredAtUtc)
+                .IsRequired();
+
+            entity.HasIndex(a => a.OccurredAtUtc);
+
+            entity.HasIndex(a => new
+            {
+                a.EntityType,
+                a.EntityId
+            });
+
+            entity.HasIndex(a => a.StaffId);
         });
 
     }

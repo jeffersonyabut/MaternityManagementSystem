@@ -1,23 +1,36 @@
 using MaternityManagementSystem.Models;
 using MaternityManagementSystem.Repositories;
+using MaternityManagementSystem.Sessions;
 
 namespace MaternityManagementSystem.Services;
 
 public class PatientService
 {
     private readonly PatientRepository _patientRepository;
+    private readonly AuthorizationService _authorizationService;
+    private readonly SessionService _sessionService;
 
-    public PatientService(PatientRepository patientRepository)
+    public PatientService(
+        PatientRepository patientRepository,
+        AuthorizationService authorizationService,
+        SessionService sessionService)
     {
         ArgumentNullException.ThrowIfNull(patientRepository);
+        ArgumentNullException.ThrowIfNull(authorizationService);
+        ArgumentNullException.ThrowIfNull(sessionService);
 
         _patientRepository = patientRepository;
+        _authorizationService = authorizationService;
+        _sessionService = sessionService;
     }
+
+
 
     public async Task<Patient> RegisterPatientAsync(
         Patient patient,
         CancellationToken cancellationToken = default)
     {
+        _authorizationService.EnsureAuthenticated();
         ArgumentNullException.ThrowIfNull(patient);
 
         ValidatePatient(patient);
@@ -39,8 +52,26 @@ public class PatientService
         patient.CreatedAtUtc = DateTime.UtcNow;
         patient.UpdatedAtUtc = null;
 
+        var currentUser = _sessionService.CurrentUser;
+
+        if (currentUser is null)
+        {
+            throw new UnauthorizedAccessException(
+                "You must be logged in to register a patient.");
+        }
+
+        var auditLog = new AuditLog
+        {
+            StaffId = currentUser.StaffId,
+            Username = currentUser.Username,
+            Action = "Created",
+            EntityType = "Patient",
+            Details = "Patient record registered."
+        };
+
         return await _patientRepository.AddAsync(
             patient,
+            auditLog,
             cancellationToken);
     }
 
@@ -49,6 +80,7 @@ public class PatientService
         Patient patient,
         CancellationToken cancellationToken = default)
     {
+        _authorizationService.EnsureAuthenticated();
         ArgumentNullException.ThrowIfNull(patient);
 
         if (patient.Id <= 0)
@@ -88,11 +120,110 @@ public class PatientService
 
         existingPatient.UpdatedAtUtc = DateTime.UtcNow;
 
+        var currentUser = _sessionService.CurrentUser;
+
+        if (currentUser is null)
+        {
+            throw new UnauthorizedAccessException(
+                "You must be logged in to update a patient.");
+        }
+
+        var auditLog = new AuditLog
+        {
+            StaffId = currentUser.StaffId,
+            Username = currentUser.Username,
+            Action = "Updated",
+            EntityType = "Patient",
+            Details = "Patient record updated."
+        };
+
         await _patientRepository.UpdateAsync(
             existingPatient,
+            auditLog,
             cancellationToken);
 
         return existingPatient;
+    }
+
+    public async Task<Patient?> GetPatientByIdAsync(
+    int patientId,
+    CancellationToken cancellationToken = default)
+    {
+        _authorizationService.EnsureAuthenticated();
+
+        if (patientId <= 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(patientId));
+        }
+
+        return await _patientRepository.GetByIdAsync(
+            patientId,
+            cancellationToken);
+    }
+
+    public async Task<Patient?> GetPatientByNumberAsync(
+        string patientNumber,
+        CancellationToken cancellationToken = default)
+    {
+        _authorizationService.EnsureAuthenticated();
+
+        ArgumentException.ThrowIfNullOrWhiteSpace(patientNumber);
+
+        return await _patientRepository.GetByPatientNumberAsync(
+            patientNumber,
+            cancellationToken);
+    }
+
+    public async Task<List<Patient>> GetAllPatientsAsync(
+        CancellationToken cancellationToken = default)
+    {
+        _authorizationService.EnsureAuthenticated();
+
+        return await _patientRepository.GetAllAsync(
+            cancellationToken);
+    }
+
+    public async Task<List<Patient>> SearchPatientsAsync(
+        string searchTerm,
+        CancellationToken cancellationToken = default)
+    {
+        _authorizationService.EnsureAuthenticated();
+
+        ArgumentNullException.ThrowIfNull(searchTerm);
+
+        return await _patientRepository.SearchAsync(
+            searchTerm,
+            cancellationToken);
+    }
+
+    public async Task<List<Patient>> SearchPatientsPageAsync(
+        string searchTerm,
+        int pageNumber,
+        int pageSize,
+        CancellationToken cancellationToken = default)
+    {
+        _authorizationService.EnsureAuthenticated();
+
+        ArgumentNullException.ThrowIfNull(searchTerm);
+
+        return await _patientRepository.SearchPageAsync(
+            searchTerm,
+            pageNumber,
+            pageSize,
+            cancellationToken);
+    }
+
+    public async Task<int> CountPatientSearchResultsAsync(
+        string searchTerm,
+        CancellationToken cancellationToken = default)
+    {
+        _authorizationService.EnsureAuthenticated();
+
+        ArgumentNullException.ThrowIfNull(searchTerm);
+
+        return await _patientRepository.CountSearchResultsAsync(
+            searchTerm,
+            cancellationToken);
     }
 
 

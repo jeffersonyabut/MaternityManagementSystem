@@ -3,6 +3,7 @@ using System.Windows;
 using MaternityManagementSystem.Navigation;
 using MaternityManagementSystem.Services;
 using MaternityManagementSystem.Views;
+using MaternityManagementSystem.Models;
 
 namespace MaternityManagementSystem.Views;
 
@@ -93,7 +94,113 @@ public partial class DashboardWindow : Window
     }
 
 
+    public void ShowPrenatalVisits(
+        MaternityManagementSystem.Models.Pregnancy pregnancy)
+    {
+        var view = new PrenatalVisitView(pregnancy);
 
+        _navigationService.NavigateToView(view);
+    }
+
+    public void ShowPrenatalVisitRegistration(
+    MaternityManagementSystem.Models.Pregnancy pregnancy)
+    {
+        var registrationView = new PrenatalVisitRegistrationView(pregnancy);
+
+        registrationView.VisitSaved += () =>
+        {
+            ShowPrenatalVisits(pregnancy);
+        };
+
+        registrationView.CancelRequested += () =>
+        {
+            ShowPrenatalVisits(pregnancy);
+        };
+
+        _navigationService.NavigateToView(registrationView);
+    }
+
+
+
+    public void ShowPrenatalVisitEdit(
+        int visitId,
+        MaternityManagementSystem.Models.Pregnancy pregnancy)
+    {
+        ArgumentNullException.ThrowIfNull(pregnancy);
+
+        var editView = new PrenatalVisitEditView(visitId);
+
+        editView.VisitUpdated += () =>
+        {
+            ShowPrenatalVisits(pregnancy);
+        };
+
+        editView.CancelRequested += () =>
+        {
+            ShowPrenatalVisits(pregnancy);
+        };
+
+        _navigationService.NavigateToView(editView);
+    }
+
+    public void ShowVitalSigns(
+        PrenatalVisit visit,
+        Pregnancy pregnancy)
+    {
+        ArgumentNullException.ThrowIfNull(visit);
+        ArgumentNullException.ThrowIfNull(pregnancy);
+
+        var view = new VitalSignsView(visit, pregnancy);
+
+        _navigationService.NavigateToView(view);
+    }
+
+
+    public void ShowVitalSignRegistration(PrenatalVisit visit, Pregnancy pregnancy)
+    {
+        ArgumentNullException.ThrowIfNull(visit);
+        ArgumentNullException.ThrowIfNull(pregnancy);
+
+        var registrationView = new VitalSignRegistrationView(visit);
+
+        registrationView.VitalSignSaved += () =>
+        {
+            ShowVitalSigns(visit, pregnancy);
+        };
+
+        registrationView.CancelRequested += () =>
+        {
+            ShowVitalSigns(visit, pregnancy);
+        };
+
+        _navigationService.NavigateToView(registrationView);
+    }
+
+
+
+    public void ShowVitalSignEdit(
+        VitalSign vitalSign,
+        PrenatalVisit visit,
+        Pregnancy pregnancy)
+    {
+        ArgumentNullException.ThrowIfNull(vitalSign);
+        ArgumentNullException.ThrowIfNull(visit);
+        ArgumentNullException.ThrowIfNull(pregnancy);
+
+        var editView = new VitalSignEditView(vitalSign);
+
+        editView.VitalSignUpdated += () =>
+        {
+            ShowVitalSigns(visit, pregnancy);
+        };
+
+        editView.CancelRequested += () =>
+        {
+            ShowVitalSigns(visit, pregnancy);
+        };
+
+        _navigationService.NavigateToView(editView);
+    }
 
 
 

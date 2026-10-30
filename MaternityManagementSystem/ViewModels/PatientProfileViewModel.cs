@@ -1,7 +1,7 @@
 
 using CommunityToolkit.Mvvm.ComponentModel;
 using MaternityManagementSystem.Models;
-using MaternityManagementSystem.Repositories;
+using MaternityManagementSystem.Services;
 using System;
 using System.Collections.ObjectModel;
 using System.Threading.Tasks;
@@ -10,25 +10,25 @@ namespace MaternityManagementSystem.ViewModels;
 
 public partial class PatientProfileViewModel : ObservableObject
 {
-    private readonly PatientRepository _patientRepository;
-    private readonly PregnancyRepository _pregnancyRepository;
+    private readonly PatientService _patientService;
+    private readonly PregnancyService _pregnancyService;
     private readonly int _patientId;
 
     public PatientProfileViewModel(
-        PatientRepository patientRepository,
-        PregnancyRepository pregnancyRepository,
+        PatientService patientService,
+        PregnancyService pregnancyService,
         int patientId)
     {
-        ArgumentNullException.ThrowIfNull(patientRepository);
-        ArgumentNullException.ThrowIfNull(pregnancyRepository);
+        ArgumentNullException.ThrowIfNull(patientService);
+        ArgumentNullException.ThrowIfNull(pregnancyService);
 
         if (patientId <= 0)
         {
             throw new ArgumentOutOfRangeException(nameof(patientId));
         }
 
-        _patientRepository = patientRepository;
-        _pregnancyRepository = pregnancyRepository;
+        _patientService = patientService;
+        _pregnancyService = pregnancyService;
         _patientId = patientId;
     }
 
@@ -56,7 +56,7 @@ public partial class PatientProfileViewModel : ObservableObject
 
         try
         {
-            Patient = await _patientRepository.GetByIdAsync(_patientId);
+            Patient = await _patientService.GetPatientByIdAsync(_patientId);
 
             if (Patient is null)
             {
@@ -79,7 +79,7 @@ public partial class PatientProfileViewModel : ObservableObject
 
     private async Task LoadPregnanciesAsync()
     {
-        var records = await _pregnancyRepository.GetByPatientIdAsync(_patientId);
+        var records = await _pregnancyService.GetByPatientIdAsync(_patientId);
 
         Pregnancies.Clear();
 

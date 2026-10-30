@@ -9,7 +9,6 @@
         WindowStartupLocation="CenterScreen"
         Background="#F5F6FA">
 
-
     <Window.Resources>
         <Style x:Key="SidebarButtonStyle" TargetType="{x:Type Button}">
             <Setter Property="Foreground" Value="#E4E2F0"/>
@@ -19,33 +18,35 @@
             <Setter Property="FontWeight" Value="SemiBold"/>
             <Setter Property="HorizontalContentAlignment" Value="Left"/>
             <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="HorizontalAlignment" Value="Stretch"/>
             <Setter Property="Padding" Value="20,14"/>
             <Setter Property="Margin" Value="12,2"/>
             <Setter Property="Cursor" Value="Hand"/>
+
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="{x:Type Button}">
                         <Border x:Name="ButtonBorder"
-                            Background="{TemplateBinding Background}"
-                            CornerRadius="8"
-                            Padding="{TemplateBinding Padding}">
+                                Background="{TemplateBinding Background}"
+                                CornerRadius="8"
+                                Padding="{TemplateBinding Padding}">
                             <ContentPresenter
-                            HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
-                            VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
-                            RecognizesAccessKey="True"/>
+                                HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+                                RecognizesAccessKey="True"/>
                         </Border>
 
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
                                 <Setter TargetName="ButtonBorder"
-                                    Property="Background"
-                                    Value="#393750"/>
+                                        Property="Background"
+                                        Value="#393750"/>
                             </Trigger>
 
                             <Trigger Property="IsPressed" Value="True">
                                 <Setter TargetName="ButtonBorder"
-                                    Property="Background"
-                                    Value="#4A456B"/>
+                                        Property="Background"
+                                        Value="#4A456B"/>
                             </Trigger>
 
                             <Trigger Property="IsEnabled" Value="False">
@@ -58,18 +59,19 @@
         </Style>
     </Window.Resources>
 
-
     <Grid>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="240"/>
             <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
 
-        <!-- Persistent sidebar -->
+        <!-- Persistent Sidebar -->
         <Border Grid.Column="0"
                 Background="#25243A">
+
             <DockPanel LastChildFill="True">
 
+                <!-- Sidebar Header -->
                 <StackPanel DockPanel.Dock="Top"
                             Margin="24,28,24,32">
 
@@ -85,74 +87,84 @@
                                Margin="2,6,0,0"/>
                 </StackPanel>
 
-                <StackPanel>
+                <!-- Navigation Menu -->
+                <StackPanel DockPanel.Dock="Top"
+                            HorizontalAlignment="Stretch">
+
                     <TextBlock Text="WORKSPACE"
                                FontSize="11"
                                FontWeight="SemiBold"
                                Foreground="#A7A5BF"
                                Margin="24,0,0,12"/>
 
-
-
-
                     <!-- Dashboard Navigation Button -->
                     <Button Content="Dashboard"
-                        Click="DashboardButton_Click">
+                            HorizontalAlignment="Stretch"
+                            Click="DashboardButton_Click">
+
                         <Button.Style>
                             <Style TargetType="{x:Type Button}"
-                        BasedOn="{StaticResource SidebarButtonStyle}">
+                                   BasedOn="{StaticResource SidebarButtonStyle}">
+
                                 <Style.Triggers>
                                     <DataTrigger Binding="{Binding CurrentPage}"
-                             Value="DashboardView">
+                                                 Value="DashboardView">
                                         <Setter Property="Background"
-                            Value="#6554C0"/>
+                                                Value="#6554C0"/>
                                         <Setter Property="Foreground"
-                            Value="White"/>
+                                                Value="White"/>
                                     </DataTrigger>
                                 </Style.Triggers>
+
                             </Style>
                         </Button.Style>
                     </Button>
 
                     <!-- Patients Navigation Button -->
                     <Button Content="Patients"
-                        Click="PatientsButton_Click">
+                            HorizontalAlignment="Stretch"
+                            Click="PatientsButton_Click">
+
                         <Button.Style>
                             <Style TargetType="{x:Type Button}"
-                        BasedOn="{StaticResource SidebarButtonStyle}">
+                                   BasedOn="{StaticResource SidebarButtonStyle}">
+
                                 <Style.Triggers>
                                     <DataTrigger Binding="{Binding CurrentPage}"
-                             Value="PatientsView">
+                                                 Value="PatientsView">
                                         <Setter Property="Background"
-                            Value="#6554C0"/>
+                                                Value="#6554C0"/>
                                         <Setter Property="Foreground"
-                            Value="White"/>
+                                                Value="White"/>
                                     </DataTrigger>
                                 </Style.Triggers>
+
                             </Style>
                         </Button.Style>
                     </Button>
 
-
                 </StackPanel>
 
+                <!-- Sidebar Footer -->
                 <TextBlock DockPanel.Dock="Bottom"
                            Text="Golddie · Clinic System"
                            Foreground="#A7A5BF"
                            FontSize="11"
                            Margin="24,20,24,24"
                            VerticalAlignment="Bottom"/>
+
             </DockPanel>
         </Border>
 
-        <!-- Main application area -->
+        <!-- Main Application Area -->
         <Grid Grid.Column="1">
+
             <Grid.RowDefinitions>
                 <RowDefinition Height="76"/>
                 <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
 
-            <!-- Top bar -->
+            <!-- Top Bar -->
             <Border Grid.Row="0"
                     Background="White"
                     Padding="28,0"
@@ -188,15 +200,16 @@
                                    Foreground="#77758B"
                                    HorizontalAlignment="Right"
                                    Margin="0,3,0,0"/>
+
                     </StackPanel>
                 </Grid>
             </Border>
 
-            <!-- Swappable content -->
+            <!-- Swappable Content -->
             <ContentControl Grid.Row="1"
                             x:Name="ContentArea"
                             Content="{Binding CurrentView}"/>
+
         </Grid>
     </Grid>
 </Window>
-    

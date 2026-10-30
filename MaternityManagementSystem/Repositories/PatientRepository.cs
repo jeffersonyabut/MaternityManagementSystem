@@ -33,16 +33,34 @@ public class PatientRepository
 
     public async Task<Patient> AddAsync(
         Patient patient,
+        AuditLog auditLog,
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(patient);
+        ArgumentNullException.ThrowIfNull(auditLog);
 
         await using var dbContext =
-        await CreateDbContextAsync(cancellationToken);
+            await CreateDbContextAsync(cancellationToken);
+
+        await using var transaction =
+            await dbContext.Database.BeginTransactionAsync(cancellationToken);
 
         dbContext.Patients.Add(patient);
 
+        // Save first so the database generates the patient ID.
         await dbContext.SaveChangesAsync(cancellationToken);
+
+        auditLog.EntityId = patient.Id;
+        auditLog.OccurredAtUtc = DateTime.UtcNow;
+
+        await dbContext.AuditLogs.AddAsync(
+            auditLog,
+            cancellationToken);
+
+        await dbContext.SaveChangesAsync(cancellationToken);
+
+        // Commit both operations together.
+        await transaction.CommitAsync(cancellationToken);
 
         return patient;
     }
@@ -214,26 +232,38 @@ public class PatientRepository
 
     public async Task UpdateAsync(
         Patient patient,
+        AuditLog auditLog,
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(patient);
+        ArgumentNullException.ThrowIfNull(auditLog);
 
         await using var dbContext =
-        await CreateDbContextAsync(cancellationToken);
+            await CreateDbContextAsync(cancellationToken);
 
-        bool patientExists = await dbContext.Patients
-            .AnyAsync(
-                existingPatient => existingPatient.Id == patient.Id,
+        var existingPatient = await dbContext.Patients
+            .FirstOrDefaultAsync(
+                existing => existing.Id == patient.Id,
                 cancellationToken);
 
-        if (!patientExists)
+        if (existingPatient is null)
         {
             throw new KeyNotFoundException(
                 $"Patient with ID {patient.Id} was not found.");
         }
 
-        dbContext.Patients.Update(patient);
+        dbContext.Entry(existingPatient).CurrentValues.SetValues(patient);
+
+        auditLog.EntityId = patient.Id;
+        auditLog.OccurredAtUtc = DateTime.UtcNow;
+
+        await dbContext.AuditLogs.AddAsync(
+            auditLog,
+            cancellationToken);
 
         await dbContext.SaveChangesAsync(cancellationToken);
     }
+
+
+
 }

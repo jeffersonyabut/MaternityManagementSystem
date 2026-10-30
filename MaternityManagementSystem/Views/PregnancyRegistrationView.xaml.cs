@@ -1,4 +1,3 @@
-
 using System.Windows;
 using System.Windows.Controls;
 using MaternityManagementSystem.Repositories;
@@ -18,9 +17,16 @@ public partial class PregnancyRegistrationView : UserControl
 
         _patientId = patientId;
 
+        var app = (App)Application.Current;
+
+        var authorizationService = new AuthorizationService(
+            app.SessionService);
+
         var pregnancyService = new PregnancyService(
             new PregnancyRepository(),
-            new PatientRepository());
+            new PatientRepository(),
+            authorizationService,
+            app.SessionService);
 
         _viewModel = new PregnancyRegistrationViewModel(
             pregnancyService,
@@ -32,7 +38,8 @@ public partial class PregnancyRegistrationView : UserControl
     }
 
     private void CancelButton_Click(
-        object sender, RoutedEventArgs e)
+        object sender,
+        RoutedEventArgs e)
     {
         var parentWindow = Window.GetWindow(this);
 

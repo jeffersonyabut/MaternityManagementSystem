@@ -1,19 +1,63 @@
 ﻿
 using System;
 using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore;
 using MaternityManagementSystem.Models;
 using MaternityManagementSystem.Repositories;
 using MaternityManagementSystem.Services;
+using MaternityManagementSystem.Sessions;
 using Xunit;
 
 namespace MaternityManagementSystem.Tests;
 
 public class PregnancyServiceTests
 {
+    private static async Task<PregnancyService> CreateAuthenticatedServiceAsync(
+        TestDatabase testDatabase,
+        PregnancyRepository pregnancyRepository,
+        PatientRepository patientRepository)
+    {
+        int staffId;
+
+        await using (var dbContext =
+            await testDatabase.Factory.CreateDbContextAsync())
+        {
+            var staff = new Staff
+            {
+                Username = "pregnancy-test-user",
+                PasswordHash = "test-password-hash",
+                Role = "Nurse/Midwife",
+                IsActive = true,
+                CreatedAtUtc = DateTime.UtcNow
+            };
+
+            dbContext.StaffMembers.Add(staff);
+            await dbContext.SaveChangesAsync();
+
+            staffId = staff.Id;
+        }
+
+        var sessionService = new SessionService();
+
+        sessionService.StartSession(
+            new UserSession(
+                staffId,
+                "pregnancy-test-user",
+                "Nurse/Midwife"));
+
+        var authorizationService =
+            new AuthorizationService(sessionService);
+
+        return new PregnancyService(
+            pregnancyRepository,
+            patientRepository,
+            authorizationService,
+            sessionService);
+    }
+
     [Fact]
     public async Task CreatePregnancyAsync_WhenPatientDoesNotExist_ThrowsArgumentException()
     {
-        // Arrange: create an isolated test database.
         await using var testDatabase =
             await TestDatabase.CreateAsync();
 
@@ -23,7 +67,8 @@ public class PregnancyServiceTests
         var patientRepository =
             new PatientRepository(testDatabase.Factory);
 
-        var service = new PregnancyService(
+        var service = await CreateAuthenticatedServiceAsync(
+            testDatabase,
             pregnancyRepository,
             patientRepository);
 
@@ -44,11 +89,9 @@ public class PregnancyServiceTests
             exception.Message);
     }
 
-
     [Fact]
     public async Task CreatePregnancyAsync_WhenPatientExists_SavesPregnancy()
     {
-        // Arrange
         await using var testDatabase =
             await TestDatabase.CreateAsync();
 
@@ -60,7 +103,6 @@ public class PregnancyServiceTests
 
         int patientId;
 
-        // Create a patient in the isolated test database.
         await using (var dbContext =
             await testDatabase.Factory.CreateDbContextAsync())
         {
@@ -78,7 +120,8 @@ public class PregnancyServiceTests
             patientId = patient.Id;
         }
 
-        var service = new PregnancyService(
+        var service = await CreateAuthenticatedServiceAsync(
+            testDatabase,
             pregnancyRepository,
             patientRepository);
 
@@ -95,7 +138,7 @@ public class PregnancyServiceTests
         var createdPregnancy =
             await service.CreatePregnancyAsync(pregnancy);
 
-        // Assert
+        // Assert: pregnancy persistence
         Assert.NotNull(createdPregnancy);
         Assert.True(createdPregnancy.Id > 0);
         Assert.Equal(patientId, createdPregnancy.PatientId);
@@ -108,21 +151,38 @@ public class PregnancyServiceTests
         Assert.Equal(patientId, savedPregnancy.PatientId);
         Assert.Equal("Current", savedPregnancy.Status);
         Assert.Equal("Test pregnancy record", savedPregnancy.Notes);
+
+        // Assert: audit log persistence
+        await using var auditContext =
+            await testDatabase.Factory.CreateDbContextAsync();
+
+        var auditLog = await auditContext.AuditLogs
+            .SingleAsync(log =>
+                log.EntityType == "Pregnancy" &&
+                log.EntityId == createdPregnancy.Id &&
+                log.Action == "Created");
+
+        Assert.Equal("pregnancy-test-user", auditLog.Username);
+        Assert.Equal("Created", auditLog.Action);
+        Assert.Equal("Pregnancy", auditLog.EntityType);
+        Assert.Equal(createdPregnancy.Id, auditLog.EntityId);
+        Assert.NotNull(auditLog.StaffId);
     }
-
-
 
     [Fact]
     public async Task UpdatePregnancyAsync_WhenPregnancyExists_SavesChanges()
     {
-        await using var testDatabase = await TestDatabase.CreateAsync();
+        await using var testDatabase =
+            await TestDatabase.CreateAsync();
 
-        var patientRepository = new PatientRepository(testDatabase.Factory);
-        var pregnancyRepository = new PregnancyRepository(testDatabase.Factory);
+        var patientRepository =
+            new PatientRepository(testDatabase.Factory);
+
+        var pregnancyRepository =
+            new PregnancyRepository(testDatabase.Factory);
 
         int patientId;
 
-        // Arrange: create a patient in the test database.
         await using (var dbContext =
             await testDatabase.Factory.CreateDbContextAsync())
         {
@@ -140,22 +200,22 @@ public class PregnancyServiceTests
             patientId = patient.Id;
         }
 
-        var service = new PregnancyService(
+        var service = await CreateAuthenticatedServiceAsync(
+            testDatabase,
             pregnancyRepository,
             patientRepository);
 
-        // Arrange: create the original pregnancy.
-        var originalPregnancy = await service.CreatePregnancyAsync(
-            new Pregnancy
-            {
-                PatientId = patientId,
-                Status = "Current",
-                LastMenstrualPeriod = new DateOnly(2026, 1, 1),
-                EstimatedDueDate = new DateOnly(2026, 10, 8),
-                Notes = "Original notes"
-            });
+        var originalPregnancy =
+            await service.CreatePregnancyAsync(
+                new Pregnancy
+                {
+                    PatientId = patientId,
+                    Status = "Current",
+                    LastMenstrualPeriod = new DateOnly(2026, 1, 1),
+                    EstimatedDueDate = new DateOnly(2026, 10, 8),
+                    Notes = "Original notes"
+                });
 
-        // Act: update the pregnancy.
         var updatedPregnancy = new Pregnancy
         {
             Id = originalPregnancy.Id,
@@ -167,20 +227,21 @@ public class PregnancyServiceTests
             Notes = "Updated pregnancy notes"
         };
 
-        var result = await service.UpdatePregnancyAsync(updatedPregnancy);
+        // Act
+        var result =
+            await service.UpdatePregnancyAsync(updatedPregnancy);
 
-        // Assert: verify the returned result.
+        // Assert: returned result
         Assert.Equal(originalPregnancy.Id, result.Id);
         Assert.Equal(patientId, result.PatientId);
         Assert.Equal("Completed", result.Status);
-        Assert.Equal(
-            "Updated pregnancy notes",
-            result.Notes);
+        Assert.Equal("Updated pregnancy notes", result.Notes);
         Assert.NotNull(result.UpdatedAtUtc);
 
-        // Assert: retrieve it again to verify persistence.
+        // Assert: database persistence
         var savedPregnancy =
-            await pregnancyRepository.GetByIdAsync(originalPregnancy.Id);
+            await pregnancyRepository.GetByIdAsync(
+                originalPregnancy.Id);
 
         Assert.NotNull(savedPregnancy);
         Assert.Equal("Completed", savedPregnancy.Status);
@@ -190,18 +251,38 @@ public class PregnancyServiceTests
         Assert.Equal(
             "Updated pregnancy notes",
             savedPregnancy.Notes);
-    }
 
+        // Assert: audit log persistence
+        await using var auditContext =
+            await testDatabase.Factory.CreateDbContextAsync();
+
+        var auditLog = await auditContext.AuditLogs
+            .SingleAsync(log =>
+                log.EntityType == "Pregnancy" &&
+                log.EntityId == originalPregnancy.Id &&
+                log.Action == "Updated");
+
+        Assert.Equal("pregnancy-test-user", auditLog.Username);
+        Assert.Equal("Updated", auditLog.Action);
+        Assert.Equal("Pregnancy", auditLog.EntityType);
+        Assert.Equal(originalPregnancy.Id, auditLog.EntityId);
+        Assert.NotNull(auditLog.StaffId);
+    }
 
     [Fact]
     public async Task UpdatePregnancyAsync_WhenPregnancyDoesNotExist_ThrowsInvalidOperationException()
     {
-        await using var testDatabase = await TestDatabase.CreateAsync();
+        await using var testDatabase =
+            await TestDatabase.CreateAsync();
 
-        var patientRepository = new PatientRepository(testDatabase.Factory);
-        var pregnancyRepository = new PregnancyRepository(testDatabase.Factory);
+        var patientRepository =
+            new PatientRepository(testDatabase.Factory);
 
-        var service = new PregnancyService(
+        var pregnancyRepository =
+            new PregnancyRepository(testDatabase.Factory);
+
+        var service = await CreateAuthenticatedServiceAsync(
+            testDatabase,
             pregnancyRepository,
             patientRepository);
 
@@ -214,27 +295,30 @@ public class PregnancyServiceTests
             EstimatedDueDate = new DateOnly(2026, 10, 8)
         };
 
-        var exception = await Assert.ThrowsAsync<InvalidOperationException>(
-            () => service.UpdatePregnancyAsync(pregnancy));
+        var exception =
+            await Assert.ThrowsAsync<InvalidOperationException>(
+                () => service.UpdatePregnancyAsync(pregnancy));
 
         Assert.Contains(
             "pregnancy record could not be found",
             exception.Message);
     }
 
-
     [Fact]
     public async Task UpdatePregnancyAsync_WhenPatientIdChanges_ThrowsInvalidOperationException()
     {
-        await using var testDatabase = await TestDatabase.CreateAsync();
+        await using var testDatabase =
+            await TestDatabase.CreateAsync();
 
-        var patientRepository = new PatientRepository(testDatabase.Factory);
-        var pregnancyRepository = new PregnancyRepository(testDatabase.Factory);
+        var patientRepository =
+            new PatientRepository(testDatabase.Factory);
+
+        var pregnancyRepository =
+            new PregnancyRepository(testDatabase.Factory);
 
         int firstPatientId;
         int secondPatientId;
 
-        // Arrange: create two patients.
         await using (var dbContext =
             await testDatabase.Factory.CreateDbContextAsync())
         {
@@ -254,52 +338,56 @@ public class PregnancyServiceTests
                 CreatedAtUtc = DateTime.UtcNow
             };
 
-            dbContext.Patients.AddRange(firstPatient, secondPatient);
+            dbContext.Patients.AddRange(
+                firstPatient,
+                secondPatient);
+
             await dbContext.SaveChangesAsync();
 
             firstPatientId = firstPatient.Id;
             secondPatientId = secondPatient.Id;
         }
 
-        var service = new PregnancyService(
+        var service = await CreateAuthenticatedServiceAsync(
+            testDatabase,
             pregnancyRepository,
             patientRepository);
 
-        // Arrange: create a pregnancy belonging to the first patient.
-        var originalPregnancy = await service.CreatePregnancyAsync(
-            new Pregnancy
-            {
-                PatientId = firstPatientId,
-                Status = "Current",
-                LastMenstrualPeriod = new DateOnly(2026, 1, 1),
-                EstimatedDueDate = new DateOnly(2026, 10, 8)
-            });
+        var originalPregnancy =
+            await service.CreatePregnancyAsync(
+                new Pregnancy
+                {
+                    PatientId = firstPatientId,
+                    Status = "Current",
+                    LastMenstrualPeriod = new DateOnly(2026, 1, 1),
+                    EstimatedDueDate = new DateOnly(2026, 10, 8)
+                });
 
-        // Act: attempt to assign it to the second patient.
         var updatedPregnancy = new Pregnancy
         {
             Id = originalPregnancy.Id,
             PatientId = secondPatientId,
             Status = "Completed",
-            LastMenstrualPeriod = originalPregnancy.LastMenstrualPeriod,
-            EstimatedDueDate = originalPregnancy.EstimatedDueDate
+            LastMenstrualPeriod =
+                originalPregnancy.LastMenstrualPeriod,
+            EstimatedDueDate =
+                originalPregnancy.EstimatedDueDate
         };
 
-        var exception = await Assert.ThrowsAsync<InvalidOperationException>(
-            () => service.UpdatePregnancyAsync(updatedPregnancy));
+        var exception =
+            await Assert.ThrowsAsync<InvalidOperationException>(
+                () => service.UpdatePregnancyAsync(updatedPregnancy));
 
         Assert.Contains(
             "cannot be reassigned to another patient",
             exception.Message);
 
-        // Assert: the original patient relationship remains unchanged.
         var savedPregnancy =
-            await pregnancyRepository.GetByIdAsync(originalPregnancy.Id);
+            await pregnancyRepository.GetByIdAsync(
+                originalPregnancy.Id);
 
         Assert.NotNull(savedPregnancy);
         Assert.Equal(firstPatientId, savedPregnancy.PatientId);
         Assert.Equal("Current", savedPregnancy.Status);
     }
-
-
 }

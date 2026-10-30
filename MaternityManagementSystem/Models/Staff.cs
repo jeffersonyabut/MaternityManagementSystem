@@ -9,7 +9,7 @@ public class Staff
     // Store a password hash, never the original password.
     public string PasswordHash { get; set; } = string.Empty;
 
-    public string Role { get; set; } = "Staff";
+    public string Role { get; set; } = "Nurse/Midwife";
 
     public bool IsActive { get; set; } = true;
 

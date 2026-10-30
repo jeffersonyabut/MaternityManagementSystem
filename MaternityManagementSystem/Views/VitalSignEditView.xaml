@@ -1,0 +1,218 @@
+<UserControl x:Class="MaternityManagementSystem.Views.VitalSignEditView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:converters="clr-namespace:MaternityManagementSystem.Converters"
+             Background="Transparent">
+    
+    <UserControl.Resources>
+        <converters:UtcToLocalDateTimeConverter
+        x:Key="UtcToLocalDateTimeConverter"/>
+    </UserControl.Resources>
+
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <Grid Margin="28">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+
+            <!-- Header -->
+            <StackPanel Grid.Row="0"
+                        Margin="0,0,0,24">
+
+                <Button Content="← Back to Vital Signs"
+                        Padding="12,7"
+                        HorizontalAlignment="Left"
+                        Margin="0,0,0,20"
+                        Click="CancelButton_Click"/>
+
+                <TextBlock Text="Edit Vital Signs"
+                           FontSize="28"
+                           FontWeight="SemiBold"/>
+
+                <TextBlock Text="Update the patient's recorded measurements."
+                           Margin="0,6,0,0"
+                           FontSize="14"
+                           Opacity="0.7"/>
+            </StackPanel>
+
+            <!-- Edit Form -->
+            <Border Grid.Row="1"
+                    Padding="24"
+                    CornerRadius="10"
+                    Background="{DynamicResource MaterialDesignPaper}">
+
+                <StackPanel>
+
+                    <TextBlock Text="Blood Pressure"
+                               FontSize="20"
+                               FontWeight="SemiBold"
+                               Margin="0,0,0,16"/>
+
+                    <Grid Margin="0,0,0,24">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+
+                        <StackPanel Grid.Column="0"
+                                    Margin="0,0,10,0">
+                            <TextBlock Text="Systolic (mmHg)"
+                                       FontWeight="SemiBold"
+                                       Margin="0,0,0,8"/>
+                            <TextBox Text="{Binding SystolicBloodPressure,
+                                                    UpdateSourceTrigger=PropertyChanged}"
+                                     Padding="10"/>
+                        </StackPanel>
+
+                        <StackPanel Grid.Column="1"
+                                    Margin="10,0,0,0">
+                            <TextBlock Text="Diastolic (mmHg)"
+                                       FontWeight="SemiBold"
+                                       Margin="0,0,0,8"/>
+                            <TextBox Text="{Binding DiastolicBloodPressure,
+                                                    UpdateSourceTrigger=PropertyChanged}"
+                                     Padding="10"/>
+                        </StackPanel>
+                    </Grid>
+
+                    <TextBlock Text="Other Measurements"
+                               FontSize="20"
+                               FontWeight="SemiBold"
+                               Margin="0,0,0,16"/>
+
+                    <Grid Margin="0,0,0,16">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+
+                        <StackPanel Grid.Column="0"
+                                    Margin="0,0,10,0">
+                            <TextBlock Text="Heart Rate (bpm)"
+                                       FontWeight="SemiBold"
+                                       Margin="0,0,0,8"/>
+                            <TextBox Text="{Binding HeartRate,
+                                                    UpdateSourceTrigger=PropertyChanged}"
+                                     Padding="10"/>
+                        </StackPanel>
+
+                        <StackPanel Grid.Column="1"
+                                    Margin="10,0,0,0">
+                            <TextBlock Text="Respiratory Rate (breaths/min)"
+                                       FontWeight="SemiBold"
+                                       Margin="0,0,0,8"/>
+                            <TextBox Text="{Binding RespiratoryRate,
+                                                    UpdateSourceTrigger=PropertyChanged}"
+                                     Padding="10"/>
+                        </StackPanel>
+                    </Grid>
+
+                    <Grid Margin="0,0,0,16">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+
+                        <StackPanel Grid.Column="0"
+                                    Margin="0,0,10,0">
+                            <TextBlock Text="Temperature (°C)"
+                                       FontWeight="SemiBold"
+                                       Margin="0,0,0,8"/>
+                            <TextBox Text="{Binding TemperatureCelsius,
+                                                    UpdateSourceTrigger=PropertyChanged}"
+                                     Padding="10"/>
+                        </StackPanel>
+
+                        <StackPanel Grid.Column="1"
+                                    Margin="10,0,0,0">
+                            <TextBlock Text="Oxygen Saturation (%)"
+                                       FontWeight="SemiBold"
+                                       Margin="0,0,0,8"/>
+                            <TextBox Text="{Binding OxygenSaturation,
+                                                    UpdateSourceTrigger=PropertyChanged}"
+                                     Padding="10"/>
+                        </StackPanel>
+                    </Grid>
+
+                    <Grid Margin="0,0,0,24">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+
+                        <StackPanel Grid.Column="0"
+                                    Margin="0,0,10,0">
+                            <TextBlock Text="Weight (kg)"
+                                       FontWeight="SemiBold"
+                                       Margin="0,0,0,8"/>
+                            <TextBox Text="{Binding WeightKg,
+                                                    UpdateSourceTrigger=PropertyChanged}"
+                                     Padding="10"/>
+                        </StackPanel>
+
+                        <StackPanel Grid.Column="1"
+                                    Margin="10,0,0,0">
+                            <TextBlock Text="Fetal Heart Rate (bpm)"
+                                       FontWeight="SemiBold"
+                                       Margin="0,0,0,8"/>
+                            <TextBox Text="{Binding FetalHeartRate,
+                                                    UpdateSourceTrigger=PropertyChanged}"
+                                     Padding="10"/>
+                        </StackPanel>
+                    </Grid>
+
+                    <!-- Recording Timestamp -->
+                    <TextBlock Text="Original Recording Time"
+                               FontWeight="SemiBold"
+                               Margin="0,0,0,8"/>
+
+                    <TextBlock Text="{Binding RecordedAtUtc,
+                                              Converter={StaticResource UtcToLocalDateTimeConverter},
+                                              StringFormat={}{0:MMM dd, yyyy hh:mm tt}}"
+                               FontSize="16"
+                               FontWeight="SemiBold"
+                               Margin="0,0,0,24"/>
+
+                    <!-- Notes -->
+                    <TextBlock Text="Clinical Notes"
+                               FontWeight="SemiBold"
+                               Margin="0,0,0,8"/>
+
+                    <TextBox Text="{Binding Notes,
+                                            UpdateSourceTrigger=PropertyChanged}"
+                             MinHeight="120"
+                             MaxHeight="220"
+                             AcceptsReturn="True"
+                             TextWrapping="Wrap"
+                             VerticalScrollBarVisibility="Auto"
+                             Padding="12"
+                             Margin="0,0,0,16"/>
+
+                    <!-- Status -->
+                    <TextBlock Text="{Binding StatusMessage}"
+                               TextWrapping="Wrap"
+                               Margin="0,0,0,16"
+                               Opacity="0.75"/>
+
+                    <!-- Actions -->
+                    <StackPanel Orientation="Horizontal"
+                                HorizontalAlignment="Right">
+
+                        <Button Content="Cancel"
+                                Padding="16,8"
+                                Margin="0,0,10,0"
+                                Click="CancelButton_Click"/>
+
+                        <Button Content="Update Vital Signs"
+                                Padding="18,8"
+                                IsEnabled="{Binding CanSave}"
+                                Click="SaveButton_Click"/>
+                    </StackPanel>
+
+                </StackPanel>
+            </Border>
+        </Grid>
+    </ScrollViewer>
+</UserControl>

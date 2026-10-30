@@ -1,8 +1,9 @@
 
+using System.Windows;
 using System.Windows.Controls;
 using MaternityManagementSystem.Repositories;
+using MaternityManagementSystem.Services;
 using MaternityManagementSystem.ViewModels;
-
 
 namespace MaternityManagementSystem.Views;
 
@@ -14,9 +15,28 @@ public partial class PatientProfileView : UserControl
     {
         InitializeComponent();
 
+        var app = (App)Application.Current;
+
+        var authorizationService =
+            new AuthorizationService(app.SessionService);
+
+        var patientRepository = new PatientRepository();
+        var pregnancyRepository = new PregnancyRepository();
+
+        var patientService = new PatientService(
+            patientRepository,
+            authorizationService,
+            app.SessionService);
+
+        var pregnancyService = new PregnancyService(
+            pregnancyRepository,
+            patientRepository,
+            authorizationService,
+            app.SessionService);
+
         _viewModel = new PatientProfileViewModel(
-            new PatientRepository(),
-            new PregnancyRepository(),
+            patientService,
+            pregnancyService,
             patientId);
 
         DataContext = _viewModel;
@@ -31,7 +51,6 @@ public partial class PatientProfileView : UserControl
         await _viewModel.LoadPatientAsync();
     }
 
-
     private void BackToPatientsButton_Click(
         object sender,
         System.Windows.RoutedEventArgs e)
@@ -43,7 +62,6 @@ public partial class PatientProfileView : UserControl
             dashboardWindow.ShowPatients();
         }
     }
-
 
     private void EditPatientButton_Click(
         object sender,
@@ -63,7 +81,8 @@ public partial class PatientProfileView : UserControl
     }
 
     private void AddPregnancyButton_Click(
-    object sender, System.Windows.RoutedEventArgs e)
+        object sender,
+        System.Windows.RoutedEventArgs e)
     {
         var parentWindow = System.Windows.Window.GetWindow(this);
 
@@ -75,13 +94,11 @@ public partial class PatientProfileView : UserControl
         }
     }
 
-
-
     private void EditPregnancyButton_Click(
         object sender,
         System.Windows.RoutedEventArgs e)
     {
-        if (sender is not System.Windows.Controls.Button button)
+        if (sender is not Button button)
         {
             return;
         }
@@ -99,6 +116,25 @@ public partial class PatientProfileView : UserControl
         }
     }
 
+    private void ViewPrenatalVisitsButton_Click(
+        object sender,
+        System.Windows.RoutedEventArgs e)
+    {
+        if (sender is not Button button)
+        {
+            return;
+        }
 
+        if (button.DataContext is not MaternityManagementSystem.Models.Pregnancy pregnancy)
+        {
+            return;
+        }
 
+        var parentWindow = System.Windows.Window.GetWindow(this);
+
+        if (parentWindow is DashboardWindow dashboardWindow)
+        {
+            dashboardWindow.ShowPrenatalVisits(pregnancy);
+        }
+    }
 }

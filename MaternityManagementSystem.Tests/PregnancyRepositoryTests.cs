@@ -49,22 +49,55 @@ public class PregnancyRepositoryTests
             CreatedAtUtc = DateTime.UtcNow
         };
 
+        var auditLog = new AuditLog
+        {
+            StaffId = null,
+            Username = "repository-test-user",
+            Action = "Created",
+            EntityType = "Pregnancy",
+            Details = "Pregnancy record registered.",
+            OccurredAtUtc = pregnancy.CreatedAtUtc
+        };
+
         // Act: save and retrieve the pregnancy.
         Pregnancy savedPregnancy =
-            await repository.AddAsync(pregnancy);
+            await repository.AddAsync(
+                pregnancy,
+                auditLog);
 
         Pregnancy? retrievedPregnancy =
             await repository.GetByIdAsync(savedPregnancy.Id);
 
-        // Assert: verify the saved data.
+        // Assert: verify the saved pregnancy.
         Assert.NotNull(retrievedPregnancy);
+        Assert.True(savedPregnancy.Id > 0);
         Assert.Equal(patientId, retrievedPregnancy.PatientId);
         Assert.Equal("Current", retrievedPregnancy.Status);
+
         Assert.Equal(
             new DateOnly(2026, 1, 1),
             retrievedPregnancy.LastMenstrualPeriod);
+
         Assert.Equal(
             new DateOnly(2026, 10, 8),
             retrievedPregnancy.EstimatedDueDate);
+
+        // Assert: verify the audit log was saved.
+        await using var auditContext =
+            await testDatabase.Factory.CreateDbContextAsync();
+
+        var savedAuditLog = await auditContext.AuditLogs
+            .SingleAsync(log =>
+                log.EntityType == "Pregnancy" &&
+                log.EntityId == savedPregnancy.Id &&
+                log.Action == "Created");
+
+        Assert.Equal(
+            "repository-test-user",
+            savedAuditLog.Username);
+
+        Assert.Equal("Created", savedAuditLog.Action);
+        Assert.Equal("Pregnancy", savedAuditLog.EntityType);
+        Assert.Equal(savedPregnancy.Id, savedAuditLog.EntityId);
     }
 }

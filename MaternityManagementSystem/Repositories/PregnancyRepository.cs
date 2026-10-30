@@ -7,6 +7,8 @@ using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using MaternityManagementSystem.Data;
 using MaternityManagementSystem.Models;
+using Microsoft.EntityFrameworkCore.Storage;
+
 
 namespace MaternityManagementSystem.Repositories;
 
@@ -40,18 +42,30 @@ public class PregnancyRepository
 
     public async Task<Pregnancy> AddAsync(
         Pregnancy pregnancy,
+        AuditLog auditLog,
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(pregnancy);
+        ArgumentNullException.ThrowIfNull(auditLog);
 
+        await using var dbContext =
+            await CreateDbContextAsync(cancellationToken);
 
-
-        await using var dbContext = await CreateDbContextAsync(
-        cancellationToken);
+        await using var transaction =
+            await dbContext.Database.BeginTransactionAsync(cancellationToken);
 
         dbContext.Pregnancies.Add(pregnancy);
 
         await dbContext.SaveChangesAsync(cancellationToken);
+
+        auditLog.EntityId = pregnancy.Id;
+        auditLog.OccurredAtUtc = pregnancy.CreatedAtUtc;
+
+        dbContext.AuditLogs.Add(auditLog);
+
+        await dbContext.SaveChangesAsync(cancellationToken);
+
+        await transaction.CommitAsync(cancellationToken);
 
         return pregnancy;
     }
@@ -98,26 +112,43 @@ public class PregnancyRepository
 
     public async Task UpdateAsync(
         Pregnancy pregnancy,
+        AuditLog auditLog,
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(pregnancy);
+        ArgumentNullException.ThrowIfNull(auditLog);
 
-        await using var dbContext = await CreateDbContextAsync(
-        cancellationToken);
+        await using var dbContext =
+            await CreateDbContextAsync(cancellationToken);
 
-        bool pregnancyExists = await dbContext.Pregnancies
-            .AnyAsync(
+        var existingPregnancy = await dbContext.Pregnancies
+            .FirstOrDefaultAsync(
                 existing => existing.Id == pregnancy.Id,
                 cancellationToken);
 
-        if (!pregnancyExists)
+        if (existingPregnancy is null)
         {
             throw new KeyNotFoundException(
                 $"Pregnancy with ID {pregnancy.Id} was not found.");
         }
 
-        dbContext.Pregnancies.Update(pregnancy);
+        existingPregnancy.Status = pregnancy.Status;
+        existingPregnancy.LastMenstrualPeriod = pregnancy.LastMenstrualPeriod;
+        existingPregnancy.EstimatedDueDate = pregnancy.EstimatedDueDate;
+        existingPregnancy.PregnancyEndDate = pregnancy.PregnancyEndDate;
+        existingPregnancy.Notes = pregnancy.Notes;
+        existingPregnancy.UpdatedAtUtc = pregnancy.UpdatedAtUtc;
+
+        auditLog.EntityId = existingPregnancy.Id;
+        auditLog.OccurredAtUtc = existingPregnancy.UpdatedAtUtc
+            ?? DateTime.UtcNow;
+
+        dbContext.AuditLogs.Add(auditLog);
 
         await dbContext.SaveChangesAsync(cancellationToken);
     }
+
+
+
+
 }

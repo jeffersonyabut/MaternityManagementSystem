@@ -17,6 +17,55 @@ namespace MaternityManagementSystem.Migrations
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "10.0.14");
 
+            modelBuilder.Entity("MaternityManagementSystem.Models.AuditLog", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Action")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Details")
+                        .HasMaxLength(2000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int?>("EntityId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("EntityType")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("OccurredAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Reason")
+                        .HasMaxLength(1000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int?>("StaffId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Username")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OccurredAtUtc");
+
+                    b.HasIndex("StaffId");
+
+                    b.HasIndex("EntityType", "EntityId");
+
+                    b.ToTable("AuditLogs");
+                });
+
             modelBuilder.Entity("MaternityManagementSystem.Models.Patient", b =>
                 {
                     b.Property<int>("Id")
@@ -127,6 +176,35 @@ namespace MaternityManagementSystem.Migrations
                     b.ToTable("Pregnancies");
                 });
 
+            modelBuilder.Entity("MaternityManagementSystem.Models.PrenatalVisit", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(2000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("PregnancyId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime?>("UpdatedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateOnly>("VisitDate")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PregnancyId");
+
+                    b.ToTable("PrenatalVisits");
+                });
+
             modelBuilder.Entity("MaternityManagementSystem.Models.Staff", b =>
                 {
                     b.Property<int>("Id")
@@ -161,6 +239,74 @@ namespace MaternityManagementSystem.Migrations
                     b.ToTable("StaffMembers");
                 });
 
+            modelBuilder.Entity("MaternityManagementSystem.Models.VitalSign", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("ArchiveReason")
+                        .HasMaxLength(1000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("ArchivedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int?>("DiastolicBloodPressure")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int?>("FetalHeartRate")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int?>("HeartRate")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("IsArchived")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasDefaultValue(false);
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(2000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<decimal?>("OxygenSaturation")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("PrenatalVisitId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("RecordedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int?>("RespiratoryRate")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int?>("SystolicBloodPressure")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<decimal?>("TemperatureCelsius")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("UpdatedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<decimal?>("WeightKg")
+                        .HasPrecision(6, 2)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PrenatalVisitId");
+
+                    b.ToTable("VitalSigns");
+                });
+
             modelBuilder.Entity("MaternityManagementSystem.Models.Pregnancy", b =>
                 {
                     b.HasOne("MaternityManagementSystem.Models.Patient", "Patient")
@@ -170,6 +316,33 @@ namespace MaternityManagementSystem.Migrations
                         .IsRequired();
 
                     b.Navigation("Patient");
+                });
+
+            modelBuilder.Entity("MaternityManagementSystem.Models.PrenatalVisit", b =>
+                {
+                    b.HasOne("MaternityManagementSystem.Models.Pregnancy", "Pregnancy")
+                        .WithMany()
+                        .HasForeignKey("PregnancyId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Pregnancy");
+                });
+
+            modelBuilder.Entity("MaternityManagementSystem.Models.VitalSign", b =>
+                {
+                    b.HasOne("MaternityManagementSystem.Models.PrenatalVisit", "PrenatalVisit")
+                        .WithMany("VitalSigns")
+                        .HasForeignKey("PrenatalVisitId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("PrenatalVisit");
+                });
+
+            modelBuilder.Entity("MaternityManagementSystem.Models.PrenatalVisit", b =>
+                {
+                    b.Navigation("VitalSigns");
                 });
 #pragma warning restore 612, 618
         }

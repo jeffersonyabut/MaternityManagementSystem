@@ -263,14 +263,22 @@
                                            Opacity="0.75"/>
                                         </StackPanel>
 
-                                        <Button Grid.Column="1"
-                                                Content="Edit"
-                                                Padding="12,6"
-                                                Margin="16,0,0,0"
-                                                VerticalAlignment="Top"
-                                                Click="EditPregnancyButton_Click"/>
 
-                                        
+                                        <StackPanel Grid.Column="1"
+                                                    Margin="16,0,0,0">
+
+                                            <Button Content="Edit"
+                                                    Padding="12,6"
+                                                    Margin="0,0,0,8"
+                                                    Click="EditPregnancyButton_Click"/>
+
+                                            <Button Content="View Prenatal Visits"
+                                                    Padding="12,6"
+                                                    Click="ViewPrenatalVisitsButton_Click"/>
+
+                                        </StackPanel>
+
+
                                     </Grid>
                                 </Border>
                             </DataTemplate>

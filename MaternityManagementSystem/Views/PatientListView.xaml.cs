@@ -1,8 +1,8 @@
-
 using System;
 using System.Windows;
 using System.Windows.Controls;
 using MaternityManagementSystem.Repositories;
+using MaternityManagementSystem.Services;
 using MaternityManagementSystem.ViewModels;
 
 namespace MaternityManagementSystem.Views;
@@ -15,7 +15,18 @@ public partial class PatientListView : UserControl
     {
         InitializeComponent();
 
-        _viewModel = new PatientListViewModel(new PatientRepository());
+        var app = (App)Application.Current;
+
+        var authorizationService =
+            new AuthorizationService(app.SessionService);
+
+        var patientService = new PatientService(
+            new PatientRepository(),
+            authorizationService,
+            app.SessionService);
+
+        _viewModel = new PatientListViewModel(patientService);
+
         DataContext = _viewModel;
 
         _viewModel.OpenProfileRequested += OnOpenProfileRequested;
@@ -41,8 +52,6 @@ public partial class PatientListView : UserControl
         }
     }
 
-
-
     private void OnOpenProfileRequested(int patientId)
     {
         var parentWindow = Window.GetWindow(this);
@@ -52,6 +61,4 @@ public partial class PatientListView : UserControl
             dashboardWindow.ShowPatientProfile(patientId);
         }
     }
-
-
 }

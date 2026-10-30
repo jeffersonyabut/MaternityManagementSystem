@@ -1,30 +1,29 @@
 
-using CommunityToolkit.Mvvm.ComponentModel;
-using CommunityToolkit.Mvvm.Input;
-using MaternityManagementSystem.Models;
-using MaternityManagementSystem.Repositories;
 using System;
 using System.Collections.ObjectModel;
 using System.Threading;
 using System.Threading.Tasks;
-using MaternityManagementSystem.Views;
+using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
+using MaternityManagementSystem.Models;
+using MaternityManagementSystem.Services;
 
 
 namespace MaternityManagementSystem.ViewModels;
 
 public partial class PatientListViewModel : ObservableObject
 {
-    private readonly PatientRepository _patientRepository;
+    private readonly PatientService _patientService;
 
     private CancellationTokenSource? _searchCancellationTokenSource;
     private int _searchRequestId;
 
     private const int PageSize = 25;
 
-    public PatientListViewModel(PatientRepository patientRepository)
+    public PatientListViewModel(PatientService patientService)
     {
-        ArgumentNullException.ThrowIfNull(patientRepository);
-        _patientRepository = patientRepository;
+        ArgumentNullException.ThrowIfNull(patientService);
+        _patientService = patientService;
     }
 
     public ObservableCollection<Patient> Patients { get; } = new();
@@ -123,9 +122,9 @@ public partial class PatientListViewModel : ObservableObject
             string searchTerm = SearchText;
 
             int totalResults =
-                await _patientRepository.CountSearchResultsAsync(
-                    searchTerm,
-                    cancellationTokenSource.Token);
+             await _patientService.CountPatientSearchResultsAsync(
+                 searchTerm,
+                 cancellationTokenSource.Token);
 
             if (requestId != Volatile.Read(ref _searchRequestId))
             {
@@ -141,7 +140,7 @@ public partial class PatientListViewModel : ObservableObject
                 CurrentPage = TotalPages;
             }
 
-            var results = await _patientRepository.SearchPageAsync(
+            var results = await _patientService.SearchPatientsPageAsync(
                 searchTerm,
                 CurrentPage,
                 PageSize,
