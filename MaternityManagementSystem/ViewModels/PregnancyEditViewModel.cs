@@ -34,6 +34,15 @@ public partial class PregnancyEditViewModel : ObservableObject
         LastMenstrualPeriod = ToDateTime(pregnancy.LastMenstrualPeriod);
         EstimatedDueDate = ToDateTime(pregnancy.EstimatedDueDate);
         PregnancyEndDate = ToDateTime(pregnancy.PregnancyEndDate);
+
+        PregnancyOutcome = pregnancy.PregnancyOutcome;
+        DeliveryMethod = pregnancy.DeliveryMethod;
+        GestationalAgeAtEndWeeks = pregnancy.GestationalAgeAtEndWeeks;
+        GestationalAgeAtEndDays = pregnancy.GestationalAgeAtEndDays;
+        NumberOfInfants = pregnancy.NumberOfInfants;
+        LivingChildrenCount = pregnancy.LivingChildrenCount;
+        Complications = pregnancy.Complications ?? string.Empty;
+
         Notes = pregnancy.Notes ?? string.Empty;
     }
 
@@ -48,6 +57,27 @@ public partial class PregnancyEditViewModel : ObservableObject
 
     [ObservableProperty]
     private DateTime? pregnancyEndDate;
+
+    [ObservableProperty]
+    private string? pregnancyOutcome;
+
+    [ObservableProperty]
+    private string? deliveryMethod;
+
+    [ObservableProperty]
+    private int? gestationalAgeAtEndWeeks;
+
+    [ObservableProperty]
+    private int? gestationalAgeAtEndDays;
+
+    [ObservableProperty]
+    private int? numberOfInfants;
+
+    [ObservableProperty]
+    private int? livingChildrenCount;
+
+    [ObservableProperty]
+    private string complications = string.Empty;
 
     [ObservableProperty]
     private string notes = string.Empty;
@@ -81,6 +111,15 @@ public partial class PregnancyEditViewModel : ObservableObject
                 LastMenstrualPeriod = ToDateOnly(LastMenstrualPeriod),
                 EstimatedDueDate = ToDateOnly(EstimatedDueDate),
                 PregnancyEndDate = ToDateOnly(PregnancyEndDate),
+
+                PregnancyOutcome = PregnancyOutcome,
+                DeliveryMethod = DeliveryMethod,
+                GestationalAgeAtEndWeeks = GestationalAgeAtEndWeeks,
+                GestationalAgeAtEndDays = GestationalAgeAtEndDays,
+                NumberOfInfants = NumberOfInfants,
+                LivingChildrenCount = LivingChildrenCount,
+                Complications = Complications,
+
                 Notes = Notes
             };
 

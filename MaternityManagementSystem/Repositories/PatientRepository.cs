@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using MaternityManagementSystem.Data;
 using MaternityManagementSystem.Models;
+using System.Text.Json;
 
 namespace MaternityManagementSystem.Repositories;
 
@@ -252,13 +253,90 @@ public class PatientRepository
                 $"Patient with ID {patient.Id} was not found.");
         }
 
+        // Capture the existing values before applying changes.
+        var previousValues = new Dictionary<string, object?>
+        {
+            ["FirstName"] = existingPatient.FirstName,
+            ["MiddleName"] = existingPatient.MiddleName,
+            ["LastName"] = existingPatient.LastName,
+            ["DateOfBirth"] = existingPatient.DateOfBirth,
+            ["Sex"] = existingPatient.Sex,
+            ["CivilStatus"] = existingPatient.CivilStatus,
+            ["ContactNumber"] = existingPatient.ContactNumber,
+            ["Email"] = existingPatient.Email,
+            ["Address"] = existingPatient.Address,
+            ["EmergencyContactName"] = existingPatient.EmergencyContactName,
+            ["EmergencyContactNumber"] = existingPatient.EmergencyContactNumber
+        };
+
+        // Capture the submitted values.
+        var updatedValues = new Dictionary<string, object?>
+        {
+            ["FirstName"] = patient.FirstName,
+            ["MiddleName"] = patient.MiddleName,
+            ["LastName"] = patient.LastName,
+            ["DateOfBirth"] = patient.DateOfBirth,
+            ["Sex"] = patient.Sex,
+            ["CivilStatus"] = patient.CivilStatus,
+            ["ContactNumber"] = patient.ContactNumber,
+            ["Email"] = patient.Email,
+            ["Address"] = patient.Address,
+            ["EmergencyContactName"] = patient.EmergencyContactName,
+            ["EmergencyContactNumber"] = patient.EmergencyContactNumber
+        };
+
+        // Keep only fields whose values actually changed.
+        var changedPreviousValues = new Dictionary<string, object?>();
+        var changedNewValues = new Dictionary<string, object?>();
+
+        foreach (var field in previousValues.Keys)
+        {
+            if (!Equals(previousValues[field], updatedValues[field]))
+            {
+                changedPreviousValues[field] = previousValues[field];
+                changedNewValues[field] = updatedValues[field];
+            }
+        }
+
+        // Nothing meaningful changed. Do not create unnecessary history
+        // or audit entries.
+        if (changedPreviousValues.Count == 0)
+        {
+            return;
+        }
+
+        // Apply the submitted values to the tracked database entity.
         dbContext.Entry(existingPatient).CurrentValues.SetValues(patient);
 
-        auditLog.EntityId = patient.Id;
-        auditLog.OccurredAtUtc = DateTime.UtcNow;
+        DateTime changedAtUtc = DateTime.UtcNow;
 
+        auditLog.EntityId = existingPatient.Id;
+        auditLog.OccurredAtUtc = changedAtUtc;
+
+        // Create the before-and-after version.
+        var recordVersion = new RecordVersion
+        {
+            EntityType = "Patient",
+            EntityId = existingPatient.Id,
+
+            PreviousValuesJson =
+                JsonSerializer.Serialize(changedPreviousValues),
+
+            NewValuesJson =
+                JsonSerializer.Serialize(changedNewValues),
+
+            StaffId = auditLog.StaffId,
+            Username = auditLog.Username,
+            ChangedAtUtc = changedAtUtc
+        };
+
+        // Save the patient update, audit log, and version history together.
         await dbContext.AuditLogs.AddAsync(
             auditLog,
+            cancellationToken);
+
+        await dbContext.RecordVersions.AddAsync(
+            recordVersion,
             cancellationToken);
 
         await dbContext.SaveChangesAsync(cancellationToken);

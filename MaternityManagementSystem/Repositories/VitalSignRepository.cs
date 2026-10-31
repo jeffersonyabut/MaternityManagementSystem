@@ -2,10 +2,10 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Infrastructure;
 using MaternityManagementSystem.Data;
 using MaternityManagementSystem.Models;
 
@@ -56,7 +56,6 @@ public class VitalSignRepository
             vitalSign,
             cancellationToken);
 
-        // First save generates the vital-sign ID.
         await dbContext.SaveChangesAsync(cancellationToken);
 
         auditLog.EntityId = vitalSign.Id;
@@ -66,7 +65,6 @@ public class VitalSignRepository
             auditLog,
             cancellationToken);
 
-        // Second save persists the audit entry.
         await dbContext.SaveChangesAsync(cancellationToken);
 
         await transaction.CommitAsync(cancellationToken);
@@ -153,6 +151,79 @@ public class VitalSignRepository
                 "A vital signs record cannot be reassigned to another prenatal visit.");
         }
 
+        var previousValues = new Dictionary<string, object?>();
+        var newValues = new Dictionary<string, object?>();
+
+        void TrackChange(
+            string fieldName,
+            object? previousValue,
+            object? newValue)
+        {
+            if (Equals(previousValue, newValue))
+            {
+                return;
+            }
+
+            previousValues[fieldName] = previousValue;
+            newValues[fieldName] = newValue;
+        }
+
+        TrackChange(
+            nameof(VitalSign.SystolicBloodPressure),
+            existingVitalSign.SystolicBloodPressure,
+            vitalSign.SystolicBloodPressure);
+
+        TrackChange(
+            nameof(VitalSign.DiastolicBloodPressure),
+            existingVitalSign.DiastolicBloodPressure,
+            vitalSign.DiastolicBloodPressure);
+
+        TrackChange(
+            nameof(VitalSign.HeartRate),
+            existingVitalSign.HeartRate,
+            vitalSign.HeartRate);
+
+        TrackChange(
+            nameof(VitalSign.RespiratoryRate),
+            existingVitalSign.RespiratoryRate,
+            vitalSign.RespiratoryRate);
+
+        TrackChange(
+            nameof(VitalSign.TemperatureCelsius),
+            existingVitalSign.TemperatureCelsius,
+            vitalSign.TemperatureCelsius);
+
+        TrackChange(
+            nameof(VitalSign.OxygenSaturation),
+            existingVitalSign.OxygenSaturation,
+            vitalSign.OxygenSaturation);
+
+        TrackChange(
+            nameof(VitalSign.WeightKg),
+            existingVitalSign.WeightKg,
+            vitalSign.WeightKg);
+
+        TrackChange(
+            nameof(VitalSign.FetalHeartRate),
+            existingVitalSign.FetalHeartRate,
+            vitalSign.FetalHeartRate);
+
+        TrackChange(
+            nameof(VitalSign.RecordedAtUtc),
+            existingVitalSign.RecordedAtUtc,
+            vitalSign.RecordedAtUtc);
+
+        TrackChange(
+            nameof(VitalSign.Notes),
+            existingVitalSign.Notes,
+            vitalSign.Notes);
+
+        // Nothing changed: do not create audit or version records.
+        if (newValues.Count == 0)
+        {
+            return;
+        }
+
         existingVitalSign.SystolicBloodPressure =
             vitalSign.SystolicBloodPressure;
 
@@ -170,13 +241,25 @@ public class VitalSignRepository
         existingVitalSign.UpdatedAtUtc = vitalSign.UpdatedAtUtc;
 
         auditLog.EntityId = existingVitalSign.Id;
-        auditLog.OccurredAtUtc = DateTime.UtcNow;
+        auditLog.OccurredAtUtc =
+            existingVitalSign.UpdatedAtUtc ?? DateTime.UtcNow;
 
-        await dbContext.AuditLogs.AddAsync(
-            auditLog,
-            cancellationToken);
+        var recordVersion = new RecordVersion
+        {
+            EntityType = "VitalSign",
+            EntityId = existingVitalSign.Id,
+            PreviousValuesJson = JsonSerializer.Serialize(previousValues),
+            NewValuesJson = JsonSerializer.Serialize(newValues),
+            StaffId = auditLog.StaffId,
+            Username = auditLog.Username,
+            ChangedAtUtc = auditLog.OccurredAtUtc
+        };
 
-        // The vital-sign update and audit entry are saved together.
+        dbContext.RecordVersions.Add(recordVersion);
+        dbContext.AuditLogs.Add(auditLog);
+
+        // Vital-sign update, audit entry, and version history
+        // are committed together.
         await dbContext.SaveChangesAsync(cancellationToken);
     }
 

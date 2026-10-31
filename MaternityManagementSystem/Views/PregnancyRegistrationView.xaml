@@ -5,90 +5,166 @@
 
     <ScrollViewer VerticalScrollBarVisibility="Auto">
         <Grid Margin="28">
-            <Grid.RowDefinitions>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="Auto"/>
-            </Grid.RowDefinitions>
+            <StackPanel>
 
-            <!-- Header -->
-            <StackPanel Grid.Row="0" Margin="0,0,0,24">
-                <Button Content="← Back to Patient Profile"
-                        Padding="12,7"
-                        HorizontalAlignment="Left"
-                        Margin="0,0,0,20"
-                        Click="CancelButton_Click"/>
+                <!-- Header -->
+                <StackPanel Margin="0,0,0,24">
+                    <Button Content="← Back to Patient Profile"
+                            Padding="12,7"
+                            HorizontalAlignment="Left"
+                            Margin="0,0,0,20"
+                            Click="CancelButton_Click"/>
 
-                <TextBlock Text="Add Pregnancy Record"
-                           FontSize="28"
-                           FontWeight="SemiBold"/>
+                    <TextBlock Text="Add Pregnancy Record"
+                               FontSize="28"
+                               FontWeight="SemiBold"/>
 
-                <TextBlock Text="Record pregnancy information for the selected patient."
-                           Margin="0,6,0,0"
-                           FontSize="14"
-                           Opacity="0.7"/>
-            </StackPanel>
-
-            <!-- Form -->
-            <Border Grid.Row="1"
-                    Padding="24"
-                    CornerRadius="10"
-                    Background="{DynamicResource MaterialDesignPaper}">
-
-                <StackPanel>
-                    <TextBlock Text="Pregnancy Information"
-                               FontSize="18"
-                               FontWeight="SemiBold"
-                               Margin="0,0,0,20"/>
-
-                    <TextBlock Text="Pregnancy Status"/>
-                    <ComboBox SelectedValue="{Binding Status, UpdateSourceTrigger=PropertyChanged}"
-                              SelectedValuePath="Content"
-                              Margin="0,4,0,20">
-                        <ComboBoxItem Content="Current"/>
-                        <ComboBoxItem Content="Completed"/>
-                        <ComboBoxItem Content="Other"/>
-                    </ComboBox>
-
-                    <TextBlock Text="Last Menstrual Period (LMP)"/>
-                    <DatePicker SelectedDate="{Binding LastMenstrualPeriod, UpdateSourceTrigger=PropertyChanged}"
-                                Margin="0,4,0,16"/>
-
-                    <TextBlock Text="Estimated Due Date (EDD)"/>
-                    <DatePicker SelectedDate="{Binding EstimatedDueDate, UpdateSourceTrigger=PropertyChanged}"
-                                Margin="0,4,0,16"/>
-
-                    <TextBlock Text="Pregnancy End Date"/>
-                    <DatePicker SelectedDate="{Binding PregnancyEndDate, UpdateSourceTrigger=PropertyChanged}"
-                                Margin="0,4,0,20"/>
-
-                    <TextBlock Text="Notes"/>
-                    <TextBox Text="{Binding Notes, UpdateSourceTrigger=PropertyChanged}"
-                             MaxLength="2000"
-                             AcceptsReturn="True"
-                             TextWrapping="Wrap"
-                             MinHeight="100"
-                             VerticalScrollBarVisibility="Auto"
-                             Margin="0,4,0,20"/>
-
-                    <TextBlock Text="{Binding StatusMessage}"
-                               TextWrapping="Wrap"
-                               Margin="0,0,0,16"
-                               Opacity="0.8"/>
-
-                    <StackPanel Orientation="Horizontal"
-                                HorizontalAlignment="Right">
-                        <Button Content="Cancel"
-                                Padding="18,10"
-                                Margin="0,0,12,0"
-                                Click="CancelButton_Click"/>
-
-                        <Button Content="Save Pregnancy"
-                                Padding="18,10"
-                                Command="{Binding SaveCommand}"/>
-                    </StackPanel>
+                    <TextBlock Text="Record pregnancy information for the selected patient."
+                               Margin="0,6,0,0"
+                               FontSize="14"
+                               Opacity="0.7"/>
                 </StackPanel>
-            </Border>
+
+                <Border Padding="24"
+                        CornerRadius="10"
+                        Background="{DynamicResource MaterialDesignPaper}">
+
+                    <StackPanel>
+
+                        <!-- Pregnancy Information -->
+                        <TextBlock Text="Pregnancy Information"
+                                   FontSize="18"
+                                   FontWeight="SemiBold"
+                                   Margin="0,0,0,20"/>
+
+                        <TextBlock Text="Pregnancy Status"/>
+                        <ComboBox SelectedValue="{Binding Status, UpdateSourceTrigger=PropertyChanged}"
+                                  SelectedValuePath="Content"
+                                  Margin="0,4,0,20">
+                            <ComboBoxItem Content="Current"/>
+                            <ComboBoxItem Content="Completed"/>
+                            <ComboBoxItem Content="Other"/>
+                        </ComboBox>
+
+                        <TextBlock Text="Last Menstrual Period (LMP)"/>
+                        <DatePicker SelectedDate="{Binding LastMenstrualPeriod, UpdateSourceTrigger=PropertyChanged}"
+                                    Margin="0,4,0,16"/>
+
+                        <TextBlock Text="Estimated Due Date (EDD)"/>
+                        <DatePicker SelectedDate="{Binding EstimatedDueDate, UpdateSourceTrigger=PropertyChanged}"
+                                    Margin="0,4,0,16"/>
+
+                        <TextBlock Text="Pregnancy End Date"/>
+                        <DatePicker SelectedDate="{Binding PregnancyEndDate, UpdateSourceTrigger=PropertyChanged}"
+                                    Margin="0,4,0,20"/>
+
+                        <Separator Margin="0,4,0,20"/>
+
+                        <!-- Obstetric Details -->
+                        <TextBlock Text="Obstetric Details"
+                                   FontSize="18"
+                                   FontWeight="SemiBold"
+                                   Margin="0,0,0,6"/>
+
+                        <TextBlock Text="These details are optional while the pregnancy is ongoing."
+                                   FontSize="13"
+                                   Opacity="0.7"
+                                   Margin="0,0,0,20"/>
+
+                        <TextBlock Text="Pregnancy Outcome"/>
+                        <ComboBox SelectedValue="{Binding PregnancyOutcome, UpdateSourceTrigger=PropertyChanged}"
+                                  SelectedValuePath="Content"
+                                  IsEditable="False"
+                                  Margin="0,4,0,16">
+                            <ComboBoxItem Content="Live Birth"/>
+                            <ComboBoxItem Content="Stillbirth"/>
+                            <ComboBoxItem Content="Miscarriage"/>
+                            <ComboBoxItem Content="Ectopic Pregnancy"/>
+                            <ComboBoxItem Content="Molar Pregnancy"/>
+                            <ComboBoxItem Content="Other"/>
+                        </ComboBox>
+
+                        <TextBlock Text="Delivery Method"/>
+                        <ComboBox SelectedValue="{Binding DeliveryMethod, UpdateSourceTrigger=PropertyChanged}"
+                                  SelectedValuePath="Content"
+                                  Margin="0,4,0,16">
+                            <ComboBoxItem Content="Vaginal"/>
+                            <ComboBoxItem Content="Cesarean Section"/>
+                            <ComboBoxItem Content="Assisted Vaginal"/>
+                            <ComboBoxItem Content="Other"/>
+                        </ComboBox>
+
+                        <TextBlock Text="Gestational Age at Pregnancy End (Weeks)"/>
+                        <TextBox Text="{Binding GestationalAgeAtEndWeeks, UpdateSourceTrigger=LostFocus}"
+                                 MaxLength="2"
+                                 Margin="0,4,0,16"/>
+
+                        <TextBlock Text="Additional Gestational Age Days (0–6)"/>
+                        <TextBox Text="{Binding GestationalAgeAtEndDays, UpdateSourceTrigger=LostFocus}"
+                                 MaxLength="1"
+                                 Margin="0,4,0,16"/>
+
+                        <TextBlock Text="Number of Infants"/>
+                        <TextBox Text="{Binding NumberOfInfants, UpdateSourceTrigger=LostFocus}"
+                                 MaxLength="2"
+                                 Margin="0,4,0,16"/>
+
+                        <!-- Living Children -->
+                        <TextBlock Text="Living Children from this Pregnancy"/>
+                        <TextBox Text="{Binding LivingChildrenCount, UpdateSourceTrigger=LostFocus}"
+                                 MaxLength="2"
+                                 Margin="0,4,0,6"/>
+
+                        <TextBlock Text="Enter the number of children from this pregnancy who are currently living."
+                                   FontSize="12"
+                                   Opacity="0.65"
+                                   Margin="0,0,0,20"/>
+
+                        <TextBlock Text="Complications"/>
+                        <TextBox Text="{Binding Complications, UpdateSourceTrigger=PropertyChanged}"
+                                 MaxLength="2000"
+                                 AcceptsReturn="True"
+                                 TextWrapping="Wrap"
+                                 MinHeight="80"
+                                 VerticalScrollBarVisibility="Auto"
+                                 Margin="0,4,0,20"/>
+
+                        <Separator Margin="0,4,0,20"/>
+
+                        <!-- Notes -->
+                        <TextBlock Text="Clinical Notes"
+                                   FontSize="18"
+                                   FontWeight="SemiBold"
+                                   Margin="0,0,0,12"/>
+
+                        <TextBox Text="{Binding Notes, UpdateSourceTrigger=PropertyChanged}"
+                                 MaxLength="2000"
+                                 AcceptsReturn="True"
+                                 TextWrapping="Wrap"
+                                 MinHeight="100"
+                                 VerticalScrollBarVisibility="Auto"
+                                 Margin="0,4,0,20"/>
+
+                        <TextBlock Text="{Binding StatusMessage}"
+                                   TextWrapping="Wrap"
+                                   Margin="0,0,0,16"
+                                   Opacity="0.8"/>
+
+                        <StackPanel Orientation="Horizontal"
+                                    HorizontalAlignment="Right">
+                            <Button Content="Cancel"
+                                    Padding="18,10"
+                                    Margin="0,0,12,0"
+                                    Click="CancelButton_Click"/>
+
+                            <Button Content="Save Pregnancy"
+                                    Padding="18,10"
+                                    Command="{Binding SaveCommand}"/>
+                        </StackPanel>
+
+                    </StackPanel>
+                </Border>
+            </StackPanel>
         </Grid>
     </ScrollViewer>
 </UserControl>

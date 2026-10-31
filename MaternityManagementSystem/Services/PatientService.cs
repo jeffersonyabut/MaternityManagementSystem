@@ -76,6 +76,7 @@ public class PatientService
     }
 
 
+
     public async Task<Patient> UpdatePatientAsync(
         Patient patient,
         CancellationToken cancellationToken = default)
@@ -92,18 +93,40 @@ public class PatientService
 
         ValidatePatient(patient);
 
-        // Load the existing record so immutable fields stay unchanged.
+        // Retrieve the existing patient record.
         Patient? existingPatient =
             await _patientRepository.GetByIdAsync(
                 patient.Id,
                 cancellationToken);
 
+        // Ensure the patient exists before accessing its properties.
         if (existingPatient is null)
         {
             throw new InvalidOperationException(
                 "The patient record could not be found.");
         }
 
+        // Check whether any editable patient information actually changed.
+        bool hasChanges =
+            existingPatient.FirstName != patient.FirstName.Trim() ||
+            existingPatient.MiddleName != NormalizeOptionalText(patient.MiddleName) ||
+            existingPatient.LastName != patient.LastName.Trim() ||
+            existingPatient.DateOfBirth != patient.DateOfBirth ||
+            existingPatient.Sex != NormalizeOptionalText(patient.Sex) ||
+            existingPatient.CivilStatus != NormalizeOptionalText(patient.CivilStatus) ||
+            existingPatient.ContactNumber != NormalizeOptionalText(patient.ContactNumber) ||
+            existingPatient.Email != NormalizeOptionalText(patient.Email) ||
+            existingPatient.Address != NormalizeOptionalText(patient.Address) ||
+            existingPatient.EmergencyContactName != NormalizeOptionalText(patient.EmergencyContactName) ||
+            existingPatient.EmergencyContactNumber != NormalizeOptionalText(patient.EmergencyContactNumber);
+
+        // Return the existing record if nothing changed.
+        if (!hasChanges)
+        {
+            return existingPatient;
+        }
+
+        // Apply the updated patient information.
         existingPatient.FirstName = patient.FirstName.Trim();
         existingPatient.MiddleName = NormalizeOptionalText(patient.MiddleName);
         existingPatient.LastName = patient.LastName.Trim();
@@ -128,6 +151,7 @@ public class PatientService
                 "You must be logged in to update a patient.");
         }
 
+        // Create the audit entry.
         var auditLog = new AuditLog
         {
             StaffId = currentUser.StaffId,
@@ -137,6 +161,7 @@ public class PatientService
             Details = "Patient record updated."
         };
 
+        // Repository saves the patient, audit log, and version history together.
         await _patientRepository.UpdateAsync(
             existingPatient,
             auditLog,
@@ -144,6 +169,7 @@ public class PatientService
 
         return existingPatient;
     }
+
 
     public async Task<Patient?> GetPatientByIdAsync(
     int patientId,

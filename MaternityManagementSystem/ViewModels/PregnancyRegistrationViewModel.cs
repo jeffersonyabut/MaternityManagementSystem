@@ -41,6 +41,27 @@ public partial class PregnancyRegistrationViewModel : ObservableObject
     private DateTime? pregnancyEndDate;
 
     [ObservableProperty]
+    private string? pregnancyOutcome;
+
+    [ObservableProperty]
+    private string? deliveryMethod;
+
+    [ObservableProperty]
+    private int? gestationalAgeAtEndWeeks;
+
+    [ObservableProperty]
+    private int? gestationalAgeAtEndDays;
+
+    [ObservableProperty]
+    private int? numberOfInfants;
+
+    [ObservableProperty]
+    private int? livingChildrenCount;
+
+    [ObservableProperty]
+    private string complications = string.Empty;
+
+    [ObservableProperty]
     private string notes = string.Empty;
 
     [ObservableProperty]
@@ -71,6 +92,13 @@ public partial class PregnancyRegistrationViewModel : ObservableObject
                 LastMenstrualPeriod = ToDateOnly(LastMenstrualPeriod),
                 EstimatedDueDate = ToDateOnly(EstimatedDueDate),
                 PregnancyEndDate = ToDateOnly(PregnancyEndDate),
+                PregnancyOutcome = PregnancyOutcome,
+                DeliveryMethod = DeliveryMethod,
+                GestationalAgeAtEndWeeks = GestationalAgeAtEndWeeks,
+                GestationalAgeAtEndDays = GestationalAgeAtEndDays,
+                NumberOfInfants = NumberOfInfants,
+                LivingChildrenCount = LivingChildrenCount,
+                Complications = Complications,
                 Notes = Notes
             };
 
@@ -89,7 +117,8 @@ public partial class PregnancyRegistrationViewModel : ObservableObject
         }
         catch (Exception)
         {
-            StatusMessage = "Unable to save the pregnancy record. Please try again.";
+            StatusMessage =
+                "Unable to save the pregnancy record. Please try again.";
         }
         finally
         {

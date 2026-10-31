@@ -1,0 +1,151 @@
+
+using System;
+using System.Collections.ObjectModel;
+using System.Text.Json;
+using System.Threading.Tasks;
+using CommunityToolkit.Mvvm.ComponentModel;
+using MaternityManagementSystem.Services;
+
+namespace MaternityManagementSystem.ViewModels;
+
+public partial class VitalSignHistoryViewModel : ObservableObject
+{
+    private readonly RecordVersionService _recordVersionService;
+    private readonly int _vitalSignId;
+
+    public VitalSignHistoryViewModel(
+        RecordVersionService recordVersionService,
+        int vitalSignId)
+    {
+        ArgumentNullException.ThrowIfNull(recordVersionService);
+
+        if (vitalSignId <= 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(vitalSignId));
+        }
+
+        _recordVersionService = recordVersionService;
+        _vitalSignId = vitalSignId;
+    }
+
+    [ObservableProperty]
+    private ObservableCollection<RecordVersionDisplayViewModel> history = new();
+
+    [ObservableProperty]
+    private bool isBusy;
+
+    [ObservableProperty]
+    private string statusMessage = string.Empty;
+
+    public async Task LoadHistoryAsync()
+    {
+        if (IsBusy)
+        {
+            return;
+        }
+
+        IsBusy = true;
+        StatusMessage = string.Empty;
+
+        try
+        {
+            var versions = await _recordVersionService.GetHistoryAsync(
+                "VitalSign",
+                _vitalSignId);
+
+            History.Clear();
+
+            foreach (var version in versions)
+            {
+                var displayVersion = new RecordVersionDisplayViewModel
+                {
+                    Username = version.Username,
+                    ChangedAtUtc = TimeZoneInfo.ConvertTimeFromUtc(
+                        DateTime.SpecifyKind(
+                            version.ChangedAtUtc,
+                            DateTimeKind.Utc),
+                        TimeZoneInfo.FindSystemTimeZoneById(
+                            "Singapore Standard Time"))
+                };
+
+                try
+                {
+                    using var previousDocument =
+                        JsonDocument.Parse(version.PreviousValuesJson);
+
+                    using var newDocument =
+                        JsonDocument.Parse(version.NewValuesJson);
+
+                    foreach (var property in newDocument.RootElement.EnumerateObject())
+                    {
+                        string fieldName = property.Name;
+
+                        if (!previousDocument.RootElement.TryGetProperty(
+                            fieldName,
+                            out var previousValue))
+                        {
+                            continue;
+                        }
+
+                        displayVersion.Changes.Add(
+                            new RecordVersionFieldChange
+                            {
+                                FieldName = FormatFieldName(fieldName),
+                                PreviousValue = FormatValue(previousValue),
+                                NewValue = FormatValue(property.Value)
+                            });
+                    }
+                }
+                catch (JsonException)
+                {
+                    continue;
+                }
+
+                History.Add(displayVersion);
+            }
+        }
+        catch (Exception)
+        {
+            StatusMessage = "Unable to load vital signs history.";
+        }
+        finally
+        {
+            IsBusy = false;
+        }
+    }
+
+    private static string FormatFieldName(string fieldName)
+    {
+        if (string.IsNullOrWhiteSpace(fieldName))
+        {
+            return fieldName;
+        }
+
+        var result = new System.Text.StringBuilder();
+
+        for (int i = 0; i < fieldName.Length; i++)
+        {
+            if (i > 0 && char.IsUpper(fieldName[i]))
+            {
+                result.Append(' ');
+            }
+
+            result.Append(fieldName[i]);
+        }
+
+        return result.ToString();
+    }
+
+    private static string FormatValue(JsonElement value)
+    {
+        return value.ValueKind switch
+        {
+            JsonValueKind.Null => "Not provided",
+            JsonValueKind.String => value.GetString() ?? "Not provided",
+            JsonValueKind.True => "Yes",
+            JsonValueKind.False => "No",
+            JsonValueKind.Undefined => "Not provided",
+            _ => value.ToString()
+        };
+    }
+}

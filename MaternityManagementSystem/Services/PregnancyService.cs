@@ -59,12 +59,11 @@ public class PregnancyService
                 nameof(pregnancy));
         }
 
+        NormalizePregnancy(pregnancy);
         PregnancyValidator.Validate(pregnancy);
 
         var now = DateTime.UtcNow;
 
-        pregnancy.Status = pregnancy.Status.Trim();
-        pregnancy.Notes = NormalizeNotes(pregnancy.Notes);
         pregnancy.CreatedAtUtc = now;
         pregnancy.UpdatedAtUtc = null;
 
@@ -139,19 +138,62 @@ public class PregnancyService
                 "A pregnancy record cannot be reassigned to another patient.");
         }
 
+        NormalizePregnancy(updatedPregnancy);
         PregnancyValidator.Validate(updatedPregnancy);
+
+        var hasChanges =
+            existingPregnancy.Status != updatedPregnancy.Status ||
+            existingPregnancy.LastMenstrualPeriod !=
+                updatedPregnancy.LastMenstrualPeriod ||
+            existingPregnancy.EstimatedDueDate !=
+                updatedPregnancy.EstimatedDueDate ||
+            existingPregnancy.PregnancyEndDate !=
+                updatedPregnancy.PregnancyEndDate ||
+            existingPregnancy.PregnancyOutcome !=
+                updatedPregnancy.PregnancyOutcome ||
+            existingPregnancy.DeliveryMethod !=
+                updatedPregnancy.DeliveryMethod ||
+            existingPregnancy.GestationalAgeAtEndWeeks !=
+                updatedPregnancy.GestationalAgeAtEndWeeks ||
+            existingPregnancy.GestationalAgeAtEndDays !=
+                updatedPregnancy.GestationalAgeAtEndDays ||
+            existingPregnancy.NumberOfInfants !=
+                updatedPregnancy.NumberOfInfants ||
+            existingPregnancy.LivingChildrenCount !=
+                updatedPregnancy.LivingChildrenCount ||
+            existingPregnancy.Complications !=
+                updatedPregnancy.Complications ||
+            existingPregnancy.Notes != updatedPregnancy.Notes;
+
+        if (!hasChanges)
+        {
+            return existingPregnancy;
+        }
 
         var now = DateTime.UtcNow;
 
-        existingPregnancy.Status = updatedPregnancy.Status.Trim();
+        existingPregnancy.Status = updatedPregnancy.Status;
         existingPregnancy.LastMenstrualPeriod =
             updatedPregnancy.LastMenstrualPeriod;
         existingPregnancy.EstimatedDueDate =
             updatedPregnancy.EstimatedDueDate;
         existingPregnancy.PregnancyEndDate =
             updatedPregnancy.PregnancyEndDate;
-        existingPregnancy.Notes =
-            NormalizeNotes(updatedPregnancy.Notes);
+        existingPregnancy.PregnancyOutcome =
+            updatedPregnancy.PregnancyOutcome;
+        existingPregnancy.DeliveryMethod =
+            updatedPregnancy.DeliveryMethod;
+        existingPregnancy.GestationalAgeAtEndWeeks =
+            updatedPregnancy.GestationalAgeAtEndWeeks;
+        existingPregnancy.GestationalAgeAtEndDays =
+            updatedPregnancy.GestationalAgeAtEndDays;
+        existingPregnancy.NumberOfInfants =
+            updatedPregnancy.NumberOfInfants;
+        existingPregnancy.LivingChildrenCount =
+            updatedPregnancy.LivingChildrenCount;
+        existingPregnancy.Complications =
+            updatedPregnancy.Complications;
+        existingPregnancy.Notes = updatedPregnancy.Notes;
         existingPregnancy.UpdatedAtUtc = now;
 
         var user = _sessionService.CurrentUser!;
@@ -175,10 +217,23 @@ public class PregnancyService
         return existingPregnancy;
     }
 
-    private static string? NormalizeNotes(string? notes)
+    private static void NormalizePregnancy(Pregnancy pregnancy)
     {
-        return string.IsNullOrWhiteSpace(notes)
+        pregnancy.Status = pregnancy.Status?.Trim() ?? string.Empty;
+        pregnancy.PregnancyOutcome =
+            NormalizeText(pregnancy.PregnancyOutcome);
+        pregnancy.DeliveryMethod =
+            NormalizeText(pregnancy.DeliveryMethod);
+        pregnancy.Complications =
+            NormalizeText(pregnancy.Complications);
+        pregnancy.Notes =
+            NormalizeText(pregnancy.Notes);
+    }
+
+    private static string? NormalizeText(string? value)
+    {
+        return string.IsNullOrWhiteSpace(value)
             ? null
-            : notes.Trim();
+            : value.Trim();
     }
 }

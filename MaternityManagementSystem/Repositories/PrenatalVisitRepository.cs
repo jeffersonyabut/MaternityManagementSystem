@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
@@ -56,13 +57,11 @@ public class PrenatalVisitRepository
             prenatalVisit,
             cancellationToken);
 
-        // First save: generate the prenatal visit ID.
         await dbContext.SaveChangesAsync(cancellationToken);
 
         auditLog.EntityId = prenatalVisit.Id;
         auditLog.OccurredAtUtc = prenatalVisit.CreatedAtUtc;
 
-        // Second save: persist the audit record.
         await dbContext.AuditLogs.AddAsync(
             auditLog,
             cancellationToken);
@@ -89,7 +88,7 @@ public class PrenatalVisitRepository
         return await dbContext.PrenatalVisits
             .AsNoTracking()
             .Where(visit => visit.PregnancyId == pregnancyId)
-            .OrderByDescending(pv => pv.VisitDate)
+            .OrderByDescending(visit => visit.VisitDate)
             .ToListAsync(cancellationToken);
     }
 
@@ -135,8 +134,47 @@ public class PrenatalVisitRepository
 
         if (existingVisit is null)
         {
+            throw new KeyNotFoundException(
+                $"Prenatal visit with ID {prenatalVisit.Id} was not found.");
+        }
+
+        if (existingVisit.PregnancyId != prenatalVisit.PregnancyId)
+        {
             throw new InvalidOperationException(
-                "The prenatal visit record could not be found.");
+                "A prenatal visit cannot be reassigned to another pregnancy.");
+        }
+
+        var previousValues = new Dictionary<string, object?>();
+        var newValues = new Dictionary<string, object?>();
+
+        void TrackChange(
+            string fieldName,
+            object? previousValue,
+            object? newValue)
+        {
+            if (Equals(previousValue, newValue))
+            {
+                return;
+            }
+
+            previousValues[fieldName] = previousValue;
+            newValues[fieldName] = newValue;
+        }
+
+        TrackChange(
+            nameof(PrenatalVisit.VisitDate),
+            existingVisit.VisitDate,
+            prenatalVisit.VisitDate);
+
+        TrackChange(
+            nameof(PrenatalVisit.Notes),
+            existingVisit.Notes,
+            prenatalVisit.Notes);
+
+        // Nothing changed: do not create audit or version records.
+        if (newValues.Count == 0)
+        {
+            return;
         }
 
         existingVisit.VisitDate = prenatalVisit.VisitDate;
@@ -147,11 +185,22 @@ public class PrenatalVisitRepository
         auditLog.OccurredAtUtc =
             existingVisit.UpdatedAtUtc ?? DateTime.UtcNow;
 
-        await dbContext.AuditLogs.AddAsync(
-            auditLog,
-            cancellationToken);
+        var recordVersion = new RecordVersion
+        {
+            EntityType = "PrenatalVisit",
+            EntityId = existingVisit.Id,
+            PreviousValuesJson = JsonSerializer.Serialize(previousValues),
+            NewValuesJson = JsonSerializer.Serialize(newValues),
+            StaffId = auditLog.StaffId,
+            Username = auditLog.Username,
+            ChangedAtUtc = auditLog.OccurredAtUtc
+        };
 
-        // Visit changes and audit entry are saved together.
+        dbContext.RecordVersions.Add(recordVersion);
+        dbContext.AuditLogs.Add(auditLog);
+
+        // Visit update, audit entry, and version history
+        // are saved together.
         await dbContext.SaveChangesAsync(cancellationToken);
     }
 }

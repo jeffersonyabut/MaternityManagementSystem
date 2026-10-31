@@ -63,10 +63,10 @@
                     </TextBlock>
 
                     <TextBlock Margin="0,4,0,0">
-                        <Run Text="Pregnancy end date: "/>          
+                        <Run Text="Pregnancy end date: "/>
                         <Run Text="{Binding Pregnancy.PregnancyEndDate,
                             TargetNullValue='Not recorded',
-                            StringFormat={}{0:MMM dd, yyyy}}"/>         
+                            StringFormat={}{0:MMM dd, yyyy}}"/>
                     </TextBlock>
                 </StackPanel>
             </Border>
@@ -105,8 +105,8 @@
 
                     <ItemsControl ItemsSource="{Binding Visits}">
                         <ItemsControl.ItemTemplate>
-
                             <DataTemplate>
+
                                 <Border BorderBrush="#DDDDDD"
                                         BorderThickness="1"
                                         CornerRadius="8"
@@ -119,19 +119,21 @@
                                             <ColumnDefinition Width="Auto"/>
                                         </Grid.ColumnDefinitions>
 
+                                        <!-- Visit Information -->
                                         <StackPanel Grid.Column="0">
                                             <TextBlock Text="{Binding VisitDate,
-                                                    StringFormat={}{0:MMMM dd, yyyy}}"
-                                                           FontSize="16"
-                                                           FontWeight="SemiBold"/>
+                                                StringFormat={}{0:MMMM dd, yyyy}}"
+                                                       FontSize="16"
+                                                       FontWeight="SemiBold"/>
 
                                             <TextBlock Text="{Binding Notes,
-                                                    TargetNullValue='No notes recorded'}"
-                                                           Margin="0,8,0,0"
-                                                           TextWrapping="Wrap"
-                                                           Opacity="0.75"/>
+                                                TargetNullValue='No notes recorded'}"
+                                                       Margin="0,8,0,0"
+                                                       TextWrapping="Wrap"
+                                                       Opacity="0.75"/>
                                         </StackPanel>
 
+                                        <!-- Visit Actions -->
                                         <StackPanel Grid.Column="1"
                                                     Orientation="Horizontal"
                                                     Margin="16,0,0,0"
@@ -144,13 +146,18 @@
 
                                             <Button Content="Edit"
                                                     Padding="14,7"
+                                                    Margin="0,0,8,0"
                                                     Click="EditVisitButton_Click"/>
+
+                                            <Button Content="History"
+                                                    Padding="14,7"
+                                                    Click="VisitHistoryButton_Click"/>
 
                                         </StackPanel>
                                     </Grid>
                                 </Border>
-                            </DataTemplate>
 
+                            </DataTemplate>
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
 

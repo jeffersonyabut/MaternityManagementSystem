@@ -13,6 +13,7 @@ public class ClinicDbContext : DbContext
     public DbSet<Pregnancy> Pregnancies => Set<Pregnancy>();
     public DbSet<PrenatalVisit> PrenatalVisits => Set<PrenatalVisit>();
     public DbSet<VitalSign> VitalSigns => Set<VitalSign>();
+    public DbSet<RecordVersion> RecordVersions => Set<RecordVersion>();
 
     public ClinicDbContext()
     {
@@ -239,6 +240,45 @@ public class ClinicDbContext : DbContext
 
             entity.HasIndex(a => a.StaffId);
         });
+
+
+
+        modelBuilder.Entity<RecordVersion>(entity =>
+        {
+            entity.HasKey(version => version.Id);
+
+            entity.Property(version => version.EntityType)
+                .IsRequired()
+                .HasMaxLength(100);
+
+            entity.Property(version => version.EntityId)
+                .IsRequired();
+
+            entity.Property(version => version.PreviousValuesJson)
+                .IsRequired();
+
+            entity.Property(version => version.NewValuesJson)
+                .IsRequired();
+
+            entity.Property(version => version.Username)
+                .IsRequired()
+                .HasMaxLength(100);
+
+            entity.Property(version => version.ChangedAtUtc)
+                .IsRequired();
+
+            entity.HasIndex(version => new
+            {
+                version.EntityType,
+                version.EntityId,
+                version.ChangedAtUtc
+            });
+
+            entity.HasIndex(version => version.StaffId);
+        });
+
+
+
 
     }
 }

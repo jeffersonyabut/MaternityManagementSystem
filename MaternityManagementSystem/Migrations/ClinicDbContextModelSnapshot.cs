@@ -142,23 +142,44 @@ namespace MaternityManagementSystem.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
 
+                    b.Property<string>("Complications")
+                        .HasColumnType("TEXT");
+
                     b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("DeliveryMethod")
                         .HasColumnType("TEXT");
 
                     b.Property<DateOnly?>("EstimatedDueDate")
                         .HasColumnType("TEXT");
 
+                    b.Property<int?>("GestationalAgeAtEndDays")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int?>("GestationalAgeAtEndWeeks")
+                        .HasColumnType("INTEGER");
+
                     b.Property<DateOnly?>("LastMenstrualPeriod")
                         .HasColumnType("TEXT");
+
+                    b.Property<int?>("LivingChildrenCount")
+                        .HasColumnType("INTEGER");
 
                     b.Property<string>("Notes")
                         .HasMaxLength(2000)
                         .HasColumnType("TEXT");
 
+                    b.Property<int?>("NumberOfInfants")
+                        .HasColumnType("INTEGER");
+
                     b.Property<int>("PatientId")
                         .HasColumnType("INTEGER");
 
                     b.Property<DateOnly?>("PregnancyEndDate")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("PregnancyOutcome")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Status")
@@ -203,6 +224,48 @@ namespace MaternityManagementSystem.Migrations
                     b.HasIndex("PregnancyId");
 
                     b.ToTable("PrenatalVisits");
+                });
+
+            modelBuilder.Entity("MaternityManagementSystem.Models.RecordVersion", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("ChangedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("EntityId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("EntityType")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("NewValuesJson")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("PreviousValuesJson")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<int?>("StaffId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Username")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("StaffId");
+
+                    b.HasIndex("EntityType", "EntityId", "ChangedAtUtc");
+
+                    b.ToTable("RecordVersions");
                 });
 
             modelBuilder.Entity("MaternityManagementSystem.Models.Staff", b =>

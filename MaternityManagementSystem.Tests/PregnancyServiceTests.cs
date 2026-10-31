@@ -1,5 +1,6 @@
 ﻿
 using System;
+using System.Text.Json;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using MaternityManagementSystem.Models;
@@ -170,7 +171,7 @@ public class PregnancyServiceTests
     }
 
     [Fact]
-    public async Task UpdatePregnancyAsync_WhenPregnancyExists_SavesChanges()
+    public async Task UpdatePregnancyAsync_WhenPregnancyExists_SavesChangesAndVersionHistory()
     {
         await using var testDatabase =
             await TestDatabase.CreateAsync();
@@ -267,7 +268,160 @@ public class PregnancyServiceTests
         Assert.Equal("Pregnancy", auditLog.EntityType);
         Assert.Equal(originalPregnancy.Id, auditLog.EntityId);
         Assert.NotNull(auditLog.StaffId);
+
+        // Assert: record version persistence
+        await using var versionContext =
+            await testDatabase.Factory.CreateDbContextAsync();
+
+        var version = await versionContext.RecordVersions
+            .SingleAsync(record =>
+                record.EntityType == "Pregnancy" &&
+                record.EntityId == originalPregnancy.Id);
+
+        Assert.Equal("pregnancy-test-user", version.Username);
+        Assert.Equal(originalPregnancy.Id, version.EntityId);
+        Assert.Equal("Pregnancy", version.EntityType);
+        Assert.NotNull(version.StaffId);
+
+        // Verify only the three changed fields were captured.
+        using var previousDocument =
+            JsonDocument.Parse(version.PreviousValuesJson);
+
+        using var newDocument =
+            JsonDocument.Parse(version.NewValuesJson);
+
+        var previousValues = previousDocument.RootElement;
+        var newValues = newDocument.RootElement;
+
+        Assert.Equal(3, newValues.EnumerateObject().Count());
+        Assert.Equal(3, previousValues.EnumerateObject().Count());
+
+        // Status
+        Assert.True(newValues.TryGetProperty(
+            nameof(Pregnancy.Status), out var newStatus));
+
+        Assert.Equal("Completed", newStatus.GetString());
+
+        Assert.True(previousValues.TryGetProperty(
+            nameof(Pregnancy.Status), out var previousStatus));
+
+        Assert.Equal("Current", previousStatus.GetString());
+
+        // PregnancyEndDate
+        Assert.True(newValues.TryGetProperty(
+            nameof(Pregnancy.PregnancyEndDate), out var newEndDate));
+
+        Assert.Equal("2026-09-20", newEndDate.GetString());
+
+        Assert.True(previousValues.TryGetProperty(
+            nameof(Pregnancy.PregnancyEndDate), out var previousEndDate));
+
+        Assert.Equal(JsonValueKind.Null, previousEndDate.ValueKind);
+
+        // Notes
+        Assert.True(newValues.TryGetProperty(
+            nameof(Pregnancy.Notes), out var newNotes));
+
+        Assert.Equal("Updated pregnancy notes", newNotes.GetString());
+
+        Assert.True(previousValues.TryGetProperty(
+            nameof(Pregnancy.Notes), out var previousNotes));
+
+        Assert.Equal("Original notes", previousNotes.GetString());
+
+        // Unchanged fields must not appear.
+        Assert.False(newValues.TryGetProperty(
+            nameof(Pregnancy.LastMenstrualPeriod), out _));
+
+        Assert.False(newValues.TryGetProperty(
+            nameof(Pregnancy.EstimatedDueDate), out _));
     }
+
+
+    [Fact]
+    public async Task UpdatePregnancyAsync_WhenNoValuesChanged_DoesNotCreateAuditOrVersion()
+    {
+        await using var testDatabase =
+            await TestDatabase.CreateAsync();
+
+        var patientRepository =
+            new PatientRepository(testDatabase.Factory);
+
+        var pregnancyRepository =
+            new PregnancyRepository(testDatabase.Factory);
+
+        int patientId;
+
+        await using (var dbContext =
+            await testDatabase.Factory.CreateDbContextAsync())
+        {
+            var patient = new Patient
+            {
+                PatientNumber = "TEST-NOCHANGE-001",
+                FirstName = "Jane",
+                LastName = "Doe",
+                CreatedAtUtc = DateTime.UtcNow
+            };
+
+            dbContext.Patients.Add(patient);
+            await dbContext.SaveChangesAsync();
+
+            patientId = patient.Id;
+        }
+
+        var service = await CreateAuthenticatedServiceAsync(
+            testDatabase,
+            pregnancyRepository,
+            patientRepository);
+
+        var originalPregnancy =
+            await service.CreatePregnancyAsync(
+                new Pregnancy
+                {
+                    PatientId = patientId,
+                    Status = "Current",
+                    LastMenstrualPeriod = new DateOnly(2026, 1, 1),
+                    EstimatedDueDate = new DateOnly(2026, 10, 8),
+                    Notes = "Original notes"
+                });
+
+        var updatedPregnancy = new Pregnancy
+        {
+            Id = originalPregnancy.Id,
+            PatientId = patientId,
+            Status = originalPregnancy.Status,
+            LastMenstrualPeriod = originalPregnancy.LastMenstrualPeriod,
+            EstimatedDueDate = originalPregnancy.EstimatedDueDate,
+            PregnancyEndDate = originalPregnancy.PregnancyEndDate,
+            Notes = originalPregnancy.Notes
+        };
+
+        // Act
+        var result =
+            await service.UpdatePregnancyAsync(updatedPregnancy);
+
+        // Assert
+        Assert.Equal(originalPregnancy.Id, result.Id);
+
+        // Verify that no update audit or version was created.
+        await using var verificationContext =
+            await testDatabase.Factory.CreateDbContextAsync();
+
+        var updatedAuditCount = await verificationContext.AuditLogs
+            .CountAsync(log =>
+                log.EntityType == "Pregnancy" &&
+                log.EntityId == originalPregnancy.Id &&
+                log.Action == "Updated");
+
+        var versionCount = await verificationContext.RecordVersions
+            .CountAsync(record =>
+                record.EntityType == "Pregnancy" &&
+                record.EntityId == originalPregnancy.Id);
+
+        Assert.Equal(0, updatedAuditCount);
+        Assert.Equal(0, versionCount);
+    }
+
 
     [Fact]
     public async Task UpdatePregnancyAsync_WhenPregnancyDoesNotExist_ThrowsInvalidOperationException()

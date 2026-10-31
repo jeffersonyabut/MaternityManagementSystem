@@ -4,6 +4,7 @@ using MaternityManagementSystem.Models;
 using MaternityManagementSystem.Services;
 using System;
 using System.Collections.ObjectModel;
+using System.Text.Json;
 using System.Threading.Tasks;
 
 namespace MaternityManagementSystem.ViewModels;
@@ -12,15 +13,18 @@ public partial class PatientProfileViewModel : ObservableObject
 {
     private readonly PatientService _patientService;
     private readonly PregnancyService _pregnancyService;
+    private readonly RecordVersionService _recordVersionService;
     private readonly int _patientId;
 
     public PatientProfileViewModel(
         PatientService patientService,
         PregnancyService pregnancyService,
+        RecordVersionService recordVersionService,
         int patientId)
     {
         ArgumentNullException.ThrowIfNull(patientService);
         ArgumentNullException.ThrowIfNull(pregnancyService);
+        ArgumentNullException.ThrowIfNull(recordVersionService);
 
         if (patientId <= 0)
         {
@@ -29,6 +33,7 @@ public partial class PatientProfileViewModel : ObservableObject
 
         _patientService = patientService;
         _pregnancyService = pregnancyService;
+        _recordVersionService = recordVersionService;
         _patientId = patientId;
     }
 
@@ -36,13 +41,37 @@ public partial class PatientProfileViewModel : ObservableObject
     private Patient? patient;
 
     [ObservableProperty]
-    private ObservableCollection<Pregnancy> pregnancies = new();
+    private ObservableCollection<PregnancyCardDisplayViewModel> pregnancies = new();
+
+    [ObservableProperty]
+    private ObservableCollection<RecordVersion> recordVersions = new();
+
+    [ObservableProperty]
+    private ObservableCollection<RecordVersionDisplayViewModel> recordHistory = new();
 
     [ObservableProperty]
     private bool isBusy;
 
     [ObservableProperty]
     private string statusMessage = string.Empty;
+
+    [ObservableProperty]
+    private int gravida;
+
+    [ObservableProperty]
+    private int term;
+
+    [ObservableProperty]
+    private int preterm;
+
+    [ObservableProperty]
+    private int abortion;
+
+    [ObservableProperty]
+    private int unclassifiedPregnancies;
+
+    [ObservableProperty]
+    private string livingChildrenDisplay = "Not recorded";
 
     public async Task LoadPatientAsync()
     {
@@ -62,10 +91,16 @@ public partial class PatientProfileViewModel : ObservableObject
             {
                 StatusMessage = "This patient record could not be found.";
                 Pregnancies.Clear();
+                RecordVersions.Clear();
+                RecordHistory.Clear();
                 return;
             }
 
             await LoadPregnanciesAsync();
+
+            CalculateObstetricHistory();
+
+            await LoadRecordHistoryAsync();
         }
         catch (Exception)
         {
@@ -85,7 +120,220 @@ public partial class PatientProfileViewModel : ObservableObject
 
         foreach (var pregnancy in records)
         {
-            Pregnancies.Add(pregnancy);
+            var history = await _recordVersionService.GetHistoryAsync(
+                "Pregnancy",
+                pregnancy.Id);
+
+            Pregnancies.Add(new PregnancyCardDisplayViewModel
+            {
+                Pregnancy = pregnancy,
+                HasHistory = history.Count > 0
+            });
         }
+    }
+
+    private async Task LoadRecordHistoryAsync()
+    {
+        var history = await _recordVersionService.GetHistoryAsync(
+            "Patient",
+            _patientId);
+
+        RecordVersions.Clear();
+        RecordHistory.Clear();
+
+        foreach (var version in history)
+        {
+            RecordVersions.Add(version);
+
+            var displayVersion = new RecordVersionDisplayViewModel
+            {
+                Username = version.Username,
+                ChangedAtUtc = TimeZoneInfo.ConvertTimeFromUtc(
+                    DateTime.SpecifyKind(
+                        version.ChangedAtUtc,
+                        DateTimeKind.Utc),
+                    TimeZoneInfo.FindSystemTimeZoneById(
+                        "Singapore Standard Time"))
+            };
+
+            try
+            {
+                using var previousDocument =
+                    JsonDocument.Parse(version.PreviousValuesJson);
+
+                using var newDocument =
+                    JsonDocument.Parse(version.NewValuesJson);
+
+                foreach (var property in newDocument.RootElement.EnumerateObject())
+                {
+                    string fieldName = property.Name;
+
+                    if (!previousDocument.RootElement.TryGetProperty(
+                        fieldName,
+                        out var previousValue))
+                    {
+                        continue;
+                    }
+
+                    displayVersion.Changes.Add(
+                        new RecordVersionFieldChange
+                        {
+                            FieldName = FormatFieldName(fieldName),
+                            PreviousValue = FormatValue(previousValue),
+                            NewValue = FormatValue(property.Value)
+                        });
+                }
+            }
+            catch (JsonException)
+            {
+                // Skip malformed snapshots rather than breaking the profile.
+                continue;
+            }
+
+            RecordHistory.Add(displayVersion);
+        }
+    }
+
+    private static string FormatFieldName(string fieldName)
+    {
+        if (string.IsNullOrWhiteSpace(fieldName))
+        {
+            return fieldName;
+        }
+
+        var result = new System.Text.StringBuilder();
+
+        for (int i = 0; i < fieldName.Length; i++)
+        {
+            if (i > 0 && char.IsUpper(fieldName[i]))
+            {
+                result.Append(' ');
+            }
+
+            result.Append(fieldName[i]);
+        }
+
+        return result.ToString();
+    }
+
+    private static string FormatValue(JsonElement value)
+    {
+        return value.ValueKind switch
+        {
+            JsonValueKind.Null => "Not provided",
+            JsonValueKind.String => value.GetString() ?? "Not provided",
+            JsonValueKind.True => "Yes",
+            JsonValueKind.False => "No",
+            JsonValueKind.Undefined => "Not provided",
+            _ => value.ToString()
+        };
+    }
+
+    private void CalculateObstetricHistory()
+    {
+        Gravida = Pregnancies.Count;
+
+        Term = 0;
+        Preterm = 0;
+        Abortion = 0;
+        UnclassifiedPregnancies = 0;
+
+        foreach (var card in Pregnancies)
+        {
+            var pregnancy = card.Pregnancy;
+
+            // Current pregnancies count toward Gravida,
+            // but are not yet classified as completed outcomes.
+            if (pregnancy.Status == "Current")
+            {
+                continue;
+            }
+
+            if (pregnancy.Status != "Completed")
+            {
+                UnclassifiedPregnancies++;
+                continue;
+            }
+
+            if (!pregnancy.GestationalAgeAtEndWeeks.HasValue)
+            {
+                UnclassifiedPregnancies++;
+                continue;
+            }
+
+            int weeks = pregnancy.GestationalAgeAtEndWeeks.Value;
+            int days = pregnancy.GestationalAgeAtEndDays ?? 0;
+
+            if (weeks < 20)
+            {
+                bool isPregnancyLoss =
+                    pregnancy.PregnancyOutcome == "Miscarriage" ||
+                    pregnancy.PregnancyOutcome == "Ectopic Pregnancy" ||
+                    pregnancy.PregnancyOutcome == "Molar Pregnancy";
+
+                if (isPregnancyLoss)
+                {
+                    Abortion++;
+                }
+                else
+                {
+                    UnclassifiedPregnancies++;
+                }
+
+                continue;
+            }
+
+            if (weeks >= 37)
+            {
+                Term++;
+            }
+            else if (weeks >= 20 && (weeks < 37 || (weeks == 37 && days == 0)))
+            {
+                Preterm++;
+            }
+            else
+            {
+                UnclassifiedPregnancies++;
+            }
+        }
+
+        CalculateLivingChildren();
+    }
+
+    private void CalculateLivingChildren()
+    {
+        int totalLivingChildren = 0;
+        bool hasIncompleteData = false;
+
+        foreach (var card in Pregnancies)
+        {
+            var pregnancy = card.Pregnancy;
+
+            // Ongoing pregnancies do not yet contribute to the
+            // recorded living-child outcome.
+            if (pregnancy.Status == "Current")
+            {
+                continue;
+            }
+
+            // Other or unclassified records may need review.
+            if (pregnancy.Status != "Completed")
+            {
+                hasIncompleteData = true;
+                continue;
+            }
+
+            if (!pregnancy.LivingChildrenCount.HasValue)
+            {
+                hasIncompleteData = true;
+                continue;
+            }
+
+            totalLivingChildren += pregnancy.LivingChildrenCount.Value;
+        }
+
+        LivingChildrenDisplay = hasIncompleteData
+            ? "Incomplete data"
+            : totalLivingChildren.ToString();
     }
 }

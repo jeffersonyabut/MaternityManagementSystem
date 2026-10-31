@@ -1,6 +1,7 @@
 
 using System.Windows;
 using System.Windows.Controls;
+using MaternityManagementSystem.Dialogs;
 using MaternityManagementSystem.Models;
 using MaternityManagementSystem.Repositories;
 using MaternityManagementSystem.Services;
@@ -12,6 +13,7 @@ public partial class PrenatalVisitView : UserControl
 {
     private readonly Pregnancy _pregnancy;
     private readonly PrenatalVisitViewModel _viewModel;
+    private readonly RecordVersionService _recordVersionService;
 
     public PrenatalVisitView(Pregnancy pregnancy)
     {
@@ -31,6 +33,10 @@ public partial class PrenatalVisitView : UserControl
             new PregnancyRepository(),
             authorizationService,
             app.SessionService);
+
+        _recordVersionService = new RecordVersionService(
+            new RecordVersionRepository(),
+            authorizationService);
 
         _viewModel = new PrenatalVisitViewModel(
             prenatalVisitService,
@@ -61,8 +67,8 @@ public partial class PrenatalVisitView : UserControl
     }
 
     private void AddVisitButton_Click(
-    object sender,
-    RoutedEventArgs e)
+        object sender,
+        RoutedEventArgs e)
     {
         var parentWindow = Window.GetWindow(this);
 
@@ -72,18 +78,12 @@ public partial class PrenatalVisitView : UserControl
         }
     }
 
-
-
     private void EditVisitButton_Click(
         object sender,
         RoutedEventArgs e)
     {
-        if (sender is not Button button)
-        {
-            return;
-        }
-
-        if (button.DataContext is not PrenatalVisit visit)
+        if (sender is not Button button ||
+            button.DataContext is not PrenatalVisit visit)
         {
             return;
         }
@@ -99,15 +99,11 @@ public partial class PrenatalVisitView : UserControl
     }
 
     private void VitalSignsButton_Click(
-    object sender,
-    RoutedEventArgs e)
+        object sender,
+        RoutedEventArgs e)
     {
-        if (sender is not Button button)
-        {
-            return;
-        }
-
-        if (button.DataContext is not PrenatalVisit visit)
+        if (sender is not Button button ||
+            button.DataContext is not PrenatalVisit visit)
         {
             return;
         }
@@ -120,5 +116,47 @@ public partial class PrenatalVisitView : UserControl
         }
     }
 
+    private async void VisitHistoryButton_Click(
+        object sender,
+        RoutedEventArgs e)
+    {
+        if (sender is not Button button ||
+            button.DataContext is not PrenatalVisit visit)
+        {
+            return;
+        }
 
+        var historyViewModel = new PrenatalVisitHistoryViewModel(
+            _recordVersionService,
+            visit.Id);
+
+        await historyViewModel.LoadHistoryAsync();
+
+        if (!string.IsNullOrEmpty(historyViewModel.StatusMessage))
+        {
+            MessageBox.Show(
+                historyViewModel.StatusMessage,
+                "History",
+                MessageBoxButton.OK,
+                MessageBoxImage.Warning);
+
+            return;
+        }
+
+        var dialog = new RecordHistoryDialog();
+
+        dialog.Configure(
+            title: "Prenatal Visit History",
+            subtitle: "Review previous changes made to this prenatal visit.",
+            history: historyViewModel.History);
+
+        var parentWindow = Window.GetWindow(this);
+
+        if (parentWindow is not null)
+        {
+            dialog.Owner = parentWindow;
+        }
+
+        dialog.ShowDialog();
+    }
 }

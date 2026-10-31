@@ -15,6 +15,7 @@ public partial class VitalSignsView : UserControl
     private readonly PrenatalVisit _prenatalVisit;
     private readonly VitalSignsViewModel _viewModel;
     private readonly Pregnancy _pregnancy;
+    private readonly RecordVersionService _recordVersionService;
 
     public VitalSignsView(
         PrenatalVisit prenatalVisit,
@@ -29,13 +30,18 @@ public partial class VitalSignsView : UserControl
         _pregnancy = pregnancy;
 
         var app = (App)Application.Current;
-        var authorizationService = new AuthorizationService(app.SessionService);
+        var authorizationService = new AuthorizationService(
+            app.SessionService);
 
         var vitalSignService = new VitalSignService(
             new VitalSignRepository(),
             new PrenatalVisitRepository(),
             authorizationService,
             app.SessionService);
+
+        _recordVersionService = new RecordVersionService(
+            new RecordVersionRepository(),
+            authorizationService);
 
         _viewModel = new VitalSignsViewModel(
             vitalSignService,
@@ -104,6 +110,61 @@ public partial class VitalSignsView : UserControl
         }
     }
 
+    private async void VitalSignHistoryButton_Click(
+        object sender,
+        RoutedEventArgs e)
+    {
+        if (sender is not Button button ||
+            button.DataContext is not VitalSign vitalSign)
+        {
+            return;
+        }
+
+        try
+        {
+            var historyViewModel = new VitalSignHistoryViewModel(
+                _recordVersionService,
+                vitalSign.Id);
+
+            await historyViewModel.LoadHistoryAsync();
+
+            if (!string.IsNullOrEmpty(historyViewModel.StatusMessage))
+            {
+                MessageBox.Show(
+                    historyViewModel.StatusMessage,
+                    "History",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
+
+                return;
+            }
+
+            var dialog = new RecordHistoryDialog();
+
+            dialog.Configure(
+                title: "Vital Signs History",
+                subtitle: "Review previous changes made to this vital signs record.",
+                history: historyViewModel.History);
+
+            var parentWindow = Window.GetWindow(this);
+
+            if (parentWindow is not null)
+            {
+                dialog.Owner = parentWindow;
+            }
+
+            dialog.ShowDialog();
+        }
+        catch (Exception)
+        {
+            MessageBox.Show(
+                "Unable to load vital signs history. Please try again.",
+                "History",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
+        }
+    }
+
     private async void ArchiveVitalSignButton_Click(
         object sender,
         RoutedEventArgs e)
@@ -154,7 +215,8 @@ public partial class VitalSignsView : UserControl
         try
         {
             var app = (App)Application.Current;
-            var authorizationService = new AuthorizationService(app.SessionService);
+            var authorizationService = new AuthorizationService(
+                app.SessionService);
 
             var vitalSignService = new VitalSignService(
                 new VitalSignRepository(),

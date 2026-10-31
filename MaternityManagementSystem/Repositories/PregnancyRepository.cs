@@ -2,19 +2,17 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using MaternityManagementSystem.Data;
 using MaternityManagementSystem.Models;
-using Microsoft.EntityFrameworkCore.Storage;
-
 
 namespace MaternityManagementSystem.Repositories;
 
 public class PregnancyRepository
 {
-
     private readonly IDbContextFactory<ClinicDbContext>? _contextFactory;
 
     public PregnancyRepository()
@@ -79,8 +77,8 @@ public class PregnancyRepository
             throw new ArgumentOutOfRangeException(nameof(patientId));
         }
 
-        await using var dbContext = await CreateDbContextAsync(
-        cancellationToken);
+        await using var dbContext =
+            await CreateDbContextAsync(cancellationToken);
 
         return await dbContext.Pregnancies
             .AsNoTracking()
@@ -99,9 +97,8 @@ public class PregnancyRepository
             throw new ArgumentOutOfRangeException(nameof(pregnancyId));
         }
 
-
-        await using var dbContext = await CreateDbContextAsync(
-        cancellationToken);
+        await using var dbContext =
+            await CreateDbContextAsync(cancellationToken);
 
         return await dbContext.Pregnancies
             .AsNoTracking()
@@ -132,23 +129,136 @@ public class PregnancyRepository
                 $"Pregnancy with ID {pregnancy.Id} was not found.");
         }
 
+        if (existingPregnancy.PatientId != pregnancy.PatientId)
+        {
+            throw new InvalidOperationException(
+                "A pregnancy record cannot be reassigned to another patient.");
+        }
+
+        var previousValues = new Dictionary<string, object?>();
+        var newValues = new Dictionary<string, object?>();
+
+        void TrackChange(
+            string fieldName,
+            object? previousValue,
+            object? newValue)
+        {
+            if (Equals(previousValue, newValue))
+            {
+                return;
+            }
+
+            previousValues[fieldName] = previousValue;
+            newValues[fieldName] = newValue;
+        }
+
+        TrackChange(
+            nameof(Pregnancy.Status),
+            existingPregnancy.Status,
+            pregnancy.Status);
+
+        TrackChange(
+            nameof(Pregnancy.LastMenstrualPeriod),
+            existingPregnancy.LastMenstrualPeriod,
+            pregnancy.LastMenstrualPeriod);
+
+        TrackChange(
+            nameof(Pregnancy.EstimatedDueDate),
+            existingPregnancy.EstimatedDueDate,
+            pregnancy.EstimatedDueDate);
+
+        TrackChange(
+            nameof(Pregnancy.PregnancyEndDate),
+            existingPregnancy.PregnancyEndDate,
+            pregnancy.PregnancyEndDate);
+
+        TrackChange(
+            nameof(Pregnancy.PregnancyOutcome),
+            existingPregnancy.PregnancyOutcome,
+            pregnancy.PregnancyOutcome);
+
+        TrackChange(
+            nameof(Pregnancy.DeliveryMethod),
+            existingPregnancy.DeliveryMethod,
+            pregnancy.DeliveryMethod);
+
+        TrackChange(
+            nameof(Pregnancy.GestationalAgeAtEndWeeks),
+            existingPregnancy.GestationalAgeAtEndWeeks,
+            pregnancy.GestationalAgeAtEndWeeks);
+
+        TrackChange(
+            nameof(Pregnancy.GestationalAgeAtEndDays),
+            existingPregnancy.GestationalAgeAtEndDays,
+            pregnancy.GestationalAgeAtEndDays);
+
+        TrackChange(
+            nameof(Pregnancy.NumberOfInfants),
+            existingPregnancy.NumberOfInfants,
+            pregnancy.NumberOfInfants);
+
+        TrackChange(
+            nameof(Pregnancy.LivingChildrenCount),
+            existingPregnancy.LivingChildrenCount,
+            pregnancy.LivingChildrenCount);
+
+        TrackChange(
+            nameof(Pregnancy.Complications),
+            existingPregnancy.Complications,
+            pregnancy.Complications);
+
+        TrackChange(
+            nameof(Pregnancy.Notes),
+            existingPregnancy.Notes,
+            pregnancy.Notes);
+
+        if (newValues.Count == 0)
+        {
+            return;
+        }
+
         existingPregnancy.Status = pregnancy.Status;
-        existingPregnancy.LastMenstrualPeriod = pregnancy.LastMenstrualPeriod;
-        existingPregnancy.EstimatedDueDate = pregnancy.EstimatedDueDate;
-        existingPregnancy.PregnancyEndDate = pregnancy.PregnancyEndDate;
+        existingPregnancy.LastMenstrualPeriod =
+            pregnancy.LastMenstrualPeriod;
+        existingPregnancy.EstimatedDueDate =
+            pregnancy.EstimatedDueDate;
+        existingPregnancy.PregnancyEndDate =
+            pregnancy.PregnancyEndDate;
+        existingPregnancy.PregnancyOutcome =
+            pregnancy.PregnancyOutcome;
+        existingPregnancy.DeliveryMethod =
+            pregnancy.DeliveryMethod;
+        existingPregnancy.GestationalAgeAtEndWeeks =
+            pregnancy.GestationalAgeAtEndWeeks;
+        existingPregnancy.GestationalAgeAtEndDays =
+            pregnancy.GestationalAgeAtEndDays;
+        existingPregnancy.NumberOfInfants =
+            pregnancy.NumberOfInfants;
+        existingPregnancy.LivingChildrenCount =
+            pregnancy.LivingChildrenCount;
+        existingPregnancy.Complications =
+            pregnancy.Complications;
         existingPregnancy.Notes = pregnancy.Notes;
         existingPregnancy.UpdatedAtUtc = pregnancy.UpdatedAtUtc;
 
         auditLog.EntityId = existingPregnancy.Id;
-        auditLog.OccurredAtUtc = existingPregnancy.UpdatedAtUtc
-            ?? DateTime.UtcNow;
+        auditLog.OccurredAtUtc =
+            existingPregnancy.UpdatedAtUtc ?? DateTime.UtcNow;
 
+        var recordVersion = new RecordVersion
+        {
+            EntityType = "Pregnancy",
+            EntityId = existingPregnancy.Id,
+            PreviousValuesJson = JsonSerializer.Serialize(previousValues),
+            NewValuesJson = JsonSerializer.Serialize(newValues),
+            StaffId = auditLog.StaffId,
+            Username = auditLog.Username,
+            ChangedAtUtc = auditLog.OccurredAtUtc
+        };
+
+        dbContext.RecordVersions.Add(recordVersion);
         dbContext.AuditLogs.Add(auditLog);
 
         await dbContext.SaveChangesAsync(cancellationToken);
     }
-
-
-
-
 }
