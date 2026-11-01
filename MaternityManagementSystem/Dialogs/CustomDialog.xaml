@@ -169,6 +169,14 @@
                      TextWrapping="Wrap"
                      VerticalScrollBarVisibility="Auto"
                      Margin="0,0,0,22"/>
+            
+            <TextBlock x:Name="InputValidationText"
+                     Text="This field is required."
+                     Foreground="#FFDC2626"
+                     FontSize="12"
+                     TextWrapping="Wrap"
+                     Margin="0,-14,0,18"
+                     Visibility="Collapsed"/>
 
             <!-- Dialog actions -->
             <StackPanel Orientation="Horizontal"

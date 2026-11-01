@@ -1,0 +1,193 @@
+<Window x:Class="MaternityManagementSystem.Dialogs.LaboratoryResultsDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Laboratory Results"
+        Width="760"
+        Height="620"
+        MinWidth="600"
+        MinHeight="450"
+        WindowStartupLocation="CenterOwner"
+        WindowStyle="None"
+        ResizeMode="CanResize"
+        AllowsTransparency="True"
+        Background="Transparent"
+        ShowInTaskbar="False">
+
+    <Border Background="#FFFAFAFA"
+            CornerRadius="16"
+            Padding="28"
+            BorderThickness="1"
+            BorderBrush="#FFE5E7EB">
+
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+
+            <!-- Header -->
+            <StackPanel Grid.Row="0"
+                        Margin="0,0,0,20">
+
+                <TextBlock Text="Laboratory Results"
+                           FontSize="23"
+                           FontWeight="SemiBold"
+                           Foreground="#FF171717"/>
+
+                <TextBlock Text="{Binding Patient.FirstName}"
+                           FontSize="13"
+                           Foreground="#FF737373"
+                           TextWrapping="Wrap"
+                           Margin="0,6,0,0"/>
+            </StackPanel>
+
+            <!-- Laboratory Results Content -->
+            <Grid Grid.Row="1">
+
+                <!-- Empty State -->
+                <TextBlock Text="{Binding StatusMessage}"
+                           HorizontalAlignment="Center"
+                           VerticalAlignment="Center"
+                           Foreground="#FF737373"
+                           FontSize="13"
+                           TextWrapping="Wrap"
+                           TextAlignment="Center"
+                           Margin="20"/>
+
+                <!-- Results List -->
+                <ScrollViewer VerticalScrollBarVisibility="Auto"
+                              HorizontalScrollBarVisibility="Disabled">
+
+                    <ItemsControl ItemsSource="{Binding LaboratoryResults}">
+
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+
+                                <Border BorderBrush="#FFE5E7EB"
+                                        BorderThickness="1"
+                                        CornerRadius="10"
+                                        Padding="16"
+                                        Margin="0,0,0,14"
+                                        Background="#FFFFFFFF">
+
+
+                                    <StackPanel>
+
+                                        <!-- Test Information -->
+                                        <DockPanel Margin="0,0,0,12">
+
+                                            <TextBlock Text="{Binding TestName}"
+                                                       FontSize="15"
+                                                       FontWeight="SemiBold"
+                                                       Foreground="#FF171717"
+                                                       TextWrapping="Wrap"/>
+
+                                            <TextBlock DockPanel.Dock="Right"
+                                                       Text="{Binding TestDate, StringFormat={}{0:MMM dd, yyyy}}"
+                                                       FontSize="12"
+                                                       Foreground="#FF737373"
+                                                       Margin="12,0,0,0"/>
+                                        </DockPanel>
+
+                                        <!-- Result -->
+                                        <TextBlock Text="RESULT"
+                                                   FontSize="10"
+                                                   FontWeight="SemiBold"
+                                                   Foreground="#FF737373"/>
+
+                                        <TextBlock Text="{Binding Result}"
+                                                   FontSize="14"
+                                                   Foreground="#FF374151"
+                                                   TextWrapping="Wrap"
+                                                   Margin="0,5,0,12"/>
+
+                                        <!-- Unit -->
+                                        <TextBlock Text="{Binding Unit, StringFormat=Unit: {0}}"
+                                                   FontSize="12"
+                                                   Foreground="#FF737373"
+                                                   TextWrapping="Wrap"
+                                                   Margin="0,0,0,5"/>
+
+                                        <!-- Reference Range -->
+                                        <TextBlock Text="{Binding ReferenceRange, StringFormat=Reference Range: {0}}"
+                                                   FontSize="12"
+                                                   Foreground="#FF737373"
+                                                   TextWrapping="Wrap"
+                                                   Margin="0,0,0,10"/>
+
+                                        <!-- Notes -->
+                                        <Border Background="#FFF9FAFB"
+                                                CornerRadius="7"
+                                                Padding="12">
+
+                                            <StackPanel>
+                                                <TextBlock Text="NOTES"
+                                                           FontSize="10"
+                                                           FontWeight="SemiBold"
+                                                           Foreground="#FF737373"/>
+
+                                                <TextBlock Text="{Binding Notes, TargetNullValue=No additional notes.}"
+                                                           FontSize="12"
+                                                           Foreground="#FF374151"
+                                                           TextWrapping="Wrap"
+                                                           Margin="0,5,0,0"/>
+                                            </StackPanel>
+                                        </Border>
+
+                                        <!-- Edit Action -->
+                                        <StackPanel Orientation="Horizontal"
+                                                    HorizontalAlignment="Right"
+                                                    Margin="0,12,0,0">
+
+                                            <Button Content="History"
+                                                    Padding="14,7"
+                                                    Margin="0,0,8,0"
+                                                    Click="LaboratoryResultHistoryButton_Click"/>
+ 
+                                            <Button Content="Edit"
+                                                    Padding="14,7"
+                                                    Click="EditLaboratoryResultButton_Click"/>
+
+                                            <Button Content="Archive"
+                                                    Padding="12,6"
+                                                    Margin="6,0,0,0"
+                                                    Click="LaboratoryResultArchiveButton_Click"/>
+                                            
+                                            
+                                        </StackPanel>
+
+                                    </StackPanel>
+
+                                </Border>
+
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+
+                    </ItemsControl>
+                </ScrollViewer>
+            </Grid>
+
+            <!-- Footer -->
+            <StackPanel Grid.Row="2"
+                        Orientation="Horizontal"
+                        HorizontalAlignment="Right"
+                        Margin="0,16,0,0">
+
+                <Button Content="Close"
+                        MinWidth="90"
+                        MinHeight="40"
+                        Padding="18,9"
+                        Background="#FFF3F4F6"
+                        Foreground="#FF374151"
+                        BorderThickness="0"
+                        FontWeight="SemiBold"
+                        Cursor="Hand"
+                        IsCancel="True"
+                        Click="CloseButton_Click"/>
+
+            </StackPanel>
+
+        </Grid>
+    </Border>
+</Window>

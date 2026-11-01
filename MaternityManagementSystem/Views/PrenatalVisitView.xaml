@@ -143,6 +143,12 @@
                                                     Padding="14,7"
                                                     Margin="0,0,8,0"
                                                     Click="VitalSignsButton_Click"/>
+                                            
+                                            <Button Content="Laboratory Results"
+                                                    Padding="14,7"
+                                                    Margin="0,0,8,0"
+                                                    Click="LaboratoryResultsButton_Click"/>
+
 
                                             <Button Content="Edit"
                                                     Padding="14,7"

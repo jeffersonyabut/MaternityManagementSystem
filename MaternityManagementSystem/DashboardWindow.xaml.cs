@@ -4,6 +4,7 @@ using MaternityManagementSystem.Navigation;
 using MaternityManagementSystem.Services;
 using MaternityManagementSystem.Views;
 using MaternityManagementSystem.Models;
+using System;
 
 namespace MaternityManagementSystem.Views;
 
@@ -201,6 +202,49 @@ public partial class DashboardWindow : Window
 
         _navigationService.NavigateToView(editView);
     }
+
+
+    public void ShowLaboratoryResultRegistration(Patient patient)
+    {
+        ArgumentNullException.ThrowIfNull(patient);
+
+        var registrationView = new LaboratoryResultRegistrationView(patient);
+
+        _navigationService.NavigateToView(registrationView);
+    }
+
+
+
+
+
+    public void ShowLaboratoryResultEdit(
+        int laboratoryResultId,
+        int patientId,
+        Action? cancelAction = null,
+        Action? saveAction = null)
+    {
+        if (laboratoryResultId <= 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(laboratoryResultId));
+        }
+
+        if (patientId <= 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(patientId));
+        }
+
+        var editView = new LaboratoryResultEditView(
+            laboratoryResultId,
+            patientId,
+            cancelAction,
+            saveAction);
+
+        _navigationService.NavigateToView(editView);
+    }
+
+
+
+
 
 
 

@@ -159,4 +159,85 @@ public partial class PrenatalVisitView : UserControl
 
         dialog.ShowDialog();
     }
+
+    private async void LaboratoryResultsButton_Click(
+    object sender,
+    RoutedEventArgs e)
+    {
+        if (sender is not Button button ||
+            button.DataContext is not PrenatalVisit visit)
+        {
+            return;
+        }
+
+        try
+        {
+            var app = (App)Application.Current;
+
+            var authorizationService = new AuthorizationService(
+                app.SessionService);
+
+            var patientRepository = new PatientRepository();
+
+            var patient = await patientRepository.GetByIdAsync(
+                _pregnancy.PatientId);
+
+            if (patient is null)
+            {
+                MessageBox.Show(
+                    "The patient associated with this visit could not be found.",
+                    "Laboratory Results",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
+
+                return;
+            }
+
+            var laboratoryResultService = new LaboratoryResultService(
+                new LaboratoryResultRepository(),
+                patientRepository,
+                new PrenatalVisitRepository(),
+                new PregnancyRepository(),
+                authorizationService,
+                app.SessionService);
+
+            var viewModel = new LaboratoryResultsViewModel(
+                laboratoryResultService,
+                patient,
+                visit);
+
+            await viewModel.LoadLaboratoryResultsAsync();
+
+            var dashboardWindow = Window.GetWindow(this) as DashboardWindow;
+
+            if (dashboardWindow is null)
+            {
+                return;
+            }
+
+            var dialog = new LaboratoryResultsDialog
+            {
+                Owner = dashboardWindow,
+                DataContext = viewModel,
+                CancelEditAction = () =>
+                {
+                    dashboardWindow.ShowPrenatalVisits(_pregnancy);
+                }
+            };
+
+            dialog.ShowDialog();
+        }
+        catch (Exception)
+        {
+            MessageBox.Show(
+                "Unable to load laboratory results for this prenatal visit.",
+                "Laboratory Results",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
+        }
+    }
+
+
+
+
 }

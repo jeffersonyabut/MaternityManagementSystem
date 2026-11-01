@@ -14,6 +14,7 @@ public class ClinicDbContext : DbContext
     public DbSet<PrenatalVisit> PrenatalVisits => Set<PrenatalVisit>();
     public DbSet<VitalSign> VitalSigns => Set<VitalSign>();
     public DbSet<RecordVersion> RecordVersions => Set<RecordVersion>();
+    public DbSet<LaboratoryResult> LaboratoryResults => Set<LaboratoryResult>();
 
     public ClinicDbContext()
     {
@@ -277,6 +278,64 @@ public class ClinicDbContext : DbContext
             entity.HasIndex(version => version.StaffId);
         });
 
+
+        modelBuilder.Entity<LaboratoryResult>(entity =>
+        {
+            entity.HasKey(lr => lr.Id);
+
+            entity.Property(lr => lr.TestName)
+                .IsRequired()
+                .HasMaxLength(150);
+
+            entity.Property(lr => lr.Result)
+                .IsRequired()
+                .HasMaxLength(2000);
+
+            entity.Property(lr => lr.Unit)
+                .HasMaxLength(50)
+                .IsRequired(false);
+
+            entity.Property(lr => lr.ReferenceRange)
+                .HasMaxLength(200)
+                .IsRequired(false);
+
+            entity.Property(lr => lr.Notes)
+                .HasMaxLength(2000)
+                .IsRequired(false);
+
+            entity.HasOne(lr => lr.Patient)
+                .WithMany()
+                .HasForeignKey(lr => lr.PatientId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(lr => lr.PrenatalVisit)
+                .WithMany()
+                .HasForeignKey(lr => lr.PrenatalVisitId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasIndex(lr => lr.PatientId);
+
+            entity.HasIndex(lr => lr.PrenatalVisitId);
+
+            entity.HasIndex(lr => lr.TestDate);
+
+            entity.Property(lr => lr.CreatedAtUtc)
+                .IsRequired();
+
+            entity.Property(lr => lr.UpdatedAtUtc)
+                .IsRequired(false);
+
+            entity.Property(lr => lr.IsArchived)
+                .HasDefaultValue(false)
+                .IsRequired();
+
+            entity.Property(lr => lr.ArchivedAtUtc)
+                .IsRequired(false);
+
+            entity.Property(lr => lr.ArchiveReason)
+                .HasMaxLength(1000)
+                .IsRequired(false);
+        });
 
 
 

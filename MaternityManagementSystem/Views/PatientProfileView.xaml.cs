@@ -3,6 +3,7 @@ using System;
 using System.Windows;
 using System.Windows.Controls;
 using MaternityManagementSystem.Dialogs;
+using MaternityManagementSystem.Models;
 using MaternityManagementSystem.Repositories;
 using MaternityManagementSystem.Services;
 using MaternityManagementSystem.ViewModels;
@@ -13,6 +14,7 @@ public partial class PatientProfileView : UserControl
 {
     private readonly PatientProfileViewModel _viewModel;
     private readonly RecordVersionService _recordVersionService;
+    private LaboratoryResultsViewModel? _laboratoryResultsViewModel;
 
     public PatientProfileView(int patientId)
     {
@@ -56,14 +58,41 @@ public partial class PatientProfileView : UserControl
 
     private async void PatientProfileView_Loaded(
         object sender,
-        System.Windows.RoutedEventArgs e)
+        RoutedEventArgs e)
     {
         await _viewModel.LoadPatientAsync();
+
+        if (_viewModel.Patient is null)
+        {
+            return;
+        }
+
+        var app = (App)Application.Current;
+
+        var authorizationService =
+            new AuthorizationService(app.SessionService);
+
+        var laboratoryResultService = new LaboratoryResultService(
+            new LaboratoryResultRepository(),
+            new PatientRepository(),
+            new PrenatalVisitRepository(),
+            new PregnancyRepository(),
+            authorizationService,
+            app.SessionService);
+
+        _laboratoryResultsViewModel = new LaboratoryResultsViewModel(
+            laboratoryResultService,
+            _viewModel.Patient);
+
+        LaboratoryResultsSection.DataContext =
+            _laboratoryResultsViewModel;
+
+        await _laboratoryResultsViewModel.LoadLaboratoryResultsAsync();
     }
 
     private void BackToPatientsButton_Click(
         object sender,
-        System.Windows.RoutedEventArgs e)
+        RoutedEventArgs e)
     {
         var parentWindow = Window.GetWindow(this);
 
@@ -75,7 +104,7 @@ public partial class PatientProfileView : UserControl
 
     private void EditPatientButton_Click(
         object sender,
-        System.Windows.RoutedEventArgs e)
+        RoutedEventArgs e)
     {
         if (_viewModel.Patient is null)
         {
@@ -92,7 +121,7 @@ public partial class PatientProfileView : UserControl
 
     private void AddPregnancyButton_Click(
         object sender,
-        System.Windows.RoutedEventArgs e)
+        RoutedEventArgs e)
     {
         var parentWindow = Window.GetWindow(this);
 
@@ -118,7 +147,8 @@ public partial class PatientProfileView : UserControl
 
         if (parentWindow is DashboardWindow dashboardWindow)
         {
-            dashboardWindow.ShowPregnancyEdit(pregnancyCard.Pregnancy);
+            dashboardWindow.ShowPregnancyEdit(
+                pregnancyCard.Pregnancy);
         }
     }
 
@@ -136,7 +166,8 @@ public partial class PatientProfileView : UserControl
 
         if (parentWindow is DashboardWindow dashboardWindow)
         {
-            dashboardWindow.ShowPrenatalVisits(pregnancyCard.Pregnancy);
+            dashboardWindow.ShowPrenatalVisits(
+                pregnancyCard.Pregnancy);
         }
     }
 
@@ -150,11 +181,9 @@ public partial class PatientProfileView : UserControl
             return;
         }
 
-        var pregnancyId = pregnancyCard.Pregnancy.Id;
-
         var historyViewModel = new PregnancyHistoryViewModel(
             _recordVersionService,
-            pregnancyId);
+            pregnancyCard.Pregnancy.Id);
 
         await historyViewModel.LoadHistoryAsync();
 
@@ -173,5 +202,129 @@ public partial class PatientProfileView : UserControl
         }
 
         dialog.ShowDialog();
+    }
+
+    private void AddLaboratoryResultButton_Click(
+        object sender,
+        RoutedEventArgs e)
+    {
+        if (_viewModel.Patient is null)
+        {
+            return;
+        }
+
+        var parentWindow = Window.GetWindow(this);
+
+        if (parentWindow is DashboardWindow dashboardWindow)
+        {
+            dashboardWindow.ShowLaboratoryResultRegistration(
+                _viewModel.Patient);
+        }
+    }
+
+    private void EditLaboratoryResultButton_Click(
+        object sender,
+        RoutedEventArgs e)
+    {
+        if (sender is not Button button ||
+            button.DataContext is not LaboratoryResult laboratoryResult)
+        {
+            return;
+        }
+
+        var parentWindow = Window.GetWindow(this);
+
+        if (parentWindow is DashboardWindow dashboardWindow)
+        {
+            dashboardWindow.ShowLaboratoryResultEdit(
+                laboratoryResult.Id,
+                laboratoryResult.PatientId);
+        }
+    }
+
+    private async void LaboratoryResultHistoryButton_Click(
+        object sender,
+        RoutedEventArgs e)
+    {
+        if (sender is not Button button ||
+            button.DataContext is not LaboratoryResult laboratoryResult)
+        {
+            return;
+        }
+
+        var historyViewModel = new LaboratoryResultHistoryViewModel(
+            _recordVersionService,
+            laboratoryResult.Id);
+
+        await historyViewModel.LoadHistoryAsync();
+
+        var dialog = new RecordHistoryDialog();
+
+        dialog.Configure(
+            title: "Laboratory Result History",
+            subtitle: $"Review previous changes made to {laboratoryResult.TestName}.",
+            history: historyViewModel.History);
+
+        var parentWindow = Window.GetWindow(this);
+
+        if (parentWindow is not null)
+        {
+            dialog.Owner = parentWindow;
+        }
+
+        dialog.ShowDialog();
+    }
+
+    private async void LaboratoryResultArchiveButton_Click(
+        object sender,
+        RoutedEventArgs e)
+    {
+        if (sender is not Button button ||
+            button.DataContext is not LaboratoryResult laboratoryResult)
+        {
+            return;
+        }
+
+        if (_laboratoryResultsViewModel is null)
+        {
+            return;
+        }
+
+        var dialog = new CustomDialog
+        {
+            Owner = Window.GetWindow(this)
+        };
+
+        dialog.Configure(
+            title: "Archive Laboratory Result",
+            message: "Please provide a reason for archiving this laboratory result. The record will be retained and removed from the active results list.",
+            confirmText: "Archive",
+            cancelText: "Cancel",
+            showCancel: true,
+            showInput: true,
+            inputPlaceholder: "Enter archive reason...",
+            requireInput: true
+        );
+
+        dialog.SetAppearance(
+            icon: "!",
+            iconColor: "#FFDC2626",
+            iconBackground: "#FFFEE2E2",
+            confirmBackground: new System.Windows.Media.SolidColorBrush(
+                (System.Windows.Media.Color)
+                System.Windows.Media.ColorConverter.ConvertFromString(
+                    "#FFDC2626")!)
+        );
+
+        if (dialog.ShowDialog() != true)
+        {
+            return;
+        }
+
+        string reason = dialog.InputValue.Trim();
+
+        await _laboratoryResultsViewModel.ArchiveLaboratoryResultAsync(
+            laboratoryResult,
+            reason);
     }
 }

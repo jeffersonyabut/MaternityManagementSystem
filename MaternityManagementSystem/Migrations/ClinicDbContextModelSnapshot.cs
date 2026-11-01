@@ -66,6 +66,72 @@ namespace MaternityManagementSystem.Migrations
                     b.ToTable("AuditLogs");
                 });
 
+            modelBuilder.Entity("MaternityManagementSystem.Models.LaboratoryResult", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("ArchiveReason")
+                        .HasMaxLength(1000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("ArchivedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("IsArchived")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasDefaultValue(false);
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(2000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("PatientId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int?>("PrenatalVisitId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("ReferenceRange")
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Result")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateOnly>("TestDate")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("TestName")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Unit")
+                        .HasMaxLength(50)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("UpdatedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PatientId");
+
+                    b.HasIndex("PrenatalVisitId");
+
+                    b.HasIndex("TestDate");
+
+                    b.ToTable("LaboratoryResults");
+                });
+
             modelBuilder.Entity("MaternityManagementSystem.Models.Patient", b =>
                 {
                     b.Property<int>("Id")
@@ -368,6 +434,24 @@ namespace MaternityManagementSystem.Migrations
                     b.HasIndex("PrenatalVisitId");
 
                     b.ToTable("VitalSigns");
+                });
+
+            modelBuilder.Entity("MaternityManagementSystem.Models.LaboratoryResult", b =>
+                {
+                    b.HasOne("MaternityManagementSystem.Models.Patient", "Patient")
+                        .WithMany()
+                        .HasForeignKey("PatientId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("MaternityManagementSystem.Models.PrenatalVisit", "PrenatalVisit")
+                        .WithMany()
+                        .HasForeignKey("PrenatalVisitId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("Patient");
+
+                    b.Navigation("PrenatalVisit");
                 });
 
             modelBuilder.Entity("MaternityManagementSystem.Models.Pregnancy", b =>
