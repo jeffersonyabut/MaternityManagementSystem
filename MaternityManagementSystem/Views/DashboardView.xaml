@@ -1,76 +1,583 @@
 <UserControl x:Class="MaternityManagementSystem.Views.DashboardView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:lvc="clr-namespace:LiveChartsCore.SkiaSharpView.WPF;assembly=LiveChartsCore.SkiaSharpView.WPF">
 
-    <ScrollViewer VerticalScrollBarVisibility="Auto">
-        <StackPanel Margin="32">
-            <TextBlock Text="Dashboard"
-                       FontSize="30"
-                       FontWeight="Bold"
-                       Foreground="#202124"/>
+    <UserControl.Resources>
 
-            <TextBlock Text="Welcome to the Maternity Clinic Management System."
-                       FontSize="15"
-                       Foreground="#666666"
-                       Margin="0,8,0,28"/>
+        <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
 
-            <UniformGrid Columns="2">
-                <Border Background="White"
-                        CornerRadius="12"
-                        Padding="24"
-                        Margin="0,0,10,10">
-                    <StackPanel>
-                        <TextBlock Text="Patients"
-                                   FontSize="20"
-                                   FontWeight="SemiBold"/>
-                        <TextBlock Text="Patient records will go here."
-                                   Margin="0,8,0,0"
-                                   Foreground="#666666"/>
+        <SolidColorBrush x:Key="PageBackground" Color="#F5F5FA"/>
+        <SolidColorBrush x:Key="CardBackground" Color="#FFFFFF"/>
+        <SolidColorBrush x:Key="PrimaryPurple" Color="#7952B3"/>
+        <SolidColorBrush x:Key="MainText" Color="#29243B"/>
+        <SolidColorBrush x:Key="SecondaryText" Color="#777184"/>
+        <SolidColorBrush x:Key="CardBorder" Color="#EAE7F0"/>
+
+        <Style x:Key="SummaryIconContainerStyle"
+               TargetType="Border">
+            <Setter Property="Width" Value="38"/>
+            <Setter Property="Height" Value="38"/>
+            <Setter Property="CornerRadius" Value="10"/>
+            <Setter Property="Background" Value="#F1EAF8"/>
+            <Setter Property="HorizontalAlignment" Value="Right"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+
+
+
+        <!-- Base Card Style -->
+        <Style x:Key="CardStyle" TargetType="Border">
+            <Setter Property="Background" Value="{StaticResource CardBackground}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource CardBorder}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="14"/>
+            <Setter Property="Padding" Value="20"/>
+        </Style>
+
+        <!-- Interactive Card Style -->
+        <Style x:Key="InteractiveCardStyle"
+           TargetType="Border"
+           BasedOn="{StaticResource CardStyle}">
+
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="RenderTransformOrigin" Value="0.5,0.5"/>
+
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="#F7F3FC"/>
+                    <Setter Property="BorderBrush" Value="#B99AD9"/>
+                </Trigger>
+            </Style.Triggers>
+
+        </Style>
+
+        <Style x:Key="SectionTitleStyle" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="16"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Foreground" Value="{StaticResource MainText}"/>
+        </Style>
+
+        <Style x:Key="SecondaryTextStyle" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="Foreground" Value="{StaticResource SecondaryText}"/>
+        </Style>
+
+        <Style x:Key="MetricValueStyle" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="28"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="Foreground" Value="{StaticResource MainText}"/>
+        </Style>
+
+    </UserControl.Resources>
+
+    <Grid Background="{StaticResource PageBackground}">
+
+        <ScrollViewer VerticalScrollBarVisibility="Auto"
+                      HorizontalScrollBarVisibility="Disabled">
+
+            <StackPanel Margin="28">
+
+                <!-- Header -->
+
+
+                <Grid Margin="0,0,0,28">
+
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <!-- Header Text -->
+                    <StackPanel Grid.Column="0"
+                VerticalAlignment="Center">
+
+                        <TextBlock Text="GOLDDIE  ·  CLINIC MANAGEMENT"
+                   FontSize="10"
+                   FontWeight="SemiBold"
+                   Foreground="{StaticResource PrimaryPurple}"/>
+
+                        <TextBlock Text="Dashboard"
+                   FontSize="28"
+                   FontWeight="Bold"
+                   Foreground="{StaticResource MainText}"
+                   Margin="0,5,0,0"/>
+
+                        <TextBlock Text="Overview of your maternity clinic's activity."
+                   FontSize="13"
+                   Foreground="{StaticResource SecondaryText}"
+                   Margin="0,5,0,0"/>
+
                     </StackPanel>
+
+                    <!-- Overview Badge -->
+                    <Border Grid.Column="1"
+            Background="#F1EAF8"
+            CornerRadius="8"
+            Padding="14,8"
+            VerticalAlignment="Center">
+
+                        <TextBlock Text="OVERVIEW"
+                   FontSize="10"
+                   FontWeight="SemiBold"
+                   Foreground="{StaticResource PrimaryPurple}"/>
+
+                    </Border>
+
+                </Grid>
+
+                <!-- Error Message -->
+
+                <TextBlock Text="{Binding ErrorMessage}"
+                           Foreground="#B42318"
+                           TextWrapping="Wrap"
+                           Margin="0,0,0,16"/>
+
+                <!-- Summary Cards -->
+
+                <UniformGrid Columns="4"
+                             Margin="0,0,0,20">
+
+                    <!-- Total Patients -->
+                    <Border Style="{StaticResource InteractiveCardStyle}"
+                            Margin="0,0,10,0"
+                            Cursor="Hand"
+                            ToolTip="Open Patient Management"
+                            MouseLeftButtonUp="NavigateToPatients">
+
+                        <StackPanel>
+
+                            <Grid>
+                                <TextBlock Text="Total Patients"
+                                           Style="{StaticResource SecondaryTextStyle}"
+                                           VerticalAlignment="Center"/>
+
+                                <Border Style="{StaticResource SummaryIconContainerStyle}">
+                                    <TextBlock Text="&#xE77B;"
+                                               FontFamily="Segoe MDL2 Assets"
+                                               FontSize="17"
+                                               Foreground="{StaticResource PrimaryPurple}"
+                                               HorizontalAlignment="Center"
+                                               VerticalAlignment="Center"/>
+                                </Border>
+                            </Grid>
+
+                            <TextBlock Text="{Binding TotalPatients}"
+                                       Style="{StaticResource MetricValueStyle}"
+                                       Margin="0,12,0,0"/>
+
+                            <TextBlock Text="Registered patients"
+                                       Style="{StaticResource SecondaryTextStyle}"
+                                       Margin="0,4,0,0"/>
+
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Active Pregnancies -->
+                    <Border Style="{StaticResource InteractiveCardStyle}"
+                            Margin="5,0"
+                            Cursor="Hand"
+                            ToolTip="View patient and pregnancy records"
+                            MouseLeftButtonUp="NavigateToPatients">
+
+                        <StackPanel>
+
+                            <Grid>
+                                <TextBlock Text="Active Pregnancies"
+                                           Style="{StaticResource SecondaryTextStyle}"
+                                           VerticalAlignment="Center"/>
+
+                                <Border Style="{StaticResource SummaryIconContainerStyle}">
+                                    <TextBlock Text="&#xE8D4;"
+                                               FontFamily="Segoe MDL2 Assets"
+                                               FontSize="17"
+                                               Foreground="{StaticResource PrimaryPurple}"
+                                               HorizontalAlignment="Center"
+                                               VerticalAlignment="Center"/>
+                                </Border>
+                            </Grid>
+
+                            <TextBlock Text="{Binding ActivePregnancies}"
+                                       Style="{StaticResource MetricValueStyle}"
+                                       Margin="0,12,0,0"/>
+
+                            <TextBlock Text="Current pregnancy records"
+                                       Style="{StaticResource SecondaryTextStyle}"
+                                       Margin="0,4,0,0"/>
+
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Today's Appointments -->
+                    <Border Style="{StaticResource InteractiveCardStyle}"
+                            Margin="5,0"
+                            Cursor="Hand"
+                            ToolTip="Open Appointment Management"
+                            MouseLeftButtonUp="NavigateToAppointments">
+
+                        <StackPanel>
+
+                            <Grid>
+                                <TextBlock Text="Today's Appointments"
+                                           Style="{StaticResource SecondaryTextStyle}"
+                                           VerticalAlignment="Center"/>
+
+                                <Border Style="{StaticResource SummaryIconContainerStyle}">
+                                    <TextBlock Text="&#xE787;"
+                                               FontFamily="Segoe MDL2 Assets"
+                                               FontSize="17"
+                                               Foreground="{StaticResource PrimaryPurple}"
+                                               HorizontalAlignment="Center"
+                                               VerticalAlignment="Center"/>
+                                </Border>
+                            </Grid>
+
+                            <TextBlock Text="{Binding TodaysAppointments}"
+                                       Style="{StaticResource MetricValueStyle}"
+                                       Margin="0,12,0,0"/>
+
+                            <TextBlock Text="Scheduled and confirmed"
+                                       Style="{StaticResource SecondaryTextStyle}"
+                                       Margin="0,4,0,0"/>
+
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Prenatal Visits -->
+                    <Border Style="{StaticResource InteractiveCardStyle}"
+                            Margin="10,0,0,0"
+                            Cursor="Hand"
+                            ToolTip="Open Patient Management to select a pregnancy"
+                            MouseLeftButtonUp="NavigateToPrenatalCare">
+
+                        <StackPanel>
+
+                            <Grid>
+                                <TextBlock Text="Prenatal Visits"
+                                           Style="{StaticResource SecondaryTextStyle}"
+                                           VerticalAlignment="Center"/>
+
+                                <Border Style="{StaticResource SummaryIconContainerStyle}">
+                                    <TextBlock Text="&#xE95E;"
+                                               FontFamily="Segoe MDL2 Assets"
+                                               FontSize="17"
+                                               Foreground="{StaticResource PrimaryPurple}"
+                                               HorizontalAlignment="Center"
+                                               VerticalAlignment="Center"/>
+                                </Border>
+                            </Grid>
+
+                            <TextBlock Text="{Binding TotalPrenatalVisits}"
+                                       Style="{StaticResource MetricValueStyle}"
+                                       Margin="0,12,0,0"/>
+
+                            <TextBlock Text="Recorded clinic visits"
+                                       Style="{StaticResource SecondaryTextStyle}"
+                                       Margin="0,4,0,0"/>
+
+                        </StackPanel>
+                    </Border>
+
+                </UniformGrid>
+
+                <!-- Charts Row -->
+
+                <Grid Margin="0,0,0,20">
+
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+
+                    <!-- Patient Registration Chart -->
+
+                    <Border Grid.Column="0"
+                            Style="{StaticResource CardStyle}"
+                            Margin="0,0,10,0">
+
+                        <StackPanel>
+                            <TextBlock Text="Patient Registrations"
+                                       Style="{StaticResource SectionTitleStyle}"/>
+
+                            <TextBlock Text="New patient registrations over the last six months"
+                                       Style="{StaticResource SecondaryTextStyle}"
+                                       Margin="0,5,0,16"/>
+
+                            <lvc:CartesianChart
+                                Series="{Binding RegistrationSeries}"
+                                XAxes="{Binding RegistrationXAxis}"
+                                YAxes="{Binding RegistrationYAxis}"
+                                Height="250"/>
+                        </StackPanel>
+
+                    </Border>
+
+                    <!-- Prenatal Activity Chart -->
+
+                    <Border Grid.Column="1"
+                            Style="{StaticResource CardStyle}"
+                            Margin="10,0,0,0">
+
+                        <StackPanel>
+                            <TextBlock Text="Prenatal Activity"
+                                       Style="{StaticResource SectionTitleStyle}"/>
+
+                            <TextBlock Text="Monthly prenatal visit records"
+                                       Style="{StaticResource SecondaryTextStyle}"
+                                       Margin="0,5,0,16"/>
+
+                            <lvc:CartesianChart
+                                Series="{Binding PrenatalVisitSeries}"
+                                XAxes="{Binding PrenatalXAxis}"
+                                YAxes="{Binding PrenatalYAxis}"
+                                Height="250"/>
+                        </StackPanel>
+
+                    </Border>
+
+                </Grid>
+
+                <!-- Appointment Charts and Upcoming Appointments -->
+
+                <Grid>
+
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="0.85*"/>
+                        <ColumnDefinition Width="1.15*"/>
+                    </Grid.ColumnDefinitions>
+
+                    <!-- Appointment Distribution -->
+
+                    <Border Grid.Column="0"
+                            Style="{StaticResource CardStyle}"
+                            Margin="0,0,10,0">
+
+                        <StackPanel>
+                            <TextBlock Text="Appointment Distribution"
+                                       Style="{StaticResource SectionTitleStyle}"/>
+
+                            <TextBlock Text="Overview by appointment status"
+                                       Style="{StaticResource SecondaryTextStyle}"
+                                       Margin="0,5,0,12"/>
+
+                            <lvc:PieChart
+                                Series="{Binding AppointmentStatusSeries}"
+                                Height="250"
+                                LegendPosition="Bottom"/>
+
+                        </StackPanel>
+
+                    </Border>
+
+                    <!-- Upcoming Appointments -->
+
+                    <Border Grid.Column="1"
+                            Style="{StaticResource CardStyle}"
+                            Margin="10,0,0,0">
+
+                        <StackPanel>
+                            <TextBlock Text="Upcoming Appointments"
+                                       Style="{StaticResource SectionTitleStyle}"/>
+
+                            <TextBlock Text="Next scheduled and confirmed appointments"
+                                       Style="{StaticResource SecondaryTextStyle}"
+                                       Margin="0,5,0,16"/>
+
+                            <DataGrid ItemsSource="{Binding UpcomingAppointments}"
+                                      AutoGenerateColumns="False"
+                                      IsReadOnly="True"
+                                      SelectionMode="Single"
+                                      SelectionUnit="FullRow"
+                                      CanUserAddRows="False"
+                                      CanUserDeleteRows="False"
+                                      HeadersVisibility="Column"
+                                      GridLinesVisibility="None"
+                                      RowHeaderWidth="0"
+                                      Background="Transparent"
+                                      BorderThickness="0"
+                                      MinHeight="180"
+                                      MaxHeight="280"
+                                      MouseDoubleClick="UpcomingAppointments_MouseDoubleClick">
+
+                                <DataGrid.Resources>
+
+                                    <!-- Hover and selected row colors -->
+                                    <SolidColorBrush x:Key="{x:Static SystemColors.HighlightBrushKey}"
+                                                    Color="#EEE6F7"/>
+
+                                    <SolidColorBrush x:Key="{x:Static SystemColors.HighlightTextBrushKey}"
+                                                     Color="#7952B3"/>
+
+                                    <Style TargetType="{x:Type DataGridRow}"
+                                           BasedOn="{StaticResource {x:Type DataGridRow}}">
+
+                                        <Style.Triggers>
+
+                                            <!-- Hover -->
+                                            <Trigger Property="IsMouseOver" Value="True">
+                                                <Setter Property="Background" Value="#F7F3FC"/>
+                                            </Trigger>
+
+                                            <!-- Active selection -->
+                                            <Trigger Property="IsSelected" Value="True">
+                                                <Setter Property="Background" Value="#EEE6F7"/>
+                                                <Setter Property="Foreground" Value="#7952B3"/>
+                                            </Trigger>
+
+                                        </Style.Triggers>
+                                    </Style>
+
+                                    <!-- Appointment Status Badge -->
+                                    <Style x:Key="AppointmentStatusBadgeStyle"
+                                            TargetType="Border">
+
+                                        <Setter Property="Background" Value="#F0EDF4"/>
+                                        <Setter Property="CornerRadius" Value="6"/>
+                                        <Setter Property="Padding" Value="7,2"/>
+                                        <Setter Property="HorizontalAlignment" Value="Left"/>
+                                        <Setter Property="VerticalAlignment" Value="Center"/>
+
+                                        <Style.Triggers>
+
+                                            <DataTrigger Binding="{Binding Status}" Value="Scheduled">
+                                                <Setter Property="Background" Value="#F1EAF8"/>
+                                            </DataTrigger>
+
+                                            <DataTrigger Binding="{Binding Status}" Value="Confirmed">
+                                                <Setter Property="Background" Value="#E8F1FC"/>
+                                            </DataTrigger>
+
+                                            <DataTrigger Binding="{Binding Status}" Value="Completed">
+                                                <Setter Property="Background" Value="#E8F5EC"/>
+                                            </DataTrigger>
+
+                                            <DataTrigger Binding="{Binding Status}" Value="Cancelled">
+                                                <Setter Property="Background" Value="#FCEAEA"/>
+                                            </DataTrigger>
+
+                                            <DataTrigger Binding="{Binding Status}" Value="No-show">
+                                                <Setter Property="Background" Value="#EEEEF0"/>
+                                            </DataTrigger>
+
+                                        </Style.Triggers>
+                                    </Style>
+
+                                    <!-- Appointment Status Text -->
+                                    <Style x:Key="AppointmentStatusTextStyle"
+                                           TargetType="TextBlock">
+
+                                        <Setter Property="FontSize" Value="11"/>
+                                        <Setter Property="FontWeight" Value="SemiBold"/>
+                                        <Setter Property="Foreground" Value="#7952B3"/>
+
+                                        <Style.Triggers>
+
+                                            <DataTrigger Binding="{Binding Status}" Value="Confirmed">
+                                                <Setter Property="Foreground" Value="#2864A5"/>
+                                            </DataTrigger>
+
+                                            <DataTrigger Binding="{Binding Status}" Value="Completed">
+                                                <Setter Property="Foreground" Value="#287A45"/>
+                                            </DataTrigger>
+
+                                            <DataTrigger Binding="{Binding Status}" Value="Cancelled">
+                                                <Setter Property="Foreground" Value="#B42318"/>
+                                            </DataTrigger>
+
+                                            <DataTrigger Binding="{Binding Status}" Value="No-show">
+                                                <Setter Property="Foreground" Value="#686873"/>
+                                            </DataTrigger>
+
+                                        </Style.Triggers>
+                                    </Style>
+
+                                    <Style TargetType="{x:Type DataGridCell}"
+                                           BasedOn="{StaticResource {x:Type DataGridCell}}">
+
+                                        <Style.Triggers>
+
+                                            <!-- Active selection background across every cell -->
+                                            <DataTrigger Binding="{Binding IsSelected,
+                                                        RelativeSource={RelativeSource AncestorType=DataGridRow}}"
+                                                                 Value="True">
+                                                <Setter Property="Background" Value="#EEE6F7"/>
+                                                <Setter Property="Foreground" Value="#7952B3"/>
+                                            </DataTrigger>
+
+                                        </Style.Triggers>
+                                    </Style>
+
+                                </DataGrid.Resources>
+
+                                <DataGrid.Columns>
+
+                                    <DataGridTextColumn Header="Patient"
+                                                        Binding="{Binding PatientName}"
+                                                        Width="*"/>
+
+                                    <DataGridTextColumn Header="Date"
+                                                        Binding="{Binding AppointmentDate}"
+                                                        Width="100"/>
+
+                                    <DataGridTextColumn Header="Time"
+                                                        Binding="{Binding StartTime}"
+                                                        Width="85"/>
+
+                                    <DataGridTemplateColumn Header="Status"
+                                                            Width="100">
+
+                                        <DataGridTemplateColumn.CellTemplate>
+                                            <DataTemplate>
+
+                                                <Border Style="{StaticResource AppointmentStatusBadgeStyle}">
+                                                    <TextBlock Text="{Binding Status}"
+                                                               Style="{StaticResource AppointmentStatusTextStyle}"/>
+                                                </Border>
+
+                                            </DataTemplate>
+                                        </DataGridTemplateColumn.CellTemplate>
+
+                                    </DataGridTemplateColumn>
+
+                                </DataGrid.Columns>
+
+                            </DataGrid>
+
+                        </StackPanel>
+
+                    </Border>
+
+                </Grid>
+
+                <!-- Loading Overlay -->
+
+                <Border Background="#CCFFFFFF"
+                        CornerRadius="12"
+                        Visibility="{Binding IsLoading,
+                            Converter={StaticResource BooleanToVisibilityConverter}}">
+
+                    <StackPanel HorizontalAlignment="Center"
+                                VerticalAlignment="Center"
+                                Margin="20">
+
+                        <ProgressBar IsIndeterminate="True"
+                                     Width="180"
+                                     Height="5"
+                                     Foreground="{StaticResource PrimaryPurple}"/>
+
+                        <TextBlock Text="Loading dashboard..."
+                                   Foreground="{StaticResource SecondaryText}"
+                                   Margin="0,12,0,0"
+                                   HorizontalAlignment="Center"/>
+
+                    </StackPanel>
+
                 </Border>
 
-                <Border Background="White"
-                        CornerRadius="12"
-                        Padding="24"
-                        Margin="10,0,0,10">
-                    <StackPanel>
-                        <TextBlock Text="Appointments"
-                                   FontSize="20"
-                                   FontWeight="SemiBold"/>
-                        <TextBlock Text="Appointment management will go here."
-                                   Margin="0,8,0,0"
-                                   Foreground="#666666"/>
-                    </StackPanel>
-                </Border>
+            </StackPanel>
 
-                <Border Background="White"
-                        CornerRadius="12"
-                        Padding="24"
-                        Margin="0,10,10,0">
-                    <StackPanel>
-                        <TextBlock Text="Maternity Records"
-                                   FontSize="20"
-                                   FontWeight="SemiBold"/>
-                        <TextBlock Text="Clinical records will go here."
-                                   Margin="0,8,0,0"
-                                   Foreground="#666666"/>
-                    </StackPanel>
-                </Border>
+        </ScrollViewer>
 
-                <Border Background="White"
-                        CornerRadius="12"
-                        Padding="24"
-                        Margin="10,10,0,0">
-                    <StackPanel>
-                        <TextBlock Text="Staff Management"
-                                   FontSize="20"
-                                   FontWeight="SemiBold"/>
-                        <TextBlock Text="Staff accounts and roles will go here."
-                                   Margin="0,8,0,0"
-                                   Foreground="#666666"/>
-                    </StackPanel>
-                </Border>
-            </UniformGrid>
-        </StackPanel>
-    </ScrollViewer>
+    </Grid>
+
 </UserControl>

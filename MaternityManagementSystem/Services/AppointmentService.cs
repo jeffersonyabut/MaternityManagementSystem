@@ -14,6 +14,9 @@ public class AppointmentService
 {
     private const int DefaultAppointmentDurationMinutes = 30;
 
+    private static readonly TimeZoneInfo ClinicTimeZone =
+        TimeZoneInfo.FindSystemTimeZoneById("Singapore Standard Time");
+
     private readonly AppointmentRepository _appointmentRepository;
     private readonly PatientRepository _patientRepository;
     private readonly PregnancyRepository _pregnancyRepository;
@@ -57,13 +60,15 @@ public class AppointmentService
 
         NormalizeFields(appointment);
 
-        if (appointment.AppointmentDate < DateOnly.FromDateTime(DateTime.Today))
+        if (IsAppointmentInPast(
+                appointment.AppointmentDate,
+                appointment.StartTime))
         {
             throw new ArgumentException(
-                "A new appointment cannot be scheduled in the past.");
+                "An appointment cannot be scheduled in the past. " +
+                "Please select a future date and time.");
         }
 
-        // Apply the default duration when no end time is supplied.
         ApplyDefaultDuration(appointment);
 
         AppointmentValidator.Validate(appointment);
@@ -226,15 +231,22 @@ public class AppointmentService
 
         NormalizeFields(updatedAppointment);
 
-        // Past appointments can still have their details corrected.
-        // However, a rescheduled appointment cannot be moved into the past.
-        if (existingAppointment.AppointmentDate !=
-                updatedAppointment.AppointmentDate &&
-            updatedAppointment.AppointmentDate <
-                DateOnly.FromDateTime(DateTime.Today))
+        // Allow corrections to appointment details without changing
+        // the schedule of an appointment that is already in the past.
+        bool scheduleChanged =
+            existingAppointment.AppointmentDate !=
+                updatedAppointment.AppointmentDate ||
+            existingAppointment.StartTime !=
+                updatedAppointment.StartTime;
+
+        if (scheduleChanged &&
+            IsAppointmentInPast(
+                updatedAppointment.AppointmentDate,
+                updatedAppointment.StartTime))
         {
             throw new ArgumentException(
-                "An appointment cannot be rescheduled into the past.");
+                "An appointment cannot be rescheduled into the past. " +
+                "Please select a future date and time.");
         }
 
         ApplyDefaultDuration(updatedAppointment);
@@ -589,6 +601,25 @@ public class AppointmentService
                     $"scheduled at {existing.StartTime:hh:mm tt}.");
             }
         }
+    }
+
+    // CLINIC TIME VALIDATION
+
+    private static DateTime GetClinicLocalNow()
+    {
+        return TimeZoneInfo.ConvertTimeFromUtc(
+            DateTime.UtcNow,
+            ClinicTimeZone);
+    }
+
+    private static bool IsAppointmentInPast(
+        DateOnly appointmentDate,
+        TimeOnly startTime)
+    {
+        DateTime appointmentDateTime =
+            appointmentDate.ToDateTime(startTime);
+
+        return appointmentDateTime < GetClinicLocalNow();
     }
 
     private static void ApplyDefaultDuration(Appointment appointment)

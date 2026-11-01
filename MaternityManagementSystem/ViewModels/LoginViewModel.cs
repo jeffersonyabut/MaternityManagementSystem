@@ -1,10 +1,12 @@
 using System;
+using System.Diagnostics;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using MaternityManagementSystem.Repositories;
 using MaternityManagementSystem.Services;
 using MaternityManagementSystem.Sessions;
+
 
 namespace MaternityManagementSystem.ViewModels;
 
@@ -74,8 +76,11 @@ public partial class LoginViewModel : ObservableObject
             Message = "Login successful!";
             LoginSucceeded?.Invoke();
         }
-        catch (Exception)
+        catch (Exception ex)
         {
+            Debug.WriteLine("LOGIN ERROR:");
+            Debug.WriteLine(ex.ToString());
+
             Message = "Unable to sign in. Please try again.";
         }
     }
