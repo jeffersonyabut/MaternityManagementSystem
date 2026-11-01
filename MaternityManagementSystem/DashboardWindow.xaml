@@ -143,6 +143,42 @@
                         </Button.Style>
                     </Button>
 
+
+                    <!-- Appointments Navigation Button -->
+                    <Button Content="Appointments"
+                            HorizontalAlignment="Stretch"
+                            Click="AppointmentsButton_Click">
+
+                        <Button.Style>
+                            <Style TargetType="{x:Type Button}"
+                                   BasedOn="{StaticResource SidebarButtonStyle}">
+
+                                <Style.Triggers>
+
+                                    <!-- Highlight Appointment Overview -->
+                                    <DataTrigger Binding="{Binding CurrentPage}"
+                                                 Value="AppointmentOverviewView">
+                                        <Setter Property="Background"
+                                                Value="#6554C0"/>
+                                        <Setter Property="Foreground"
+                                                Value="White"/>
+                                    </DataTrigger>
+
+                                    <!-- Highlight Appointment Registration -->
+                                    <DataTrigger Binding="{Binding CurrentPage}"
+                                                 Value="AppointmentRegistrationView">
+                                        <Setter Property="Background"
+                                                Value="#6554C0"/>
+                                        <Setter Property="Foreground"
+                                                Value="White"/>
+                                    </DataTrigger>
+
+                                </Style.Triggers>
+                            </Style>
+                        </Button.Style>
+                    </Button>
+
+
                 </StackPanel>
 
                 <!-- Sidebar Footer -->

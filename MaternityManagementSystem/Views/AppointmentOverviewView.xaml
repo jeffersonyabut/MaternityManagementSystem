@@ -1,0 +1,395 @@
+<UserControl x:Class="MaternityManagementSystem.Views.AppointmentOverviewView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <UserControl.Resources>
+
+        <SolidColorBrush x:Key="PrimaryBrush" Color="#6554C0"/>
+        <SolidColorBrush x:Key="PageBrush" Color="#F6F7FB"/>
+        <SolidColorBrush x:Key="TextBrush" Color="#25243A"/>
+        <SolidColorBrush x:Key="MutedBrush" Color="#85849A"/>
+        <SolidColorBrush x:Key="BorderBrush" Color="#EAEAF1"/>
+
+        <Style x:Key="SummaryCardStyle" TargetType="Border">
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="CornerRadius" Value="12"/>
+            <Setter Property="Padding" Value="20"/>
+            <Setter Property="BorderBrush" Value="#EAEAF1"/>
+            <Setter Property="BorderThickness" Value="1"/>
+        </Style>
+
+        <Style x:Key="FilterButtonStyle" TargetType="Button">
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="Foreground" Value="#55546A"/>
+            <Setter Property="BorderBrush" Value="#E4E3EB"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Padding" Value="14,9"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Cursor" Value="Hand"/>
+        </Style>
+
+        <Style x:Key="AppointmentDataGridStyle" TargetType="DataGrid">
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="RowHeight" Value="58"/>
+            <Setter Property="ColumnHeaderHeight" Value="44"/>
+            <Setter Property="GridLinesVisibility" Value="None"/>
+            <Setter Property="HeadersVisibility" Value="Column"/>
+            <Setter Property="CanUserAddRows" Value="False"/>
+            <Setter Property="CanUserDeleteRows" Value="False"/>
+            <Setter Property="CanUserResizeRows" Value="False"/>
+            <Setter Property="AutoGenerateColumns" Value="False"/>
+            <Setter Property="SelectionMode" Value="Single"/>
+            <Setter Property="SelectionUnit" Value="FullRow"/>
+            <Setter Property="IsReadOnly" Value="True"/>
+            <Setter Property="HorizontalGridLinesBrush" Value="#F0F0F4"/>
+        </Style>
+
+        <Style TargetType="DataGridColumnHeader">
+            <Setter Property="Background" Value="#FAFAFC"/>
+            <Setter Property="Foreground" Value="#77768B"/>
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Padding" Value="14,0"/>
+            <Setter Property="BorderThickness" Value="0,0,0,1"/>
+            <Setter Property="BorderBrush" Value="#EAEAF1"/>
+        </Style>
+
+        <Style TargetType="DataGridCell">
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="14,0"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="Foreground" Value="#343348"/>
+        </Style>
+
+        <Style TargetType="DataGridRow">
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="BorderThickness" Value="0,0,0,1"/>
+            <Setter Property="BorderBrush" Value="#F0F0F4"/>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="#F8F7FD"/>
+                </Trigger>
+                <Trigger Property="IsSelected" Value="True">
+                    <Setter Property="Background" Value="#F0EEFA"/>
+                    <Setter Property="Foreground" Value="#25243A"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+    </UserControl.Resources>
+
+    <Grid Background="{StaticResource PageBrush}">
+
+        <ScrollViewer VerticalScrollBarVisibility="Auto"
+                      HorizontalScrollBarVisibility="Disabled">
+
+            <StackPanel Margin="30">
+
+                <!-- PAGE HEADER -->
+
+                <Grid Margin="0,0,0,26">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <StackPanel VerticalAlignment="Center">
+                        <TextBlock Text="Appointment Management"
+                                   FontSize="27"
+                                   FontWeight="Bold"
+                                   Foreground="{StaticResource TextBrush}"/>
+
+                        <TextBlock Text="Manage, monitor, and organize clinic appointments."
+                                   FontSize="13"
+                                   Foreground="{StaticResource MutedBrush}"
+                                   Margin="0,7,0,0"/>
+                    </StackPanel>
+
+                    <Button Grid.Column="1"
+                            Content="+  Schedule Appointment"
+                            Background="{StaticResource PrimaryBrush}"
+                            Foreground="White"
+                            BorderThickness="0"
+                            Padding="18,12"
+                            FontWeight="SemiBold"
+                            FontSize="12"
+                            Cursor="Hand"
+                            VerticalAlignment="Center"
+                            Click="ScheduleAppointment_Click"/>
+                </Grid>
+
+                <!-- SUMMARY CARDS -->
+
+                <UniformGrid Columns="4" Margin="0,0,0,24">
+
+                    <Border Style="{StaticResource SummaryCardStyle}"
+                            Margin="0,0,10,0">
+                        <StackPanel>
+                            <TextBlock Text="TODAY'S APPOINTMENTS"
+                                       FontSize="10"
+                                       FontWeight="SemiBold"
+                                       Foreground="{StaticResource MutedBrush}"/>
+
+                            <TextBlock Text="{Binding TodayCount}"
+                                       FontSize="29"
+                                       FontWeight="Bold"
+                                       Foreground="{StaticResource TextBrush}"
+                                       Margin="0,12,0,4"/>
+
+                            <TextBlock Text="Scheduled for today"
+                                       FontSize="11"
+                                       Foreground="{StaticResource MutedBrush}"/>
+                        </StackPanel>
+                    </Border>
+
+                    <Border Style="{StaticResource SummaryCardStyle}"
+                            Margin="10,0">
+                        <StackPanel>
+                            <TextBlock Text="UPCOMING"
+                                       FontSize="10"
+                                       FontWeight="SemiBold"
+                                       Foreground="{StaticResource MutedBrush}"/>
+
+                            <TextBlock Text="{Binding UpcomingCount}"
+                                       FontSize="29"
+                                       FontWeight="Bold"
+                                       Foreground="#6554C0"
+                                       Margin="0,12,0,4"/>
+
+                            <TextBlock Text="Future appointments"
+                                       FontSize="11"
+                                       Foreground="{StaticResource MutedBrush}"/>
+                        </StackPanel>
+                    </Border>
+
+                    <Border Style="{StaticResource SummaryCardStyle}"
+                            Margin="10,0">
+                        <StackPanel>
+                            <TextBlock Text="COMPLETED"
+                                       FontSize="10"
+                                       FontWeight="SemiBold"
+                                       Foreground="{StaticResource MutedBrush}"/>
+
+                            <TextBlock Text="{Binding CompletedCount}"
+                                       FontSize="29"
+                                       FontWeight="Bold"
+                                       Foreground="#24966B"
+                                       Margin="0,12,0,4"/>
+
+                            <TextBlock Text="Completed appointments"
+                                       FontSize="11"
+                                       Foreground="{StaticResource MutedBrush}"/>
+                        </StackPanel>
+                    </Border>
+
+                    <Border Style="{StaticResource SummaryCardStyle}"
+                            Margin="10,0,0,0">
+                        <StackPanel>
+                            <TextBlock Text="CANCELLED"
+                                       FontSize="10"
+                                       FontWeight="SemiBold"
+                                       Foreground="{StaticResource MutedBrush}"/>
+
+                            <TextBlock Text="{Binding CancelledCount}"
+                                       FontSize="29"
+                                       FontWeight="Bold"
+                                       Foreground="#D65A68"
+                                       Margin="0,12,0,4"/>
+
+                            <TextBlock Text="Cancelled appointments"
+                                       FontSize="11"
+                                       Foreground="{StaticResource MutedBrush}"/>
+                        </StackPanel>
+                    </Border>
+
+                </UniformGrid>
+
+                <!-- APPOINTMENT TABLE CONTAINER -->
+
+                <Border Background="White"
+                        CornerRadius="12"
+                        BorderBrush="#EAEAF1"
+                        BorderThickness="1">
+
+                    <StackPanel>
+
+                        <!-- TABLE HEADER -->
+
+                        <Grid Margin="22,20,22,18">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+
+                            <StackPanel>
+                                <TextBlock Text="Appointment Records"
+                                           FontSize="17"
+                                           FontWeight="Bold"
+                                           Foreground="{StaticResource TextBrush}"/>
+
+                                <TextBlock Text="View and manage all scheduled appointments."
+                                           FontSize="11"
+                                           Foreground="{StaticResource MutedBrush}"
+                                           Margin="0,5,0,0"/>
+                            </StackPanel>
+
+                            <TextBlock Grid.Column="1"
+                                       Text="ALL APPOINTMENTS"
+                                       FontSize="10"
+                                       FontWeight="SemiBold"
+                                       Foreground="{StaticResource PrimaryBrush}"
+                                       VerticalAlignment="Center"/>
+                        </Grid>
+
+                        <Border Height="1"
+                                Background="#EAEAF1"/>
+
+                        <!-- SEARCH AND FILTERS -->
+
+                        <Grid Margin="22,18">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+
+                            <TextBox x:Name="AppointmentSearchBox"
+                                     Height="38"
+                                     FontSize="12"
+                                     Padding="12,9"
+                                     VerticalContentAlignment="Center"
+                                     BorderBrush="#E4E3EB"
+                                     BorderThickness="1"
+                                     Background="#FFFFFF"
+                                     ToolTip="Search patient or appointment purpose"
+                                     Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"/>
+
+                            <ComboBox x:Name="AppointmentStatusFilter"
+                                      Grid.Column="1"
+                                      Width="150"
+                                      Height="38"
+                                      Margin="10,0,0,0"
+                                      Padding="8,5"
+                                      VerticalContentAlignment="Center"
+                                      ItemsSource="{Binding StatusOptions}"
+                                      SelectedItem="{Binding SelectedStatus, Mode=TwoWay}"/>
+
+                            <DatePicker x:Name="AppointmentDateFilter"
+                                        Grid.Column="2"
+                                        Width="145"
+                                        Height="38"
+                                        Margin="10,0,0,0"
+                                        SelectedDateChanged="AppointmentDateFilter_SelectedDateChanged"/>
+                        </Grid>
+
+                        <!-- APPOINTMENT DATA GRID -->
+
+                        <DataGrid x:Name="AppointmentsDataGrid"
+                                  Style="{StaticResource AppointmentDataGridStyle}"
+                                  ItemsSource="{Binding Appointments}"
+                                  SelectedItem="{Binding SelectedAppointment, Mode=TwoWay}"
+                                  MinHeight="250"
+                                  MaxHeight="500">
+
+                            <DataGrid.Columns>
+
+                                <DataGridTemplateColumn Header="PATIENT"
+                                                        Width="1.5*">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <StackPanel VerticalAlignment="Center">
+                                                <TextBlock FontWeight="SemiBold"
+                                                           Foreground="#343348">
+                                                    <Run Text="{Binding Patient.FirstName}"/>
+                                                    <Run Text=" "/>
+                                                    <Run Text="{Binding Patient.MiddleName}"/>
+                                                    <Run Text=" "/>
+                                                    <Run Text="{Binding Patient.LastName}"/>
+                                                </TextBlock>
+                                            </StackPanel>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+
+                                <DataGridTextColumn Header="DATE"
+                                                    Binding="{Binding AppointmentDate}"
+                                                    Width="1.1*"/>
+
+                                <DataGridTextColumn Header="TIME"
+                                                    Binding="{Binding StartTime}"
+                                                    Width="1*"/>
+
+                                <DataGridTextColumn Header="PURPOSE"
+                                                    Binding="{Binding Purpose}"
+                                                    Width="1.5*"/>
+
+                                <DataGridTemplateColumn Header="PREGNANCY"
+                                                        Width="1*">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Text="{Binding PregnancyId,
+                                                StringFormat='Pregnancy #{0}'}"
+                                                       VerticalAlignment="Center"/>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+
+                                <DataGridTextColumn Header="STATUS"
+                                                    Binding="{Binding Status}"
+                                                    Width="1*"/>
+
+                            </DataGrid.Columns>
+
+                        </DataGrid>
+
+                        <!-- TABLE FOOTER -->
+
+                        <Border BorderBrush="#EAEAF1"
+                                BorderThickness="0,1,0,0"
+                                Padding="22,15">
+
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+
+                                <TextBlock Text="{Binding Appointments.Count,
+                                    StringFormat='Showing {0} appointment(s)'}"
+                                           FontSize="11"
+                                           Foreground="{StaticResource MutedBrush}"
+                                           VerticalAlignment="Center"/>
+
+                                <StackPanel Grid.Column="1"
+                                            Orientation="Horizontal"
+                                            VerticalAlignment="Center">
+
+                                    <Button Content="View Details"
+                                            Style="{StaticResource FilterButtonStyle}"
+                                            Margin="0,0,8,0"
+                                            Click="ViewAppointment_Click"/>
+
+                                    <Button Content="Manage"
+                                            Background="{StaticResource PrimaryBrush}"
+                                            Foreground="White"
+                                            BorderThickness="0"
+                                            Padding="16,9"
+                                            FontSize="12"
+                                            FontWeight="SemiBold"
+                                            Cursor="Hand"
+                                            Click="ManageAppointment_Click"/>
+
+                                </StackPanel>
+                            </Grid>
+
+                        </Border>
+
+                    </StackPanel>
+                </Border>
+
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
+</UserControl>

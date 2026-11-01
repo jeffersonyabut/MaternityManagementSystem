@@ -1,0 +1,416 @@
+<Window x:Class="MaternityManagementSystem.Dialogs.AppointmentDetailsDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:local="clr-namespace:MaternityManagementSystem.Dialogs"
+        Title="Appointment Details"
+        Width="680"
+        Height="760"
+        MinWidth="600"
+        MinHeight="650"
+        WindowStartupLocation="CenterOwner"
+        WindowStyle="None"
+        ResizeMode="CanResize"
+        Background="Transparent"
+        AllowsTransparency="True"
+        ShowInTaskbar="False">
+
+    <Window.Resources>
+
+        <local:UtcToPhilippineTimeConverter x:Key="PhilippineTimeConverter"/>
+
+        <SolidColorBrush x:Key="PrimaryBrush" Color="#6554C0"/>
+        <SolidColorBrush x:Key="TextBrush" Color="#25243A"/>
+        <SolidColorBrush x:Key="MutedBrush" Color="#85849A"/>
+        <SolidColorBrush x:Key="BorderBrush" Color="#EAEAF1"/>
+
+        <Style x:Key="SectionCardStyle" TargetType="Border">
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="CornerRadius" Value="12"/>
+            <Setter Property="BorderBrush" Value="#EAEAF1"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Padding" Value="18"/>
+            <Setter Property="Margin" Value="0,0,0,14"/>
+        </Style>
+
+        <Style x:Key="FieldLabelStyle" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="Foreground" Value="#85849A"/>
+            <Setter Property="Margin" Value="0,0,0,5"/>
+        </Style>
+
+        <Style x:Key="FieldValueStyle" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Foreground" Value="#25243A"/>
+            <Setter Property="TextWrapping" Value="Wrap"/>
+        </Style>
+
+    </Window.Resources>
+
+    <Border Background="#FFF6F7FB"
+            CornerRadius="16"
+            BorderBrush="#FFEAEAF1"
+            BorderThickness="1">
+
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+
+            <!-- HEADER -->
+
+            <Border Grid.Row="0"
+                    Background="White"
+                    CornerRadius="16,16,0,0"
+                    Padding="24,20"
+                    BorderBrush="#FFEAEAF1"
+                    BorderThickness="0,0,0,1">
+
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <StackPanel>
+                        <TextBlock Text="Appointment Details"
+                                   FontSize="21"
+                                   FontWeight="Bold"
+                                   Foreground="{StaticResource TextBrush}"/>
+
+                        <TextBlock Text="Review the complete appointment record."
+                                   FontSize="12"
+                                   Foreground="{StaticResource MutedBrush}"
+                                   Margin="0,5,0,0"/>
+                    </StackPanel>
+
+                    <TextBlock Grid.Column="1"
+                               Text="GOLDDIE"
+                               FontSize="11"
+                               FontWeight="Bold"
+                               Foreground="{StaticResource PrimaryBrush}"
+                               VerticalAlignment="Center"/>
+                </Grid>
+            </Border>
+
+            <!-- CONTENT -->
+
+            <ScrollViewer Grid.Row="1"
+                          VerticalScrollBarVisibility="Auto"
+                          Padding="24,20">
+
+                <StackPanel>
+
+                    <!-- PATIENT INFORMATION -->
+
+                    <Border Style="{StaticResource SectionCardStyle}">
+                        <StackPanel>
+                            <TextBlock Text="PATIENT INFORMATION"
+                                       FontSize="11"
+                                       FontWeight="Bold"
+                                       Foreground="{StaticResource PrimaryBrush}"
+                                       Margin="0,0,0,16"/>
+
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+
+                                <StackPanel Grid.Column="0"
+                                            Margin="0,0,12,14">
+                                    <TextBlock Text="Full Name"
+                                               Style="{StaticResource FieldLabelStyle}"/>
+
+                                    <TextBlock Style="{StaticResource FieldValueStyle}">
+                                        <Run Text="{Binding Patient.FirstName}"/>
+                                        <Run Text=" "/>
+                                        <Run Text="{Binding Patient.MiddleName}"/>
+                                        <Run Text=" "/>
+                                        <Run Text="{Binding Patient.LastName}"/>
+                                    </TextBlock>
+                                </StackPanel>
+
+                                <StackPanel Grid.Column="1"
+                                            Margin="12,0,0,14">
+                                    <TextBlock Text="Patient Number"
+                                               Style="{StaticResource FieldLabelStyle}"/>
+
+                                    <TextBlock Text="{Binding Patient.PatientNumber}"
+                                               Style="{StaticResource FieldValueStyle}"/>
+                                </StackPanel>
+
+                                <StackPanel Grid.Row="1"
+                                            Grid.Column="0">
+                                    <TextBlock Text="Contact Number"
+                                               Style="{StaticResource FieldLabelStyle}"/>
+
+                                    <TextBlock Text="{Binding Patient.ContactNumber,
+                                        TargetNullValue='Not provided'}"
+                                               Style="{StaticResource FieldValueStyle}"/>
+                                </StackPanel>
+
+                                <StackPanel Grid.Row="1"
+                                            Grid.Column="1"
+                                            Margin="12,0,0,0">
+                                    <TextBlock Text="Date of Birth"
+                                               Style="{StaticResource FieldLabelStyle}"/>
+
+                                    <TextBlock Text="{Binding Patient.DateOfBirth,
+                                        TargetNullValue='Not provided'}"
+                                               Style="{StaticResource FieldValueStyle}"/>
+                                </StackPanel>
+                            </Grid>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- APPOINTMENT INFORMATION -->
+
+                    <Border Style="{StaticResource SectionCardStyle}">
+                        <StackPanel>
+                            <TextBlock Text="APPOINTMENT INFORMATION"
+                                       FontSize="11"
+                                       FontWeight="Bold"
+                                       Foreground="{StaticResource PrimaryBrush}"
+                                       Margin="0,0,0,16"/>
+
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+
+                                <StackPanel Margin="0,0,12,14">
+                                    <TextBlock Text="Appointment Date"
+                                               Style="{StaticResource FieldLabelStyle}"/>
+
+                                    <TextBlock Text="{Binding AppointmentDate}"
+                                               Style="{StaticResource FieldValueStyle}"/>
+                                </StackPanel>
+
+                                <StackPanel Grid.Column="1"
+                                            Margin="12,0,0,14">
+                                    <TextBlock Text="Start Time"
+                                               Style="{StaticResource FieldLabelStyle}"/>
+
+                                    <TextBlock Text="{Binding StartTime}"
+                                               Style="{StaticResource FieldValueStyle}"/>
+                                </StackPanel>
+
+                                <StackPanel Grid.Row="1"
+                                            Margin="0,0,12,14">
+                                    <TextBlock Text="End Time"
+                                               Style="{StaticResource FieldLabelStyle}"/>
+
+                                    <TextBlock Text="{Binding EndTime,
+                                        TargetNullValue='Not specified'}"
+                                               Style="{StaticResource FieldValueStyle}"/>
+                                </StackPanel>
+
+                                <StackPanel Grid.Row="1"
+                                            Grid.Column="1"
+                                            Margin="12,0,0,14">
+                                    <TextBlock Text="Status"
+                                               Style="{StaticResource FieldLabelStyle}"/>
+
+                                    <TextBlock Text="{Binding Status}"
+                                               Style="{StaticResource FieldValueStyle}"/>
+                                </StackPanel>
+
+                                <StackPanel Grid.Row="2"
+                                            Grid.ColumnSpan="2">
+                                    <TextBlock Text="Purpose"
+                                               Style="{StaticResource FieldLabelStyle}"/>
+
+                                    <TextBlock Text="{Binding Purpose}"
+                                               Style="{StaticResource FieldValueStyle}"/>
+                                </StackPanel>
+                            </Grid>
+
+                            <Border Background="#FFF8F7FC"
+                                    CornerRadius="8"
+                                    Padding="12"
+                                    Margin="0,16,0,0">
+                                <StackPanel>
+                                    <TextBlock Text="Appointment Notes"
+                                               Style="{StaticResource FieldLabelStyle}"/>
+
+                                    <TextBlock Text="{Binding Notes,
+                                        TargetNullValue='No additional notes.'}"
+                                               Style="{StaticResource FieldValueStyle}"/>
+                                </StackPanel>
+                            </Border>
+
+                            <Border Background="#FFFFF5F5"
+                                    CornerRadius="8"
+                                    Padding="12"
+                                    Margin="0,12,0,0">
+                                <StackPanel>
+                                    <TextBlock Text="Cancellation Reason"
+                                               Style="{StaticResource FieldLabelStyle}"/>
+
+                                    <TextBlock Text="{Binding CancellationReason,
+                                        TargetNullValue='Not applicable'}"
+                                               Style="{StaticResource FieldValueStyle}"/>
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- PREGNANCY INFORMATION -->
+                    <!-- Entire card is hidden if no pregnancy is linked. -->
+
+                    <Border>
+                        <Border.Style>
+                            <Style TargetType="Border"
+                                   BasedOn="{StaticResource SectionCardStyle}">
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding Pregnancy}"
+                                                 Value="{x:Null}">
+                                        <Setter Property="Visibility"
+                                                Value="Collapsed"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Border.Style>
+
+                        <StackPanel>
+                            <TextBlock Text="PREGNANCY INFORMATION"
+                                       FontSize="11"
+                                       FontWeight="Bold"
+                                       Foreground="{StaticResource PrimaryBrush}"
+                                       Margin="0,0,0,16"/>
+
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+
+                                <StackPanel Margin="0,0,12,14">
+                                    <TextBlock Text="Pregnancy Record"
+                                               Style="{StaticResource FieldLabelStyle}"/>
+
+                                    <TextBlock Text="{Binding Pregnancy.Id}"
+                                               Style="{StaticResource FieldValueStyle}"/>
+                                </StackPanel>
+
+                                <StackPanel Grid.Column="1"
+                                            Margin="12,0,0,14">
+                                    <TextBlock Text="Pregnancy Status"
+                                               Style="{StaticResource FieldLabelStyle}"/>
+
+                                    <TextBlock Text="{Binding Pregnancy.Status}"
+                                               Style="{StaticResource FieldValueStyle}"/>
+                                </StackPanel>
+
+                                <StackPanel Grid.Row="1"
+                                            Margin="0,0,12,0">
+                                    <TextBlock Text="Last Menstrual Period"
+                                               Style="{StaticResource FieldLabelStyle}"/>
+
+                                    <TextBlock Text="{Binding Pregnancy.LastMenstrualPeriod,
+                                        TargetNullValue='Not available'}"
+                                               Style="{StaticResource FieldValueStyle}"/>
+                                </StackPanel>
+
+                                <StackPanel Grid.Row="1"
+                                            Grid.Column="1"
+                                            Margin="12,0,0,0">
+                                    <TextBlock Text="Estimated Due Date"
+                                               Style="{StaticResource FieldLabelStyle}"/>
+
+                                    <TextBlock Text="{Binding Pregnancy.EstimatedDueDate,
+                                        TargetNullValue='Not available'}"
+                                               Style="{StaticResource FieldValueStyle}"/>
+                                </StackPanel>
+                            </Grid>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- RECORD INFORMATION -->
+
+                    <Border Style="{StaticResource SectionCardStyle}">
+                        <StackPanel>
+                            <TextBlock Text="RECORD INFORMATION"
+                                       FontSize="11"
+                                       FontWeight="Bold"
+                                       Foreground="{StaticResource PrimaryBrush}"
+                                       Margin="0,0,0,16"/>
+
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+
+                                <StackPanel Margin="0,0,12,0">
+                                    <TextBlock Text="Created"
+                                               Style="{StaticResource FieldLabelStyle}"/>
+
+                                    <TextBlock Text="{Binding CreatedAtUtc,
+                                        Converter={StaticResource PhilippineTimeConverter}}"
+                                               Style="{StaticResource FieldValueStyle}"/>
+                                </StackPanel>
+
+                                <StackPanel Grid.Column="1"
+                                            Margin="12,0,0,0">
+                                    <TextBlock Text="Last Updated"
+                                               Style="{StaticResource FieldLabelStyle}"/>
+
+                                    <TextBlock Text="{Binding UpdatedAtUtc,
+                                        Converter={StaticResource PhilippineTimeConverter},
+                                        TargetNullValue='Not updated'}"
+                                               Style="{StaticResource FieldValueStyle}"/>
+                                </StackPanel>
+                            </Grid>
+                        </StackPanel>
+                    </Border>
+
+                </StackPanel>
+            </ScrollViewer>
+
+            <!-- FOOTER -->
+
+            <Border Grid.Row="2"
+                    Background="White"
+                    CornerRadius="0,0,16,16"
+                    Padding="24,16"
+                    BorderBrush="#FFEAEAF1"
+                    BorderThickness="0,1,0,0">
+
+                <Button Content="Close"
+                        Width="100"
+                        Height="40"
+                        HorizontalAlignment="Right"
+                        Background="{StaticResource PrimaryBrush}"
+                        Foreground="White"
+                        BorderThickness="0"
+                        FontSize="12"
+                        FontWeight="SemiBold"
+                        Cursor="Hand"
+                        IsCancel="True"
+                        Click="CloseButton_Click"/>
+            </Border>
+
+        </Grid>
+    </Border>
+</Window>

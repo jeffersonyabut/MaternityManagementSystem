@@ -244,6 +244,34 @@ public partial class DashboardWindow : Window
 
 
 
+    private void AppointmentsButton_Click(
+        object sender,
+        RoutedEventArgs e)
+    {
+        ShowAppointments();
+    }
+
+
+    // APPOINTMENT OVERVIEW
+
+    public void ShowAppointments()
+    {
+        _navigationService.NavigateToView(
+            new AppointmentOverviewView());
+    }
+
+    // APPOINTMENT REGISTRATION
+
+    public void ShowAppointmentRegistration()
+    {
+        var registrationView = new AppointmentRegistrationView();
+
+        registrationView.AppointmentSaved += ShowAppointments;
+        registrationView.CancelRequested += ShowAppointments;
+
+        _navigationService.NavigateToView(registrationView);
+    }
+
 
 
 

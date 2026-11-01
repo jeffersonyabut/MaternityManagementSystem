@@ -33,16 +33,14 @@ public partial class NavigationService : ObservableObject
             _views.Add(viewType, view);
         }
 
-        CurrentView = view;
-        CurrentPage = viewType.Name;
+        NavigateToView(view);
     }
-
 
     public void NavigateToView(UserControl view)
     {
         ArgumentNullException.ThrowIfNull(view);
 
         CurrentView = view;
+        CurrentPage = view.GetType().Name;
     }
-
 }

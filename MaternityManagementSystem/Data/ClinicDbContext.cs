@@ -15,6 +15,8 @@ public class ClinicDbContext : DbContext
     public DbSet<VitalSign> VitalSigns => Set<VitalSign>();
     public DbSet<RecordVersion> RecordVersions => Set<RecordVersion>();
     public DbSet<LaboratoryResult> LaboratoryResults => Set<LaboratoryResult>();
+    public DbSet<Appointment> Appointments => Set<Appointment>();
+
 
     public ClinicDbContext()
     {
@@ -337,6 +339,77 @@ public class ClinicDbContext : DbContext
                 .IsRequired(false);
         });
 
+
+
+        modelBuilder.Entity<Appointment>(entity =>
+        {
+            entity.HasKey(a => a.Id);
+
+            // Appointment details
+            entity.Property(a => a.Purpose)
+                .IsRequired()
+                .HasMaxLength(200);
+
+            entity.Property(a => a.Notes)
+                .HasMaxLength(2000)
+                .IsRequired(false);
+
+            // Appointment status
+            entity.Property(a => a.Status)
+                .IsRequired()
+                .HasMaxLength(30);
+
+            // Cancellation information
+            entity.Property(a => a.CancellationReason)
+                .HasMaxLength(1000)
+                .IsRequired(false);
+
+            // Required Patient relationship
+            entity.HasOne(a => a.Patient)
+                .WithMany()
+                .HasForeignKey(a => a.PatientId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // Optional Pregnancy relationship
+            entity.HasOne(a => a.Pregnancy)
+                .WithMany()
+                .HasForeignKey(a => a.PregnancyId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // Indexes
+            entity.HasIndex(a => a.PatientId);
+
+            entity.HasIndex(a => a.PregnancyId);
+
+            entity.HasIndex(a => a.AppointmentDate);
+
+            entity.HasIndex(a => a.Status);
+
+            entity.HasIndex(a => new
+            {
+                a.AppointmentDate,
+                a.StartTime
+            });
+
+            // Timestamps
+            entity.Property(a => a.CreatedAtUtc)
+                .IsRequired();
+
+            entity.Property(a => a.UpdatedAtUtc)
+                .IsRequired(false);
+
+            // Archive information
+            entity.Property(a => a.IsArchived)
+                .HasDefaultValue(false)
+                .IsRequired();
+
+            entity.Property(a => a.ArchivedAtUtc)
+                .IsRequired(false);
+
+            entity.Property(a => a.ArchiveReason)
+                .HasMaxLength(1000)
+                .IsRequired(false);
+        });
 
 
     }
