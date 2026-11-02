@@ -106,6 +106,22 @@ public class PrenatalVisitService
             cancellationToken);
     }
 
+    public async Task<PrenatalVisit?> GetForReportByIdAsync(
+    int visitId,
+    CancellationToken cancellationToken = default)
+    {
+        _authorizationService.EnsureAuthenticated();
+
+        if (visitId <= 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(visitId));
+        }
+
+        return await _prenatalVisitRepository.GetForReportByIdAsync(
+            visitId,
+            cancellationToken);
+    }
+
     public async Task<PrenatalVisit> UpdateVisitAsync(
         PrenatalVisit updatedVisit,
         CancellationToken cancellationToken = default)

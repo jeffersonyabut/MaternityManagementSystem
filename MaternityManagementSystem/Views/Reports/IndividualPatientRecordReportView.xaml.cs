@@ -18,6 +18,7 @@ public partial class IndividualPatientRecordReportView : UserControl
     private readonly IndividualPatientRecordReport _report;
 
     public event Action? BackRequested;
+    public event Action? AllReportsRequested;
 
     private const double PageWidth = 1056;
     private const double PageHeight = 816;
@@ -55,6 +56,13 @@ public partial class IndividualPatientRecordReportView : UserControl
         RoutedEventArgs e)
     {
         BackRequested?.Invoke();
+    }
+
+    private void AllReportsButton_Click(
+    object sender,
+    RoutedEventArgs e)
+    {
+        AllReportsRequested?.Invoke();
     }
 
     private void PrintPreviewButton_Click(

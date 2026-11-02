@@ -1,0 +1,380 @@
+<UserControl x:Class="MaternityManagementSystem.Views.Reports.PrenatalVisitReportView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Background="#F5F5FA">
+
+    <UserControl.Resources>
+        <SolidColorBrush x:Key="PrimaryPurple" Color="#7952B3"/>
+        <SolidColorBrush x:Key="MainText" Color="#29243B"/>
+        <SolidColorBrush x:Key="SecondaryText" Color="#777184"/>
+        <SolidColorBrush x:Key="CardBorder" Color="#EAE7F0"/>
+
+        <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
+
+        <Style x:Key="SectionCardStyle" TargetType="Border">
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="BorderBrush" Value="{StaticResource CardBorder}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="12"/>
+            <Setter Property="Padding" Value="20"/>
+            <Setter Property="Margin" Value="0,0,0,16"/>
+        </Style>
+
+        <Style x:Key="SectionTitleStyle" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="16"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Foreground" Value="{StaticResource MainText}"/>
+            <Setter Property="Margin" Value="0,0,0,14"/>
+        </Style>
+
+        <Style x:Key="FieldLabelStyle" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="Foreground" Value="{StaticResource SecondaryText}"/>
+            <Setter Property="Margin" Value="0,0,0,4"/>
+        </Style>
+
+        <Style x:Key="FieldValueStyle" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Foreground" Value="{StaticResource MainText}"/>
+            <Setter Property="TextWrapping" Value="Wrap"/>
+        </Style>
+
+        <Style x:Key="ReportDataGridStyle" TargetType="DataGrid">
+            <Setter Property="AutoGenerateColumns" Value="False"/>
+            <Setter Property="CanUserAddRows" Value="False"/>
+            <Setter Property="CanUserDeleteRows" Value="False"/>
+            <Setter Property="CanUserResizeRows" Value="False"/>
+            <Setter Property="IsReadOnly" Value="True"/>
+            <Setter Property="HeadersVisibility" Value="Column"/>
+            <Setter Property="GridLinesVisibility" Value="Horizontal"/>
+            <Setter Property="HorizontalGridLinesBrush" Value="#EAE7F0"/>
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="RowHeaderWidth" Value="0"/>
+            <Setter Property="ColumnHeaderHeight" Value="38"/>
+            <Setter Property="RowHeight" Value="38"/>
+            <Setter Property="FontSize" Value="12"/>
+        </Style>
+
+        <Style TargetType="DataGridColumnHeader">
+            <Setter Property="Background" Value="#F5F2FA"/>
+            <Setter Property="Foreground" Value="#51436B"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Padding" Value="10,0"/>
+            <Setter Property="BorderThickness" Value="0"/>
+        </Style>
+    </UserControl.Resources>
+
+    <Grid>
+        <ScrollViewer VerticalScrollBarVisibility="Auto"
+                      HorizontalScrollBarVisibility="Disabled">
+
+            <StackPanel Margin="30">
+
+                <!-- Header -->
+                <StackPanel Margin="0,0,0,24">
+                    <TextBlock Text="GOLDDIE · CLINIC MANAGEMENT"
+                               FontSize="11"
+                               FontWeight="Bold"
+                               Foreground="{StaticResource PrimaryPurple}"/>
+
+                    <TextBlock Text="Prenatal Visit Report"
+                               FontSize="26"
+                               FontWeight="Bold"
+                               Foreground="{StaticResource MainText}"
+                               Margin="0,6,0,4"/>
+
+                    <TextBlock Text="Clinical summary of one selected prenatal visit."
+                               FontSize="13"
+                               Foreground="{StaticResource SecondaryText}"/>
+                </StackPanel>
+
+                <!-- Report Actions -->
+                <Border Style="{StaticResource SectionCardStyle}"
+                        Padding="16">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+
+                        <StackPanel VerticalAlignment="Center">
+                            <TextBlock Text="Report Preview"
+                                       FontSize="15"
+                                       FontWeight="SemiBold"
+                                       Foreground="{StaticResource MainText}"/>
+
+                            <TextBlock Text="Review the selected prenatal visit before printing."
+                                       FontSize="12"
+                                       Foreground="{StaticResource SecondaryText}"
+                                       Margin="0,4,0,0"/>
+                        </StackPanel>
+
+                        <Button Grid.Column="1"
+                                Content="Back"
+                                Padding="18,9"
+                                Margin="8,0"
+                                Background="White"
+                                Foreground="{StaticResource PrimaryPurple}"
+                                BorderBrush="{StaticResource PrimaryPurple}"
+                                BorderThickness="1"
+                                Click="BackButton_Click"/>
+
+                        <Button Grid.Column="2"
+                                Content="Print Preview"
+                                Padding="18,9"
+                                Margin="8,0,0,0"
+                                Background="{StaticResource PrimaryPurple}"
+                                Foreground="White"
+                                BorderThickness="0"
+                                FontWeight="SemiBold"
+                                Click="PrintPreviewButton_Click"/>
+                    </Grid>
+                </Border>
+
+                <!-- Error Message -->
+                <Border Background="#FFF1F0"
+                        BorderBrush="#F2C5C2"
+                        BorderThickness="1"
+                        CornerRadius="8"
+                        Padding="12"
+                        Margin="0,0,0,16"
+                        Visibility="{Binding HasError,
+                            Converter={StaticResource BooleanToVisibilityConverter}}">
+                    <TextBlock Text="{Binding ErrorMessage}"
+                               Foreground="#B42318"
+                               TextWrapping="Wrap"/>
+                </Border>
+
+                <!-- Loading -->
+                <TextBlock Text="Generating report..."
+                           FontSize="13"
+                           Foreground="{StaticResource SecondaryText}"
+                           HorizontalAlignment="Center"
+                           Margin="0,0,0,16"
+                           Visibility="{Binding IsLoading,
+                               Converter={StaticResource BooleanToVisibilityConverter}}"/>
+
+                <!-- Report Content -->
+                <StackPanel>
+
+                    <!-- 1. Patient Information -->
+                    <Border Style="{StaticResource SectionCardStyle}">
+                        <StackPanel>
+                            <TextBlock Text="1. Patient Information"
+                                       Style="{StaticResource SectionTitleStyle}"/>
+
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+
+                                <StackPanel Grid.Row="0" Grid.Column="0" Margin="0,0,16,16">
+                                    <TextBlock Text="Patient Number" Style="{StaticResource FieldLabelStyle}"/>
+                                    <TextBlock Text="{Binding Report.Patient.PatientNumber, TargetNullValue=—}" Style="{StaticResource FieldValueStyle}"/>
+                                </StackPanel>
+
+                                <StackPanel Grid.Row="0" Grid.Column="1" Margin="0,0,16,16">
+                                    <TextBlock Text="Patient Name" Style="{StaticResource FieldLabelStyle}"/>
+                                    <TextBlock Style="{StaticResource FieldValueStyle}">
+                                        <Run Text="{Binding Report.Patient.FirstName}"/>
+                                        <Run Text=" "/>
+                                        <Run Text="{Binding Report.Patient.MiddleName}"/>
+                                        <Run Text=" "/>
+                                        <Run Text="{Binding Report.Patient.LastName}"/>
+                                    </TextBlock>
+                                </StackPanel>
+
+                                <StackPanel Grid.Row="0" Grid.Column="2" Margin="0,0,0,16">
+                                    <TextBlock Text="Date of Birth" Style="{StaticResource FieldLabelStyle}"/>
+                                    <TextBlock Text="{Binding Report.Patient.DateOfBirth, TargetNullValue=—}" Style="{StaticResource FieldValueStyle}"/>
+                                </StackPanel>
+
+                                <StackPanel Grid.Row="1" Grid.Column="0" Margin="0,0,16,0">
+                                    <TextBlock Text="Sex" Style="{StaticResource FieldLabelStyle}"/>
+                                    <TextBlock Text="{Binding Report.Patient.Sex, TargetNullValue=—}" Style="{StaticResource FieldValueStyle}"/>
+                                </StackPanel>
+
+                                <StackPanel Grid.Row="1" Grid.Column="1" Margin="0,0,16,0">
+                                    <TextBlock Text="Contact Number" Style="{StaticResource FieldLabelStyle}"/>
+                                    <TextBlock Text="{Binding Report.Patient.ContactNumber, TargetNullValue=—}" Style="{StaticResource FieldValueStyle}"/>
+                                </StackPanel>
+
+                                <StackPanel Grid.Row="1" Grid.Column="2">
+                                    <TextBlock Text="Address" Style="{StaticResource FieldLabelStyle}"/>
+                                    <TextBlock Text="{Binding Report.Patient.Address, TargetNullValue=—}" Style="{StaticResource FieldValueStyle}"/>
+                                </StackPanel>
+                            </Grid>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- 2. Pregnancy Information -->
+                    <Border Style="{StaticResource SectionCardStyle}">
+                        <StackPanel>
+                            <TextBlock Text="2. Pregnancy Information"
+                                       Style="{StaticResource SectionTitleStyle}"/>
+
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+
+                                <StackPanel Grid.Column="0" Margin="0,0,16,0">
+                                    <TextBlock Text="Pregnancy Status" Style="{StaticResource FieldLabelStyle}"/>
+                                    <TextBlock Text="{Binding Report.Pregnancy.Status, TargetNullValue=—}" Style="{StaticResource FieldValueStyle}"/>
+                                </StackPanel>
+
+                                <StackPanel Grid.Column="1" Margin="0,0,16,0">
+                                    <TextBlock Text="Last Menstrual Period" Style="{StaticResource FieldLabelStyle}"/>
+                                    <TextBlock Text="{Binding Report.Pregnancy.LastMenstrualPeriod, TargetNullValue=—}" Style="{StaticResource FieldValueStyle}"/>
+                                </StackPanel>
+
+                                <StackPanel Grid.Column="2">
+                                    <TextBlock Text="Estimated Due Date" Style="{StaticResource FieldLabelStyle}"/>
+                                    <TextBlock Text="{Binding Report.Pregnancy.EstimatedDueDate, TargetNullValue=—}" Style="{StaticResource FieldValueStyle}"/>
+                                </StackPanel>
+                            </Grid>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- 3. Prenatal Visit Details -->
+                    <Border Style="{StaticResource SectionCardStyle}">
+                        <StackPanel>
+                            <TextBlock Text="3. Prenatal Visit Details"
+                                       Style="{StaticResource SectionTitleStyle}"/>
+
+                            <TextBlock Text="Visit Date"
+                                       Style="{StaticResource FieldLabelStyle}"/>
+
+                            <TextBlock Text="{Binding Report.PrenatalVisit.VisitDate, TargetNullValue=—}"
+                                       Style="{StaticResource FieldValueStyle}"
+                                       Margin="0,0,0,16"/>
+
+                            <TextBlock Text="Clinical Notes"
+                                       Style="{StaticResource FieldLabelStyle}"/>
+
+                            <Border Background="#F8F7FA"
+                                    BorderBrush="#EAE7F0"
+                                    BorderThickness="1"
+                                    CornerRadius="8"
+                                    Padding="14">
+                                <TextBlock Text="{Binding Report.PrenatalVisit.Notes, TargetNullValue=No clinical notes recorded.}"
+                                           FontSize="13"
+                                           Foreground="{StaticResource MainText}"
+                                           TextWrapping="Wrap"/>
+                            </Border>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- 4. Vital Signs -->
+                    <Border Style="{StaticResource SectionCardStyle}">
+                        <StackPanel>
+                            <TextBlock Text="4. Vital Signs"
+                                       Style="{StaticResource SectionTitleStyle}"/>
+
+                            <DataGrid ItemsSource="{Binding Report.VitalSigns}"
+                                      Style="{StaticResource ReportDataGridStyle}"
+                                      MinHeight="90">
+                                <DataGrid.Columns>
+                                    <DataGridTextColumn Header="Recorded"
+                                                        Binding="{Binding RecordedAtUtc, StringFormat={}{0:MMM dd, yyyy hh:mm tt}}"
+                                                        Width="*"/>
+
+                                    <DataGridTextColumn Header="Blood Pressure"
+                                                        Binding="{Binding SystolicBloodPressure}"
+                                                        Width="*"/>
+
+                                    <DataGridTextColumn Header="Heart Rate"
+                                                        Binding="{Binding HeartRate}"
+                                                        Width="*"/>
+
+                                    <DataGridTextColumn Header="Respiratory Rate"
+                                                        Binding="{Binding RespiratoryRate}"
+                                                        Width="*"/>
+
+                                    <DataGridTextColumn Header="Temperature"
+                                                        Binding="{Binding TemperatureCelsius}"
+                                                        Width="*"/>
+
+                                    <DataGridTextColumn Header="SpO₂"
+                                                        Binding="{Binding OxygenSaturation}"
+                                                        Width="*"/>
+
+                                    <DataGridTextColumn Header="Weight (kg)"
+                                                        Binding="{Binding WeightKg}"
+                                                        Width="*"/>
+
+                                    <DataGridTextColumn Header="Fetal HR"
+                                                        Binding="{Binding FetalHeartRate}"
+                                                        Width="*"/>
+                                </DataGrid.Columns>
+                            </DataGrid>
+
+                            <TextBlock Text="No vital signs recorded for this visit."
+                                       FontSize="12"
+                                       Foreground="{StaticResource SecondaryText}"
+                                       Margin="0,10,0,0"
+                                       Visibility="{Binding HasNoVitalSigns,
+                                           Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- 5. Laboratory Results -->
+                    <Border Style="{StaticResource SectionCardStyle}">
+                        <StackPanel>
+                            <TextBlock Text="5. Laboratory Results"
+                                       Style="{StaticResource SectionTitleStyle}"/>
+
+                            <DataGrid ItemsSource="{Binding Report.LaboratoryResults}"
+                                      Style="{StaticResource ReportDataGridStyle}"
+                                      MinHeight="90">
+                                <DataGrid.Columns>
+                                    <DataGridTextColumn Header="Test Date" Binding="{Binding TestDate}" Width="*"/>
+                                    <DataGridTextColumn Header="Test Name" Binding="{Binding TestName}" Width="*"/>
+                                    <DataGridTextColumn Header="Result" Binding="{Binding Result}" Width="*"/>
+                                    <DataGridTextColumn Header="Unit" Binding="{Binding Unit}" Width="*"/>
+                                    <DataGridTextColumn Header="Reference Range" Binding="{Binding ReferenceRange}" Width="*"/>
+                                    <DataGridTextColumn Header="Notes" Binding="{Binding Notes}" Width="*"/>
+                                </DataGrid.Columns>
+                            </DataGrid>
+
+                            <TextBlock Text="No laboratory results linked to this visit."
+                                       FontSize="12"
+                                       Foreground="{StaticResource SecondaryText}"
+                                       Margin="0,10,0,0"
+                                       Visibility="{Binding HasNoLaboratoryResults,
+                                           Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Report Metadata -->
+                    <TextBlock Text="{Binding Report.GeneratedAtUtc,
+                                      StringFormat='Report generated: {0:MMM dd, yyyy hh:mm tt} UTC'}"
+                               FontSize="10"
+                               Foreground="{StaticResource SecondaryText}"
+                               HorizontalAlignment="Right"
+                               Margin="0,0,0,8"/>
+
+                    <TextBlock Text="END OF PRENATAL VISIT REPORT"
+                               FontSize="10"
+                               FontWeight="SemiBold"
+                               Foreground="{StaticResource SecondaryText}"
+                               HorizontalAlignment="Center"
+                               Margin="0,8,0,20"/>
+
+                </StackPanel>
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
+</UserControl>

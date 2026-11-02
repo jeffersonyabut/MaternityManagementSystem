@@ -409,4 +409,30 @@ public class PatientService
     }
 
 
+    public async Task<PrenatalCareReport> GetPrenatalCareReportAsync(
+    DateOnly? startDate = null,
+    DateOnly? endDate = null,
+    string? searchTerm = null,
+    CancellationToken cancellationToken = default)
+    {
+        _authorizationService.EnsureAuthenticated();
+
+        if (startDate.HasValue &&
+            endDate.HasValue &&
+            endDate.Value < startDate.Value)
+        {
+            throw new ArgumentException(
+                "The end date cannot be earlier than the start date.");
+        }
+
+        return await _patientRepository.GetPrenatalCareReportAsync(
+            startDate,
+            endDate,
+            searchTerm,
+            cancellationToken);
+    }
+
+
+
+
 }

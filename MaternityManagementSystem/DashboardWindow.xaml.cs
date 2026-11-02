@@ -1,10 +1,14 @@
 
 using System;
 using System.Windows;
+using System.Windows.Controls;
 using MaternityManagementSystem.Models;
 using MaternityManagementSystem.Models.Reports;
 using MaternityManagementSystem.Navigation;
+using MaternityManagementSystem.Repositories;
 using MaternityManagementSystem.Services;
+using MaternityManagementSystem.Services.Reports;
+using MaternityManagementSystem.ViewModels.Reports;
 using MaternityManagementSystem.Views;
 using MaternityManagementSystem.Views.Reports;
 
@@ -243,12 +247,11 @@ public partial class DashboardWindow : Window
             new ReportsView());
     }
 
-    public void NavigateToReportView(
-        PatientMasterListReportView view)
+    public void NavigateToReportView(UserControl reportView)
     {
-        ArgumentNullException.ThrowIfNull(view);
+        ArgumentNullException.ThrowIfNull(reportView);
 
-        _navigationService.NavigateToView(view);
+        _navigationService.NavigateToView(reportView);
     }
 
     public void ShowIndividualPatientRecordSelection()
@@ -256,6 +259,7 @@ public partial class DashboardWindow : Window
         var view = new IndividualPatientRecordSelectionView();
 
         view.ReportGenerated += ShowIndividualPatientRecordPreview;
+        view.BackRequested += ShowReports;
 
         _navigationService.NavigateToView(view);
     }
@@ -268,6 +272,62 @@ public partial class DashboardWindow : Window
         var view = new IndividualPatientRecordReportView(report);
 
         view.BackRequested += ShowIndividualPatientRecordSelection;
+
+        _navigationService.NavigateToView(view);
+    }
+
+    public void ShowPrenatalVisitReport(
+    int visitId,
+    Pregnancy pregnancy)
+    {
+        ArgumentNullException.ThrowIfNull(pregnancy);
+
+        if (visitId <= 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(visitId));
+        }
+
+        var app = (App)Application.Current;
+
+        var authorizationService = new AuthorizationService(
+            app.SessionService);
+
+        var prenatalVisitService = new PrenatalVisitService(
+            new PrenatalVisitRepository(),
+            new PregnancyRepository(),
+            authorizationService,
+            app.SessionService);
+
+        var laboratoryResultService = new LaboratoryResultService(
+            new LaboratoryResultRepository(),
+            new PatientRepository(),
+            new PrenatalVisitRepository(),
+            new PregnancyRepository(),
+            authorizationService,
+            app.SessionService);
+
+        var reportService = new PrenatalVisitReportService(
+            prenatalVisitService,
+            laboratoryResultService);
+
+        var viewModel = new PrenatalVisitReportViewModel(
+            reportService,
+            visitId);
+
+        var view = new PrenatalVisitReportView
+        {
+            DataContext = viewModel
+        };
+
+        view.BackRequested += () =>
+        {
+            ShowPrenatalVisits(pregnancy);
+        };
+
+        view.Loaded += async (_, _) =>
+        {
+            await viewModel.GenerateReportCommand.ExecuteAsync(null);
+        };
 
         _navigationService.NavigateToView(view);
     }

@@ -504,5 +504,85 @@ public class PatientRepository
     }
 
 
+    public async Task<PrenatalCareReport> GetPrenatalCareReportAsync(
+    DateOnly? startDate = null,
+    DateOnly? endDate = null,
+    string? searchTerm = null,
+    CancellationToken cancellationToken = default)
+    {
+        if (startDate.HasValue &&
+            endDate.HasValue &&
+            endDate.Value < startDate.Value)
+        {
+            throw new ArgumentException(
+                "The end date cannot be earlier than the start date.");
+        }
+
+        string search = searchTerm?.Trim().ToLowerInvariant() ?? string.Empty;
+
+        await using var dbContext =
+            await CreateDbContextAsync(cancellationToken);
+
+        IQueryable<PrenatalVisit> query = dbContext.PrenatalVisits
+            .AsNoTracking()
+            .Include(visit => visit.Pregnancy)
+                .ThenInclude(pregnancy => pregnancy.Patient)
+            .Include(visit => visit.VitalSigns
+                .Where(vitalSign => !vitalSign.IsArchived));
+
+        // Filter by prenatal visit date.
+        if (startDate.HasValue)
+        {
+            query = query.Where(visit =>
+                visit.VisitDate >= startDate.Value);
+        }
+
+        if (endDate.HasValue)
+        {
+            query = query.Where(visit =>
+                visit.VisitDate <= endDate.Value);
+        }
+
+        // Search by patient number or patient name.
+        if (search.Length > 0)
+        {
+            query = query.Where(visit =>
+                visit.Pregnancy.Patient.PatientNumber
+                    .ToLower().Contains(search) ||
+
+                visit.Pregnancy.Patient.FirstName
+                    .ToLower().Contains(search) ||
+
+                visit.Pregnancy.Patient.LastName
+                    .ToLower().Contains(search) ||
+
+                (visit.Pregnancy.Patient.MiddleName != null &&
+                 visit.Pregnancy.Patient.MiddleName
+                    .ToLower().Contains(search)) ||
+
+                ((
+                    visit.Pregnancy.Patient.FirstName + " " +
+                    (visit.Pregnancy.Patient.MiddleName ?? "") + " " +
+                    visit.Pregnancy.Patient.LastName
+                ).ToLower().Contains(search))
+            );
+        }
+
+        var prenatalVisits = await query
+            .OrderBy(visit => visit.VisitDate)
+            .ThenBy(visit => visit.Id)
+            .ToListAsync(cancellationToken);
+
+        return new PrenatalCareReport
+        {
+            GeneratedAtUtc = DateTime.UtcNow,
+            StartDate = startDate,
+            EndDate = endDate,
+            SearchTerm = searchTerm?.Trim(),
+            PrenatalVisits = prenatalVisits
+        };
+    }
+
+
 
 }

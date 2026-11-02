@@ -11,6 +11,7 @@ namespace MaternityManagementSystem.Views
     public partial class ReportsView : UserControl
     {
         private readonly PatientMasterListViewModel _viewModel;
+        private readonly PrenatalCareReportViewModel _prenatalCareViewModel;
 
         public ReportsView()
         {
@@ -23,11 +24,20 @@ namespace MaternityManagementSystem.Views
                 new AuthorizationService(app.SessionService),
                 app.SessionService);
 
+            // Patient Master List
             var patientReportService =
                 new PatientReportService(patientService);
 
             _viewModel = new PatientMasterListViewModel(
                 patientReportService);
+
+            // Prenatal Care Report
+            var prenatalCareReportService =
+                new PrenatalCareReportService(patientService);
+
+            _prenatalCareViewModel =
+                new PrenatalCareReportViewModel(
+                    prenatalCareReportService);
 
             DataContext = _viewModel;
         }
@@ -38,12 +48,12 @@ namespace MaternityManagementSystem.Views
         {
             if (Window.GetWindow(this) is DashboardWindow dashboard)
             {
-                var reportView = new PatientMasterListReportView(_viewModel);
+                var reportView =
+                    new PatientMasterListReportView(_viewModel);
 
                 dashboard.NavigateToReportView(reportView);
             }
         }
-
 
         private void IndividualPatientRecordButton_Click(
             object sender,
@@ -55,9 +65,19 @@ namespace MaternityManagementSystem.Views
             }
         }
 
+        private void PrenatalCareReportButton_Click(
+            object sender,
+            RoutedEventArgs e)
+        {
+            if (Window.GetWindow(this) is DashboardWindow dashboard)
+            {
+                var reportView =
+                    new PrenatalCareReportView(_prenatalCareViewModel);
 
+                reportView.BackRequested += dashboard.ShowReports;
 
-
-
+                dashboard.NavigateToReportView(reportView);
+            }
+        }
     }
 }

@@ -105,16 +105,16 @@
 
                         <StackPanel VerticalAlignment="Center">
                             <TextBlock Text="Report Preview"
-                                       FontSize="15"
-                                       FontWeight="SemiBold"
-                                       Foreground="{StaticResource MainText}"/>
+                       FontSize="15"
+                       FontWeight="SemiBold"
+                       Foreground="{StaticResource MainText}"/>
 
                             <TextBlock Text="Review the patient's complete record before printing."
-                                       FontSize="12"
-                                       Foreground="{StaticResource SecondaryText}"
-                                       Margin="0,4,0,0"/>
+                       FontSize="12"
+                       Foreground="{StaticResource SecondaryText}"
+                       Margin="0,4,0,0"/>
                         </StackPanel>
-                        
+
                         <Button Grid.Column="1"
                                 Content="Back"
                                 Padding="18,9"

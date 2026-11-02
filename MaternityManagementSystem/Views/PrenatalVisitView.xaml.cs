@@ -116,6 +116,26 @@ public partial class PrenatalVisitView : UserControl
         }
     }
 
+    private void GenerateVisitReportButton_Click(
+        object sender,
+        RoutedEventArgs e)
+    {
+        if (sender is not Button button ||
+            button.DataContext is not PrenatalVisit visit)
+        {
+            return;
+        }
+
+        var parentWindow = Window.GetWindow(this);
+
+        if (parentWindow is DashboardWindow dashboardWindow)
+        {
+            dashboardWindow.ShowPrenatalVisitReport(
+                visit.Id,
+                _pregnancy);
+        }
+    }
+
     private async void VisitHistoryButton_Click(
         object sender,
         RoutedEventArgs e)

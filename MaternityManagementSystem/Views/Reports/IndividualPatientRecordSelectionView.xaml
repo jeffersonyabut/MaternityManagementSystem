@@ -10,6 +10,17 @@
                 <!-- Header -->
                 <StackPanel Margin="0,0,0,24">
 
+                    <Button Content="←  Back to Reports"
+                            HorizontalAlignment="Left"
+                            Padding="14,8"
+                            Margin="0,0,0,18"
+                            Background="White"
+                            Foreground="#7952B3"
+                            BorderBrush="#EAE7F0"
+                            BorderThickness="1"
+                            FontWeight="SemiBold"
+                            Click="BackButton_Click"/>
+
                     <TextBlock Text="GOLDDIE · CLINIC MANAGEMENT"
                                FontSize="10"
                                FontWeight="SemiBold"

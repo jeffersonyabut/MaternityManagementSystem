@@ -111,6 +111,31 @@ public class PrenatalVisitRepository
                 cancellationToken);
     }
 
+
+    public async Task<PrenatalVisit?> GetForReportByIdAsync(
+    int visitId,
+    CancellationToken cancellationToken = default)
+    {
+        if (visitId <= 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(visitId));
+        }
+
+        await using var dbContext =
+            await CreateDbContextAsync(cancellationToken);
+
+        return await dbContext.PrenatalVisits
+            .AsNoTracking()
+            .Include(visit => visit.Pregnancy)
+                .ThenInclude(pregnancy => pregnancy.Patient)
+            .Include(visit => visit.VitalSigns
+                .Where(vitalSign => !vitalSign.IsArchived))
+            .FirstOrDefaultAsync(
+                visit => visit.Id == visitId,
+                cancellationToken);
+    }
+
+
     public async Task UpdateAsync(
         PrenatalVisit prenatalVisit,
         AuditLog auditLog,

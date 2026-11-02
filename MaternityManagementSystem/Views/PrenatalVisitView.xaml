@@ -150,6 +150,11 @@
                                                     Click="LaboratoryResultsButton_Click"/>
 
 
+                                            <Button Content="Generate Visit Report"
+                                                    Padding="14,7"
+                                                    Margin="0,0,8,0"
+                                                    Click="GenerateVisitReportButton_Click"/>
+                                            
                                             <Button Content="Edit"
                                                     Padding="14,7"
                                                     Margin="0,0,8,0"

@@ -15,6 +15,7 @@ public partial class IndividualPatientRecordSelectionView : UserControl
     private readonly IndividualPatientRecordSelectionViewModel _viewModel;
 
     public event Action<IndividualPatientRecordReport>? ReportGenerated;
+    public event Action? BackRequested;
 
     public IndividualPatientRecordSelectionView()
     {
@@ -42,6 +43,13 @@ public partial class IndividualPatientRecordSelectionView : UserControl
         DataContext = _viewModel;
 
         Loaded += View_Loaded;
+    }
+
+    private void BackButton_Click(
+    object sender,
+    RoutedEventArgs e)
+    {
+        BackRequested?.Invoke();
     }
 
     private async void View_Loaded(
