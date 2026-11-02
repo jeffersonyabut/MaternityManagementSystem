@@ -1,10 +1,12 @@
 
+using System;
 using System.Windows;
+using MaternityManagementSystem.Models;
+using MaternityManagementSystem.Models.Reports;
 using MaternityManagementSystem.Navigation;
 using MaternityManagementSystem.Services;
 using MaternityManagementSystem.Views;
-using MaternityManagementSystem.Models;
-using System;
+using MaternityManagementSystem.Views.Reports;
 
 namespace MaternityManagementSystem.Views;
 
@@ -53,7 +55,6 @@ public partial class DashboardWindow : Window
         _navigationService.NavigateTo<PatientsView>();
     }
 
-
     public void ShowPatientProfile(int patientId)
     {
         _navigationService.NavigateToView(
@@ -65,9 +66,7 @@ public partial class DashboardWindow : Window
         _navigationService.NavigateTo<PatientsView>();
     }
 
-
-    public void ShowPatientEdit(
-        MaternityManagementSystem.Models.Patient patient)
+    public void ShowPatientEdit(Patient patient)
     {
         var editView = new PatientEditView(patient);
 
@@ -86,25 +85,20 @@ public partial class DashboardWindow : Window
         _navigationService.NavigateToView(registrationView);
     }
 
-
-    public void ShowPregnancyEdit(
-        MaternityManagementSystem.Models.Pregnancy pregnancy)
+    public void ShowPregnancyEdit(Pregnancy pregnancy)
     {
         var editView = new PregnancyEditView(pregnancy);
         _navigationService.NavigateToView(editView);
     }
 
-
-    public void ShowPrenatalVisits(
-        MaternityManagementSystem.Models.Pregnancy pregnancy)
+    public void ShowPrenatalVisits(Pregnancy pregnancy)
     {
         var view = new PrenatalVisitView(pregnancy);
 
         _navigationService.NavigateToView(view);
     }
 
-    public void ShowPrenatalVisitRegistration(
-    MaternityManagementSystem.Models.Pregnancy pregnancy)
+    public void ShowPrenatalVisitRegistration(Pregnancy pregnancy)
     {
         var registrationView = new PrenatalVisitRegistrationView(pregnancy);
 
@@ -121,11 +115,9 @@ public partial class DashboardWindow : Window
         _navigationService.NavigateToView(registrationView);
     }
 
-
-
     public void ShowPrenatalVisitEdit(
         int visitId,
-        MaternityManagementSystem.Models.Pregnancy pregnancy)
+        Pregnancy pregnancy)
     {
         ArgumentNullException.ThrowIfNull(pregnancy);
 
@@ -156,8 +148,9 @@ public partial class DashboardWindow : Window
         _navigationService.NavigateToView(view);
     }
 
-
-    public void ShowVitalSignRegistration(PrenatalVisit visit, Pregnancy pregnancy)
+    public void ShowVitalSignRegistration(
+        PrenatalVisit visit,
+        Pregnancy pregnancy)
     {
         ArgumentNullException.ThrowIfNull(visit);
         ArgumentNullException.ThrowIfNull(pregnancy);
@@ -176,8 +169,6 @@ public partial class DashboardWindow : Window
 
         _navigationService.NavigateToView(registrationView);
     }
-
-
 
     public void ShowVitalSignEdit(
         VitalSign vitalSign,
@@ -203,7 +194,6 @@ public partial class DashboardWindow : Window
         _navigationService.NavigateToView(editView);
     }
 
-
     public void ShowLaboratoryResultRegistration(Patient patient)
     {
         ArgumentNullException.ThrowIfNull(patient);
@@ -212,10 +202,6 @@ public partial class DashboardWindow : Window
 
         _navigationService.NavigateToView(registrationView);
     }
-
-
-
-
 
     public void ShowLaboratoryResultEdit(
         int laboratoryResultId,
@@ -242,16 +228,6 @@ public partial class DashboardWindow : Window
         _navigationService.NavigateToView(editView);
     }
 
-
-
-    private void AppointmentsButton_Click(
-        object sender,
-        RoutedEventArgs e)
-    {
-        ShowAppointments();
-    }
-
-
     // REPORTS NAVIGATION
 
     private void ReportsButton_Click(
@@ -268,14 +244,42 @@ public partial class DashboardWindow : Window
     }
 
     public void NavigateToReportView(
-    PatientMasterListReportView view)
+        PatientMasterListReportView view)
     {
         ArgumentNullException.ThrowIfNull(view);
 
         _navigationService.NavigateToView(view);
     }
 
+    public void ShowIndividualPatientRecordSelection()
+    {
+        var view = new IndividualPatientRecordSelectionView();
+
+        view.ReportGenerated += ShowIndividualPatientRecordPreview;
+
+        _navigationService.NavigateToView(view);
+    }
+
+    public void ShowIndividualPatientRecordPreview(
+        IndividualPatientRecordReport report)
+    {
+        ArgumentNullException.ThrowIfNull(report);
+
+        var view = new IndividualPatientRecordReportView(report);
+
+        view.BackRequested += ShowIndividualPatientRecordSelection;
+
+        _navigationService.NavigateToView(view);
+    }
+
     // APPOINTMENT OVERVIEW
+
+    private void AppointmentsButton_Click(
+        object sender,
+        RoutedEventArgs e)
+    {
+        ShowAppointments();
+    }
 
     public void ShowAppointments()
     {
@@ -294,10 +298,4 @@ public partial class DashboardWindow : Window
 
         _navigationService.NavigateToView(registrationView);
     }
-
-
-
-
-
-
 }

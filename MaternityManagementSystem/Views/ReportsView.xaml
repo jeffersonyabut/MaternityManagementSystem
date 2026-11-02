@@ -124,13 +124,10 @@
                         </StackPanel>
                     </Button>
 
-                    <!-- Patient Record -->
-                    <Border Background="White"
-                            BorderBrush="#EAE7F0"
-                            BorderThickness="1"
-                            CornerRadius="12"
-                            Padding="20"
-                            Margin="10,0,0,10">
+                    <!-- Individual Patient Record -->
+                    <Button Style="{StaticResource ReportCardButtonStyle}"
+                            Margin="10,0,0,10"
+                            Click="IndividualPatientRecordButton_Click">
 
                         <StackPanel>
                             <TextBlock Text="Individual Patient Record"
@@ -144,7 +141,8 @@
                                        TextWrapping="Wrap"
                                        Margin="0,7,0,0"/>
                         </StackPanel>
-                    </Border>
+                    </Button>
+
 
                     <!-- Prenatal Report -->
                     <Border Background="White"

@@ -6,6 +6,7 @@ using System;
 using System.Collections.ObjectModel;
 using System.Text.Json;
 using System.Threading.Tasks;
+using System.Linq;
 
 namespace MaternityManagementSystem.ViewModels;
 
@@ -15,6 +16,7 @@ public partial class PatientProfileViewModel : ObservableObject
     private readonly PregnancyService _pregnancyService;
     private readonly RecordVersionService _recordVersionService;
     private readonly int _patientId;
+    private readonly ObstetricHistoryService _obstetricHistoryService = new();
 
     public PatientProfileViewModel(
         PatientService patientService,
@@ -231,73 +233,15 @@ public partial class PatientProfileViewModel : ObservableObject
 
     private void CalculateObstetricHistory()
     {
-        Gravida = Pregnancies.Count;
+        var summary = _obstetricHistoryService.Calculate(
+            Pregnancies.Select(card => card.Pregnancy).ToList());
 
-        Term = 0;
-        Preterm = 0;
-        Abortion = 0;
-        UnclassifiedPregnancies = 0;
-
-        foreach (var card in Pregnancies)
-        {
-            var pregnancy = card.Pregnancy;
-
-            // Current pregnancies count toward Gravida,
-            // but are not yet classified as completed outcomes.
-            if (pregnancy.Status == "Current")
-            {
-                continue;
-            }
-
-            if (pregnancy.Status != "Completed")
-            {
-                UnclassifiedPregnancies++;
-                continue;
-            }
-
-            if (!pregnancy.GestationalAgeAtEndWeeks.HasValue)
-            {
-                UnclassifiedPregnancies++;
-                continue;
-            }
-
-            int weeks = pregnancy.GestationalAgeAtEndWeeks.Value;
-            int days = pregnancy.GestationalAgeAtEndDays ?? 0;
-
-            if (weeks < 20)
-            {
-                bool isPregnancyLoss =
-                    pregnancy.PregnancyOutcome == "Miscarriage" ||
-                    pregnancy.PregnancyOutcome == "Ectopic Pregnancy" ||
-                    pregnancy.PregnancyOutcome == "Molar Pregnancy";
-
-                if (isPregnancyLoss)
-                {
-                    Abortion++;
-                }
-                else
-                {
-                    UnclassifiedPregnancies++;
-                }
-
-                continue;
-            }
-
-            if (weeks >= 37)
-            {
-                Term++;
-            }
-            else if (weeks >= 20 && (weeks < 37 || (weeks == 37 && days == 0)))
-            {
-                Preterm++;
-            }
-            else
-            {
-                UnclassifiedPregnancies++;
-            }
-        }
-
-        CalculateLivingChildren();
+        Gravida = summary.Gravida;
+        Term = summary.Term;
+        Preterm = summary.Preterm;
+        Abortion = summary.Abortion;
+        UnclassifiedPregnancies = summary.UnclassifiedPregnancies;
+        LivingChildrenDisplay = summary.LivingChildrenDisplay;
     }
 
     private void CalculateLivingChildren()

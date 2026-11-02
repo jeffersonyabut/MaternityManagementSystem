@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using MaternityManagementSystem.Data;
 using MaternityManagementSystem.Models;
 using System.Text.Json;
+using MaternityManagementSystem.Models.Reports;
 
 namespace MaternityManagementSystem.Repositories;
 
@@ -420,6 +421,86 @@ public class PatientRepository
             cancellationToken);
 
         await dbContext.SaveChangesAsync(cancellationToken);
+    }
+
+
+
+    public async Task<IndividualPatientRecordReport?> GetIndividualPatientRecordReportAsync(
+    int patientId,
+    CancellationToken cancellationToken = default)
+    {
+        if (patientId <= 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(patientId));
+        }
+
+        await using var dbContext =
+            await CreateDbContextAsync(cancellationToken);
+
+        // Retrieve the patient.
+        var patient = await dbContext.Patients
+            .AsNoTracking()
+            .FirstOrDefaultAsync(
+                p => p.Id == patientId,
+                cancellationToken);
+
+        if (patient is null)
+        {
+            return null;
+        }
+
+        // Retrieve all pregnancies belonging to the patient.
+        var pregnancies = await dbContext.Pregnancies
+            .AsNoTracking()
+            .Where(p => p.PatientId == patientId)
+            .OrderBy(p => p.CreatedAtUtc)
+            .ToListAsync(cancellationToken);
+
+        var pregnancyIds = pregnancies
+            .Select(p => p.Id)
+            .ToList();
+
+        // Retrieve prenatal visits belonging to those pregnancies.
+        var prenatalVisits = await dbContext.PrenatalVisits
+            .AsNoTracking()
+            .Where(v => pregnancyIds.Contains(v.PregnancyId))
+            .OrderBy(v => v.VisitDate)
+            .ThenBy(v => v.Id)
+            .ToListAsync(cancellationToken);
+
+        var prenatalVisitIds = prenatalVisits
+            .Select(v => v.Id)
+            .ToList();
+
+        // Retrieve non-archived vital signs.
+        var vitalSigns = await dbContext.VitalSigns
+            .AsNoTracking()
+            .Where(v =>
+                !v.IsArchived &&
+                prenatalVisitIds.Contains(v.PrenatalVisitId))
+            .OrderBy(v => v.RecordedAtUtc)
+            .ThenBy(v => v.Id)
+            .ToListAsync(cancellationToken);
+
+        // Retrieve non-archived laboratory results.
+        var laboratoryResults = await dbContext.LaboratoryResults
+            .AsNoTracking()
+            .Where(r =>
+                r.PatientId == patientId &&
+                !r.IsArchived)
+            .OrderBy(r => r.TestDate)
+            .ThenBy(r => r.Id)
+            .ToListAsync(cancellationToken);
+
+        return new IndividualPatientRecordReport
+        {
+            GeneratedAtUtc = DateTime.UtcNow,
+            Patient = patient,
+            Pregnancies = pregnancies,
+            PrenatalVisits = prenatalVisits,
+            VitalSigns = vitalSigns,
+            LaboratoryResults = laboratoryResults
+        };
     }
 
 

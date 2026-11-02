@@ -43,5 +43,21 @@ namespace MaternityManagementSystem.Views
                 dashboard.NavigateToReportView(reportView);
             }
         }
+
+
+        private void IndividualPatientRecordButton_Click(
+            object sender,
+            RoutedEventArgs e)
+        {
+            if (Window.GetWindow(this) is DashboardWindow dashboard)
+            {
+                dashboard.ShowIndividualPatientRecordSelection();
+            }
+        }
+
+
+
+
+
     }
 }

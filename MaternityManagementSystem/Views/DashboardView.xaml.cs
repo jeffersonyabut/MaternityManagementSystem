@@ -8,6 +8,7 @@ using MaternityManagementSystem.Dialogs;
 using MaternityManagementSystem.Repositories;
 using MaternityManagementSystem.Services;
 using MaternityManagementSystem.ViewModels;
+using MaternityManagementSystem.Views.Reports;
 
 namespace MaternityManagementSystem.Views
 {

@@ -1,6 +1,7 @@
 using MaternityManagementSystem.Models;
 using MaternityManagementSystem.Repositories;
 using MaternityManagementSystem.Sessions;
+using MaternityManagementSystem.Models.Reports;
 
 namespace MaternityManagementSystem.Services;
 
@@ -389,4 +390,23 @@ public class PatientService
 
         return value.Trim();
     }
+
+
+    public async Task<IndividualPatientRecordReport?> GetIndividualPatientRecordReportAsync(
+    int patientId,
+    CancellationToken cancellationToken = default)
+    {
+        _authorizationService.EnsureAuthenticated();
+
+        if (patientId <= 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(patientId));
+        }
+
+        return await _patientRepository.GetIndividualPatientRecordReportAsync(
+            patientId,
+            cancellationToken);
+    }
+
+
 }

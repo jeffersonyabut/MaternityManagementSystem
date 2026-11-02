@@ -8,6 +8,7 @@ using System.Windows.Media;
 using MaternityManagementSystem.Models;
 using MaternityManagementSystem.Models.Reports;
 using MaternityManagementSystem.ViewModels.Reports;
+using System.Printing;
 
 namespace MaternityManagementSystem.Views
 {
@@ -90,10 +91,9 @@ namespace MaternityManagementSystem.Views
 
                 var printButton = new Button
                 {
-                    Content = "Print / Save as PDF",
+                    Content = "Print",
                     Padding = new Thickness(16, 8, 16, 8),
                     Margin = new Thickness(10),
-                    HorizontalAlignment = HorizontalAlignment.Right,
                     Background = Brushes.DarkSlateBlue,
                     Foreground = Brushes.White,
                     FontWeight = FontWeights.SemiBold,
@@ -112,11 +112,75 @@ namespace MaternityManagementSystem.Views
                     }
                 };
 
+                var pdfButton = new Button
+                {
+                    Content = "Save as PDF",
+                    Padding = new Thickness(16, 8, 16, 8),
+                    Margin = new Thickness(10),
+                    Background = Brushes.White,
+                    Foreground = Brushes.DarkSlateBlue,
+                    BorderBrush = Brushes.DarkSlateBlue,
+                    BorderThickness = new Thickness(1),
+                    FontWeight = FontWeights.SemiBold,
+                    Cursor = System.Windows.Input.Cursors.Hand
+                };
+
+                pdfButton.Click += (_, _) =>
+                {
+                    try
+                    {
+                        var printServer = new LocalPrintServer();
+
+                        var pdfQueue = printServer.GetPrintQueue(
+                            "Microsoft Print to PDF");
+
+                        pdfQueue.Refresh();
+
+                        var printDialog = new PrintDialog
+                        {
+                            PrintQueue = pdfQueue
+                        };
+
+                        var printTicket = pdfQueue.DefaultPrintTicket
+                            ?? new PrintTicket();
+
+                        printTicket.PageMediaSize =
+                            new PageMediaSize(PageMediaSizeName.NorthAmericaLetter);
+
+                        printTicket.PageOrientation = PageOrientation.Landscape;
+
+                        printDialog.PrintTicket = printTicket;
+
+                        printDialog.PrintDocument(
+                            document.DocumentPaginator,
+                            "Golddie - Patient Master List");
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show(
+                            "Unable to export using Microsoft Print to PDF.\n\n" +
+                            "Make sure Microsoft Print to PDF is installed and enabled.\n\n" +
+                            ex.Message,
+                            "PDF Export Error",
+                            MessageBoxButton.OK,
+                            MessageBoxImage.Error);
+                    }
+                };
+
+                var toolbar = new StackPanel
+                {
+                    Orientation = Orientation.Horizontal,
+                    HorizontalAlignment = HorizontalAlignment.Right
+                };
+
+                toolbar.Children.Add(pdfButton);
+                toolbar.Children.Add(printButton);
+
                 var layout = new DockPanel();
 
-                DockPanel.SetDock(printButton, Dock.Top);
+                DockPanel.SetDock(toolbar, Dock.Top);
 
-                layout.Children.Add(printButton);
+                layout.Children.Add(toolbar);
                 layout.Children.Add(viewer);
 
                 var owner = Window.GetWindow(this);
@@ -304,54 +368,59 @@ namespace MaternityManagementSystem.Views
                         DateTimeKind.Utc),
                     ClinicTimeZone);
 
+                // Generated — left side
                 AddText(
                     page,
                     $"Generated: {generatedAt:MMM dd, yyyy hh:mm tt} (UTC+8)",
                     MarginSize,
                     120,
-                    ContentWidth,
+                    450,
                     20,
                     10,
                     Brushes.Black,
                     FontWeights.Normal);
 
+                // Registration From — right side
                 AddText(
                     page,
                     $"Registration From: {report.StartDate?.ToString("MMM dd, yyyy") ?? "Any"}",
-                    MarginSize,
-                    145,
-                    450,
+                    MarginSize + 480,
+                    120,
+                    230,
                     20,
                     10,
                     Brushes.Black,
                     FontWeights.Normal);
 
+                // Registration To — beside Registration From
                 AddText(
                     page,
                     $"Registration To: {report.EndDate?.ToString("MMM dd, yyyy") ?? "Any"}",
-                    MarginSize + 480,
-                    145,
-                    450,
+                    MarginSize + 710,
+                    120,
+                    270,
                     20,
                     10,
                     Brushes.Black,
                     FontWeights.Normal);
 
+                // Sex — left side
                 AddText(
                     page,
                     $"Sex: {report.Sex ?? "All"}",
                     MarginSize,
-                    170,
+                    145,
                     450,
                     20,
                     10,
                     Brushes.Black,
                     FontWeights.Normal);
 
+                // Search Term — left side, next row
                 AddText(
                     page,
                     $"Search Term: {report.SearchTerm ?? "None"}",
-                    MarginSize + 480,
+                    MarginSize,
                     170,
                     450,
                     20,
