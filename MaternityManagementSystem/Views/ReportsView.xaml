@@ -1,0 +1,241 @@
+<UserControl x:Class="MaternityManagementSystem.Views.ReportsView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <UserControl.Resources>
+        <Style x:Key="ReportCardButtonStyle"
+               TargetType="{x:Type Button}">
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="BorderBrush" Value="#EAE7F0"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Padding" Value="20"/>
+            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type Button}">
+                        <Border x:Name="CardBorder"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="12"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter/>
+                        </Border>
+
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="CardBorder"
+                                        Property="Background"
+                                        Value="#F7F3FC"/>
+                                <Setter TargetName="CardBorder"
+                                        Property="BorderBrush"
+                                        Value="#B99AD9"/>
+                            </Trigger>
+
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="CardBorder"
+                                        Property="Background"
+                                        Value="#EEE6F7"/>
+                            </Trigger>
+
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="CardBorder"
+                                        Property="Opacity"
+                                        Value="0.5"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </UserControl.Resources>
+
+    <Grid Background="#F5F5FA">
+        <ScrollViewer VerticalScrollBarVisibility="Auto">
+            <StackPanel Margin="28">
+
+                <!-- Header -->
+                <StackPanel Margin="0,0,0,28">
+                    <TextBlock Text="GOLDDIE · CLINIC MANAGEMENT"
+                               FontSize="10"
+                               FontWeight="SemiBold"
+                               Foreground="#7952B3"/>
+
+                    <TextBlock Text="Reports"
+                               FontSize="28"
+                               FontWeight="Bold"
+                               Foreground="#29243B"
+                               Margin="0,5,0,0"/>
+
+                    <TextBlock Text="Generate, preview, and print clinic reports."
+                               FontSize="13"
+                               Foreground="#777184"
+                               Margin="0,5,0,0"/>
+                </StackPanel>
+
+                <!-- Report Introduction -->
+                <Border Background="White"
+                        BorderBrush="#EAE7F0"
+                        BorderThickness="1"
+                        CornerRadius="14"
+                        Padding="24">
+
+                    <StackPanel>
+                        <TextBlock Text="Report Management"
+                                   FontSize="18"
+                                   FontWeight="SemiBold"
+                                   Foreground="#29243B"/>
+
+                        <TextBlock Text="Access organized clinic records and generate printable reports from your existing data."
+                                   FontSize="13"
+                                   Foreground="#777184"
+                                   TextWrapping="Wrap"
+                                   Margin="0,8,0,0"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- Available Reports -->
+                <TextBlock Text="Available Reports"
+                           FontSize="17"
+                           FontWeight="SemiBold"
+                           Foreground="#29243B"
+                           Margin="0,28,0,14"/>
+
+                <UniformGrid Columns="2">
+
+                    <!-- Patient Master List -->
+                    <Button Style="{StaticResource ReportCardButtonStyle}"
+                            Margin="0,0,10,10"
+                            Click="PatientMasterListButton_Click">
+
+                        <StackPanel>
+                            <TextBlock Text="Patient Master List"
+                                       FontSize="15"
+                                       FontWeight="SemiBold"
+                                       Foreground="#29243B"/>
+
+                            <TextBlock Text="View registered patients and their basic information."
+                                       FontSize="12"
+                                       Foreground="#777184"
+                                       TextWrapping="Wrap"
+                                       Margin="0,7,0,0"/>
+                        </StackPanel>
+                    </Button>
+
+                    <!-- Patient Record -->
+                    <Border Background="White"
+                            BorderBrush="#EAE7F0"
+                            BorderThickness="1"
+                            CornerRadius="12"
+                            Padding="20"
+                            Margin="10,0,0,10">
+
+                        <StackPanel>
+                            <TextBlock Text="Individual Patient Record"
+                                       FontSize="15"
+                                       FontWeight="SemiBold"
+                                       Foreground="#29243B"/>
+
+                            <TextBlock Text="View a patient's personal, pregnancy, and obstetric information."
+                                       FontSize="12"
+                                       Foreground="#777184"
+                                       TextWrapping="Wrap"
+                                       Margin="0,7,0,0"/>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Prenatal Report -->
+                    <Border Background="White"
+                            BorderBrush="#EAE7F0"
+                            BorderThickness="1"
+                            CornerRadius="12"
+                            Padding="20"
+                            Margin="0,0,10,10">
+
+                        <StackPanel>
+                            <TextBlock Text="Prenatal Care Report"
+                                       FontSize="15"
+                                       FontWeight="SemiBold"
+                                       Foreground="#29243B"/>
+
+                            <TextBlock Text="Review prenatal visits and recorded vital signs."
+                                       FontSize="12"
+                                       Foreground="#777184"
+                                       TextWrapping="Wrap"
+                                       Margin="0,7,0,0"/>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Laboratory Report -->
+                    <Border Background="White"
+                            BorderBrush="#EAE7F0"
+                            BorderThickness="1"
+                            CornerRadius="12"
+                            Padding="20"
+                            Margin="10,0,0,10">
+
+                        <StackPanel>
+                            <TextBlock Text="Laboratory Results Report"
+                                       FontSize="15"
+                                       FontWeight="SemiBold"
+                                       Foreground="#29243B"/>
+
+                            <TextBlock Text="Review recorded laboratory results and findings."
+                                       FontSize="12"
+                                       Foreground="#777184"
+                                       TextWrapping="Wrap"
+                                       Margin="0,7,0,0"/>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Appointment Report -->
+                    <Border Background="White"
+                            BorderBrush="#EAE7F0"
+                            BorderThickness="1"
+                            CornerRadius="12"
+                            Padding="20"
+                            Margin="0,0,10,10">
+
+                        <StackPanel>
+                            <TextBlock Text="Appointment Report"
+                                       FontSize="15"
+                                       FontWeight="SemiBold"
+                                       Foreground="#29243B"/>
+
+                            <TextBlock Text="Review clinic schedules and appointment statuses."
+                                       FontSize="12"
+                                       Foreground="#777184"
+                                       TextWrapping="Wrap"
+                                       Margin="0,7,0,0"/>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Pregnancy Summary -->
+                    <Border Background="White"
+                            BorderBrush="#EAE7F0"
+                            BorderThickness="1"
+                            CornerRadius="12"
+                            Padding="20"
+                            Margin="10,0,0,10">
+
+                        <StackPanel>
+                            <TextBlock Text="Pregnancy Summary"
+                                       FontSize="15"
+                                       FontWeight="SemiBold"
+                                       Foreground="#29243B"/>
+
+                            <TextBlock Text="Review pregnancy records, outcomes, and obstetric history."
+                                       FontSize="12"
+                                       Foreground="#777184"
+                                       TextWrapping="Wrap"
+                                       Margin="0,7,0,0"/>
+                        </StackPanel>
+                    </Border>
+
+                </UniformGrid>
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
+</UserControl>

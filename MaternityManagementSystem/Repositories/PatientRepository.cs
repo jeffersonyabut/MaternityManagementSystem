@@ -231,6 +231,86 @@ public class PatientRepository
 
 
 
+
+    public async Task<List<Patient>> GetPatientMasterListAsync(
+        DateTime? startUtc = null,
+        DateTime? endUtc = null,
+        string? sex = null,
+        string? searchTerm = null,
+        CancellationToken cancellationToken = default)
+    {
+        if (startUtc.HasValue &&
+            endUtc.HasValue &&
+            endUtc.Value <= startUtc.Value)
+        {
+            throw new ArgumentException(
+                "The end date must be later than the start date.");
+        }
+
+        string? normalizedSex =
+            string.IsNullOrWhiteSpace(sex) ? null : sex.Trim();
+
+        string normalizedSearch =
+            searchTerm?.Trim() ?? string.Empty;
+
+        string search = normalizedSearch.ToLowerInvariant();
+
+        await using var dbContext =
+            await CreateDbContextAsync(cancellationToken);
+
+        var query = dbContext.Patients
+            .AsNoTracking();
+
+        // Registration date filter.
+        if (startUtc.HasValue)
+        {
+            query = query.Where(patient =>
+                patient.CreatedAtUtc >= startUtc.Value);
+        }
+
+        if (endUtc.HasValue)
+        {
+            query = query.Where(patient =>
+                patient.CreatedAtUtc < endUtc.Value);
+        }
+
+        // Sex filter.
+        if (normalizedSex is not null)
+        {
+            query = query.Where(patient =>
+                patient.Sex == normalizedSex);
+        }
+
+        // Patient number and full-name search.
+        if (search.Length > 0)
+        {
+            query = query.Where(patient =>
+                patient.PatientNumber.ToLower().Contains(search) ||
+                patient.FirstName.ToLower().Contains(search) ||
+                patient.LastName.ToLower().Contains(search) ||
+                (
+                    patient.MiddleName != null &&
+                    patient.MiddleName.ToLower().Contains(search)
+                ) ||
+                (
+                    (patient.FirstName + " " +
+                     (patient.MiddleName ?? "") + " " +
+                     patient.LastName)
+                    .ToLower()
+                    .Contains(search)
+                ));
+        }
+
+        return await query
+            .OrderBy(patient => patient.LastName)
+            .ThenBy(patient => patient.FirstName)
+            .ThenBy(patient => patient.Id)
+            .ToListAsync(cancellationToken);
+    }
+
+
+
+
     public async Task UpdateAsync(
         Patient patient,
         AuditLog auditLog,

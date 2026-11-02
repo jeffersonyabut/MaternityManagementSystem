@@ -209,6 +209,26 @@ public class PatientService
             cancellationToken);
     }
 
+
+    public async Task<List<Patient>> GetPatientMasterListAsync(
+        DateTime? startUtc = null,
+        DateTime? endUtc = null,
+        string? sex = null,
+        string? searchTerm = null,
+        CancellationToken cancellationToken = default)
+    {
+        _authorizationService.EnsureAuthenticated();
+
+        return await _patientRepository.GetPatientMasterListAsync(
+            startUtc,
+            endUtc,
+            sex,
+            searchTerm,
+            cancellationToken);
+    }
+
+
+
     public async Task<List<Patient>> SearchPatientsAsync(
         string searchTerm,
         CancellationToken cancellationToken = default)

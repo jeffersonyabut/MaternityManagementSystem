@@ -252,6 +252,29 @@ public partial class DashboardWindow : Window
     }
 
 
+    // REPORTS NAVIGATION
+
+    private void ReportsButton_Click(
+        object sender,
+        RoutedEventArgs e)
+    {
+        ShowReports();
+    }
+
+    public void ShowReports()
+    {
+        _navigationService.NavigateToView(
+            new ReportsView());
+    }
+
+    public void NavigateToReportView(
+    PatientMasterListReportView view)
+    {
+        ArgumentNullException.ThrowIfNull(view);
+
+        _navigationService.NavigateToView(view);
+    }
+
     // APPOINTMENT OVERVIEW
 
     public void ShowAppointments()
