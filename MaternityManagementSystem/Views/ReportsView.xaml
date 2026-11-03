@@ -202,12 +202,9 @@
                     </Button>
 
                     <!-- Pregnancy Summary -->
-                    <Border Background="White"
-                            BorderBrush="#EAE7F0"
-                            BorderThickness="1"
-                            CornerRadius="12"
-                            Padding="20"
-                            Margin="10,0,0,10">
+                    <Button Style="{StaticResource ReportCardButtonStyle}"
+                            Margin="10,0,0,10"
+                            Click="PregnancySummaryReportButton_Click">
 
                         <StackPanel>
                             <TextBlock Text="Pregnancy Summary"
@@ -221,7 +218,7 @@
                                        TextWrapping="Wrap"
                                        Margin="0,7,0,0"/>
                         </StackPanel>
-                    </Border>
+                    </Button>
 
                 </UniformGrid>
             </StackPanel>

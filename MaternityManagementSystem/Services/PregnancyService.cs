@@ -107,6 +107,57 @@ public class PregnancyService
             cancellationToken);
     }
 
+
+    public Task<List<Pregnancy>> GetForReportAsync(
+    DateOnly? startDate,
+    DateOnly? endDate,
+    string? searchTerm,
+    string? status,
+    CancellationToken cancellationToken = default)
+    {
+        _authorizationService.EnsureAuthenticated();
+
+        if (startDate.HasValue &&
+            endDate.HasValue &&
+            startDate.Value > endDate.Value)
+        {
+            throw new ArgumentException(
+                "The start date cannot be later than the end date.");
+        }
+
+        if (!string.IsNullOrWhiteSpace(status))
+        {
+            string normalizedStatus = status.Trim();
+
+            string[] allowedStatuses =
+            [
+                "Current",
+                "Completed",
+                "Other"
+            ];
+
+            if (!normalizedStatus.Equals(
+                    "All",
+                    StringComparison.OrdinalIgnoreCase) &&
+                !allowedStatuses.Contains(
+                    normalizedStatus,
+                    StringComparer.OrdinalIgnoreCase))
+            {
+                throw new ArgumentException(
+                    "Invalid pregnancy status.",
+                    nameof(status));
+            }
+        }
+
+        return _pregnancyRepository.GetForReportAsync(
+            startDate,
+            endDate,
+            searchTerm,
+            status,
+            cancellationToken);
+    }
+
+
     public async Task<Pregnancy> UpdatePregnancyAsync(
         Pregnancy updatedPregnancy,
         CancellationToken cancellationToken = default)

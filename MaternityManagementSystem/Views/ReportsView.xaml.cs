@@ -1,4 +1,3 @@
-
 using System.Windows;
 using System.Windows.Controls;
 using MaternityManagementSystem.Repositories;
@@ -15,6 +14,7 @@ namespace MaternityManagementSystem.Views
         private readonly PrenatalCareReportViewModel _prenatalCareViewModel;
         private readonly LaboratoryResultsReportViewModel _laboratoryResultsViewModel;
         private readonly AppointmentReportViewModel _appointmentReportViewModel;
+        private readonly PregnancySummaryReportViewModel _pregnancySummaryViewModel;
 
         public ReportsView()
         {
@@ -79,6 +79,22 @@ namespace MaternityManagementSystem.Views
             _appointmentReportViewModel =
                 new AppointmentReportViewModel(
                     appointmentReportService);
+
+            // Pregnancy Summary Report
+            var pregnancyService =
+                new PregnancyService(
+                    new PregnancyRepository(),
+                    new PatientRepository(),
+                    authorizationService,
+                    app.SessionService);
+
+            var pregnancySummaryReportService =
+                new PregnancySummaryReportService(
+                    pregnancyService);
+
+            _pregnancySummaryViewModel =
+                new PregnancySummaryReportViewModel(
+                    pregnancySummaryReportService);
 
             DataContext = _viewModel;
         }
@@ -150,6 +166,33 @@ namespace MaternityManagementSystem.Views
                 reportView.BackRequested += dashboard.ShowReports;
 
                 dashboard.NavigateToReportView(reportView);
+            }
+        }
+
+        private void PregnancySummaryReportButton_Click(
+            object sender,
+            RoutedEventArgs e)
+        {
+            try
+            {
+                if (Window.GetWindow(this) is DashboardWindow dashboard)
+                {
+                    var reportView =
+                        new PregnancySummaryReportView(
+                            _pregnancySummaryViewModel);
+
+                    reportView.BackRequested += dashboard.ShowReports;
+
+                    dashboard.NavigateToReportView(reportView);
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(
+                    ex.ToString(),
+                    "Pregnancy Summary Report Error",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
             }
         }
     }

@@ -107,6 +107,74 @@ public class PregnancyRepository
                 cancellationToken);
     }
 
+    public async Task<List<Pregnancy>> GetForReportAsync(
+    DateOnly? startDate,
+    DateOnly? endDate,
+    string? searchTerm,
+    string? status,
+    CancellationToken cancellationToken = default)
+    {
+        if (startDate.HasValue &&
+            endDate.HasValue &&
+            startDate.Value > endDate.Value)
+        {
+            throw new ArgumentException(
+                "The start date cannot be later than the end date.");
+        }
+
+        await using var dbContext =
+            await CreateDbContextAsync(cancellationToken);
+
+        var query = dbContext.Pregnancies
+            .AsNoTracking()
+            .Include(pregnancy => pregnancy.Patient)
+            .AsQueryable();
+
+        // Filter by LMP date.
+        if (startDate.HasValue)
+        {
+            query = query.Where(pregnancy =>
+                pregnancy.LastMenstrualPeriod >= startDate.Value);
+        }
+
+        if (endDate.HasValue)
+        {
+            query = query.Where(pregnancy =>
+                pregnancy.LastMenstrualPeriod <= endDate.Value);
+        }
+
+        // Search by patient number or name.
+        if (!string.IsNullOrWhiteSpace(searchTerm))
+        {
+            var search = searchTerm.Trim();
+
+            query = query.Where(pregnancy =>
+                pregnancy.Patient.PatientNumber.Contains(search) ||
+                pregnancy.Patient.FirstName.Contains(search) ||
+                (pregnancy.Patient.MiddleName != null &&
+                 pregnancy.Patient.MiddleName.Contains(search)) ||
+                pregnancy.Patient.LastName.Contains(search));
+        }
+
+        // Filter by pregnancy status.
+        if (!string.IsNullOrWhiteSpace(status) &&
+            !string.Equals(
+                status,
+                "All",
+                StringComparison.OrdinalIgnoreCase))
+        {
+            query = query.Where(pregnancy =>
+                pregnancy.Status == status);
+        }
+
+        return await query
+            .OrderByDescending(pregnancy =>
+                pregnancy.LastMenstrualPeriod)
+            .ThenBy(pregnancy => pregnancy.Patient.LastName)
+            .ToListAsync(cancellationToken);
+    }
+
+
     public async Task UpdateAsync(
         Pregnancy pregnancy,
         AuditLog auditLog,
