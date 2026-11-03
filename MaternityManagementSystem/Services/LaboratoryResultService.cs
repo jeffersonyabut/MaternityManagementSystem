@@ -132,6 +132,32 @@ public class LaboratoryResultService
             cancellationToken);
     }
 
+    public Task<List<LaboratoryResult>> GetForReportAsync(
+    DateOnly? startDate,
+    DateOnly? endDate,
+    string? searchTerm,
+    string? testName,
+    CancellationToken cancellationToken = default)
+    {
+        _authorizationService.EnsureAuthenticated();
+
+        if (startDate.HasValue &&
+            endDate.HasValue &&
+            startDate.Value > endDate.Value)
+        {
+            throw new ArgumentException(
+                "The start date cannot be later than the end date.");
+        }
+
+        return _laboratoryResultRepository.GetForReportAsync(
+            startDate,
+            endDate,
+            searchTerm,
+            testName,
+            cancellationToken);
+    }
+
+
     public async Task<LaboratoryResult> UpdateLaboratoryResultAsync(
         LaboratoryResult updatedLaboratoryResult,
         CancellationToken cancellationToken = default)

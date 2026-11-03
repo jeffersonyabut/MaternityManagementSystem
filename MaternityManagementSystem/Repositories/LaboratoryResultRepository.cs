@@ -140,6 +140,69 @@ public class LaboratoryResultRepository
             .ToListAsync(cancellationToken);
     }
 
+
+    public async Task<List<LaboratoryResult>> GetForReportAsync(
+    DateOnly? startDate,
+    DateOnly? endDate,
+    string? searchTerm,
+    string? testName,
+    CancellationToken cancellationToken = default)
+    {
+        if (startDate.HasValue &&
+            endDate.HasValue &&
+            startDate.Value > endDate.Value)
+        {
+            throw new ArgumentException(
+                "The start date cannot be later than the end date.");
+        }
+
+        await using var dbContext =
+            await CreateDbContextAsync(cancellationToken);
+
+        var query = dbContext.LaboratoryResults
+            .AsNoTracking()
+            .Include(result => result.Patient)
+            .Where(result => !result.IsArchived);
+
+        if (startDate.HasValue)
+        {
+            query = query.Where(result =>
+                result.TestDate >= startDate.Value);
+        }
+
+        if (endDate.HasValue)
+        {
+            query = query.Where(result =>
+                result.TestDate <= endDate.Value);
+        }
+
+        if (!string.IsNullOrWhiteSpace(searchTerm))
+        {
+            var search = searchTerm.Trim();
+
+            query = query.Where(result =>
+                result.Patient.PatientNumber.Contains(search) ||
+                result.Patient.FirstName.Contains(search) ||
+                (result.Patient.MiddleName != null &&
+                 result.Patient.MiddleName.Contains(search)) ||
+                result.Patient.LastName.Contains(search));
+        }
+
+        if (!string.IsNullOrWhiteSpace(testName))
+        {
+            var test = testName.Trim();
+
+            query = query.Where(result =>
+                result.TestName.Contains(test));
+        }
+
+        return await query
+            .OrderByDescending(result => result.TestDate)
+            .ThenBy(result => result.Patient.LastName)
+            .ToListAsync(cancellationToken);
+    }
+
+
     public async Task UpdateAsync(
         LaboratoryResult laboratoryResult,
         AuditLog auditLog,
