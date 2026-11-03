@@ -501,6 +501,160 @@ public class AppointmentRepository
         await transaction.CommitAsync(cancellationToken);
     }
 
+
+    public async Task<int> GetAppointmentCountForClinicActivityReportAsync(
+    DateOnly? startDate,
+    DateOnly? endDate,
+    CancellationToken cancellationToken = default)
+    {
+        if (startDate.HasValue &&
+            endDate.HasValue &&
+            startDate.Value > endDate.Value)
+        {
+            throw new ArgumentException(
+                "The start date cannot be later than the end date.");
+        }
+
+        await using var dbContext =
+            await CreateDbContextAsync(cancellationToken);
+
+        var query = dbContext.Appointments
+            .AsNoTracking()
+            .Where(appointment => !appointment.IsArchived);
+
+        if (startDate.HasValue)
+        {
+            query = query.Where(appointment =>
+                appointment.AppointmentDate >= startDate.Value);
+        }
+
+        if (endDate.HasValue)
+        {
+            query = query.Where(appointment =>
+                appointment.AppointmentDate <= endDate.Value);
+        }
+
+        return await query.CountAsync(cancellationToken);
+    }
+
+
+    public async Task<List<DateOnly>> GetAppointmentDatesForClinicActivityReportAsync(
+    DateOnly? startDate,
+    DateOnly? endDate,
+    CancellationToken cancellationToken = default)
+    {
+        if (startDate.HasValue &&
+            endDate.HasValue &&
+            startDate.Value > endDate.Value)
+        {
+            throw new ArgumentException(
+                "The start date cannot be later than the end date.");
+        }
+
+        await using var dbContext =
+            await CreateDbContextAsync(cancellationToken);
+
+        var query = dbContext.Appointments
+            .AsNoTracking()
+            .Where(appointment => !appointment.IsArchived);
+
+        if (startDate.HasValue)
+        {
+            query = query.Where(appointment =>
+                appointment.AppointmentDate >= startDate.Value);
+        }
+
+        if (endDate.HasValue)
+        {
+            query = query.Where(appointment =>
+                appointment.AppointmentDate <= endDate.Value);
+        }
+
+        return await query
+            .OrderBy(appointment => appointment.AppointmentDate)
+            .Select(appointment => appointment.AppointmentDate)
+            .ToListAsync(cancellationToken);
+    }
+
+
+    public async Task<List<int>> GetPatientIdsForClinicActivityReportAsync(
+    DateOnly? startDate,
+    DateOnly? endDate,
+    CancellationToken cancellationToken = default)
+    {
+        if (startDate.HasValue &&
+            endDate.HasValue &&
+            startDate.Value > endDate.Value)
+        {
+            throw new ArgumentException(
+                "The start date cannot be later than the end date.");
+        }
+
+        await using var dbContext =
+            await CreateDbContextAsync(cancellationToken);
+
+        var query = dbContext.Appointments
+            .AsNoTracking()
+            .Where(appointment => !appointment.IsArchived);
+
+        if (startDate.HasValue)
+        {
+            query = query.Where(appointment =>
+                appointment.AppointmentDate >= startDate.Value);
+        }
+
+        if (endDate.HasValue)
+        {
+            query = query.Where(appointment =>
+                appointment.AppointmentDate <= endDate.Value);
+        }
+
+        return await query
+            .Select(appointment => appointment.PatientId)
+            .Distinct()
+            .ToListAsync(cancellationToken);
+    }
+
+
+
+    public async Task<List<string>> GetStatusesForClinicActivityReportAsync(
+    DateOnly? startDate,
+    DateOnly? endDate,
+    CancellationToken cancellationToken = default)
+    {
+        if (startDate.HasValue &&
+            endDate.HasValue &&
+            startDate.Value > endDate.Value)
+        {
+            throw new ArgumentException(
+                "The start date cannot be later than the end date.");
+        }
+
+        await using var dbContext =
+            await CreateDbContextAsync(cancellationToken);
+
+        var query = dbContext.Appointments
+            .AsNoTracking()
+            .Where(appointment => !appointment.IsArchived);
+
+        if (startDate.HasValue)
+        {
+            query = query.Where(appointment =>
+                appointment.AppointmentDate >= startDate.Value);
+        }
+
+        if (endDate.HasValue)
+        {
+            query = query.Where(appointment =>
+                appointment.AppointmentDate <= endDate.Value);
+        }
+
+        return await query
+            .Select(appointment => appointment.Status)
+            .ToListAsync(cancellationToken);
+    }
+
+
     // TRANSACTION-SAFE CONFLICT VALIDATION
 
     private static async Task EnsureNoScheduleConflictAsync(

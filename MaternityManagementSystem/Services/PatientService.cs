@@ -435,4 +435,52 @@ public class PatientService
 
 
 
+    public async Task<int> GetPatientRegistrationCountForClinicActivityReportAsync(
+    DateOnly? startDate,
+    DateOnly? endDate,
+    CancellationToken cancellationToken = default)
+    {
+        _authorizationService.EnsureAuthenticated();
+
+        if (startDate.HasValue &&
+            endDate.HasValue &&
+            startDate.Value > endDate.Value)
+        {
+            throw new ArgumentException(
+                "The start date cannot be later than the end date.");
+        }
+
+        return await _patientRepository
+            .GetRegistrationCountForClinicActivityReportAsync(
+                startDate,
+                endDate,
+                cancellationToken);
+    }
+
+
+    public async Task<List<DateTime>> GetPatientRegistrationDatesForClinicActivityReportAsync(
+    DateOnly? startDate,
+    DateOnly? endDate,
+    CancellationToken cancellationToken = default)
+    {
+        _authorizationService.EnsureAuthenticated();
+
+        if (startDate.HasValue &&
+            endDate.HasValue &&
+            startDate.Value > endDate.Value)
+        {
+            throw new ArgumentException(
+                "The start date cannot be later than the end date.");
+        }
+
+        return await _patientRepository
+            .GetRegistrationDatesForClinicActivityReportAsync(
+                startDate,
+                endDate,
+                cancellationToken);
+    }
+
+
+
+
 }

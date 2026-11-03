@@ -220,6 +220,25 @@
                         </StackPanel>
                     </Button>
 
+                    <!-- Clinic Activity Report -->
+                    <Button Style="{StaticResource ReportCardButtonStyle}"
+                            Margin="0,0,10,10"
+                            Click="ClinicActivityReportButton_Click">
+
+                        <StackPanel>
+                            <TextBlock Text="Clinic Activity Report"
+                                       FontSize="15"
+                                       FontWeight="SemiBold"
+                                       Foreground="#29243B"/>
+
+                            <TextBlock Text="View overall clinic activity, patient registrations, clinical services, and appointment statistics."
+                                       FontSize="12"
+                                       Foreground="#777184"
+                                       TextWrapping="Wrap"
+                                       Margin="0,7,0,0"/>
+                        </StackPanel>
+                    </Button>
+
                 </UniformGrid>
             </StackPanel>
         </ScrollViewer>

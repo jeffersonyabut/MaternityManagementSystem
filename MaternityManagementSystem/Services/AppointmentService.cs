@@ -236,6 +236,97 @@ public class AppointmentService
 
 
 
+    public async Task<int> GetAppointmentCountForClinicActivityReportAsync(
+    DateOnly? startDate,
+    DateOnly? endDate,
+    CancellationToken cancellationToken = default)
+    {
+        _authorizationService.EnsureAuthenticated();
+
+        if (startDate.HasValue &&
+            endDate.HasValue &&
+            startDate.Value > endDate.Value)
+        {
+            throw new ArgumentException(
+                "The start date cannot be later than the end date.");
+        }
+
+        return await _appointmentRepository
+            .GetAppointmentCountForClinicActivityReportAsync(
+                startDate,
+                endDate,
+                cancellationToken);
+    }
+
+
+    public async Task<List<DateOnly>> GetAppointmentDatesForClinicActivityReportAsync(
+    DateOnly? startDate,
+    DateOnly? endDate,
+    CancellationToken cancellationToken = default)
+    {
+        _authorizationService.EnsureAuthenticated();
+
+        if (startDate.HasValue &&
+            endDate.HasValue &&
+            startDate.Value > endDate.Value)
+        {
+            throw new ArgumentException(
+                "The start date cannot be later than the end date.");
+        }
+
+        return await _appointmentRepository
+            .GetAppointmentDatesForClinicActivityReportAsync(
+                startDate,
+                endDate,
+                cancellationToken);
+    }
+
+
+    public async Task<List<int>> GetPatientIdsForClinicActivityReportAsync(
+    DateOnly? startDate,
+    DateOnly? endDate,
+    CancellationToken cancellationToken = default)
+    {
+        _authorizationService.EnsureAuthenticated();
+
+        if (startDate.HasValue &&
+            endDate.HasValue &&
+            startDate.Value > endDate.Value)
+        {
+            throw new ArgumentException(
+                "The start date cannot be later than the end date.");
+        }
+
+        return await _appointmentRepository
+            .GetPatientIdsForClinicActivityReportAsync(
+                startDate,
+                endDate,
+                cancellationToken);
+    }
+
+
+    public async Task<List<string>> GetStatusesForClinicActivityReportAsync(
+    DateOnly? startDate,
+    DateOnly? endDate,
+    CancellationToken cancellationToken = default)
+    {
+        _authorizationService.EnsureAuthenticated();
+
+        if (startDate.HasValue &&
+            endDate.HasValue &&
+            startDate.Value > endDate.Value)
+        {
+            throw new ArgumentException(
+                "The start date cannot be later than the end date.");
+        }
+
+        return await _appointmentRepository
+            .GetStatusesForClinicActivityReportAsync(
+                startDate,
+                endDate,
+                cancellationToken);
+    }
+
 
     // UPDATE / RESCHEDULE
 

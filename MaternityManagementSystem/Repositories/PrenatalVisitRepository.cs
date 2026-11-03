@@ -228,4 +228,120 @@ public class PrenatalVisitRepository
         // are saved together.
         await dbContext.SaveChangesAsync(cancellationToken);
     }
+
+
+    public async Task<int> GetPrenatalVisitCountForClinicActivityReportAsync(
+    DateOnly? startDate,
+    DateOnly? endDate,
+    CancellationToken cancellationToken = default)
+    {
+        if (startDate.HasValue &&
+            endDate.HasValue &&
+            startDate.Value > endDate.Value)
+        {
+            throw new ArgumentException(
+                "The start date cannot be later than the end date.");
+        }
+
+        await using var dbContext =
+            await CreateDbContextAsync(cancellationToken);
+
+        var query = dbContext.PrenatalVisits
+            .AsNoTracking()
+            .AsQueryable();
+
+        if (startDate.HasValue)
+        {
+            query = query.Where(visit =>
+                visit.VisitDate >= startDate.Value);
+        }
+
+        if (endDate.HasValue)
+        {
+            query = query.Where(visit =>
+                visit.VisitDate <= endDate.Value);
+        }
+
+        return await query.CountAsync(cancellationToken);
+    }
+
+    public async Task<List<DateOnly>> GetVisitDatesForClinicActivityReportAsync(
+    DateOnly? startDate,
+    DateOnly? endDate,
+    CancellationToken cancellationToken = default)
+    {
+        if (startDate.HasValue &&
+            endDate.HasValue &&
+            startDate.Value > endDate.Value)
+        {
+            throw new ArgumentException(
+                "The start date cannot be later than the end date.");
+        }
+
+        await using var dbContext =
+            await CreateDbContextAsync(cancellationToken);
+
+        var query = dbContext.PrenatalVisits
+            .AsNoTracking()
+            .AsQueryable();
+
+        if (startDate.HasValue)
+        {
+            query = query.Where(visit =>
+                visit.VisitDate >= startDate.Value);
+        }
+
+        if (endDate.HasValue)
+        {
+            query = query.Where(visit =>
+                visit.VisitDate <= endDate.Value);
+        }
+
+        return await query
+            .OrderBy(visit => visit.VisitDate)
+            .Select(visit => visit.VisitDate)
+            .ToListAsync(cancellationToken);
+    }
+
+
+    public async Task<List<int>> GetPatientIdsForClinicActivityReportAsync(
+    DateOnly? startDate,
+    DateOnly? endDate,
+    CancellationToken cancellationToken = default)
+    {
+        if (startDate.HasValue &&
+            endDate.HasValue &&
+            startDate.Value > endDate.Value)
+        {
+            throw new ArgumentException(
+                "The start date cannot be later than the end date.");
+        }
+
+        await using var dbContext =
+            await CreateDbContextAsync(cancellationToken);
+
+        var query = dbContext.PrenatalVisits
+            .AsNoTracking()
+            .AsQueryable();
+
+        if (startDate.HasValue)
+        {
+            query = query.Where(visit =>
+                visit.VisitDate >= startDate.Value);
+        }
+
+        if (endDate.HasValue)
+        {
+            query = query.Where(visit =>
+                visit.VisitDate <= endDate.Value);
+        }
+
+        return await query
+            .Select(visit => visit.Pregnancy.PatientId)
+            .Distinct()
+            .ToListAsync(cancellationToken);
+    }
+
+
+
 }

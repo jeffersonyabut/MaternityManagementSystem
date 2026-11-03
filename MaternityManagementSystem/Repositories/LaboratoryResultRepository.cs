@@ -393,4 +393,121 @@ public class LaboratoryResultRepository
 
         await transaction.CommitAsync(cancellationToken);
     }
+
+
+    public async Task<int> GetLaboratoryResultCountForClinicActivityReportAsync(
+    DateOnly? startDate,
+    DateOnly? endDate,
+    CancellationToken cancellationToken = default)
+    {
+        if (startDate.HasValue &&
+            endDate.HasValue &&
+            startDate.Value > endDate.Value)
+        {
+            throw new ArgumentException(
+                "The start date cannot be later than the end date.");
+        }
+
+        await using var dbContext =
+            await CreateDbContextAsync(cancellationToken);
+
+        var query = dbContext.LaboratoryResults
+            .AsNoTracking()
+            .Where(result => !result.IsArchived);
+
+        if (startDate.HasValue)
+        {
+            query = query.Where(result =>
+                result.TestDate >= startDate.Value);
+        }
+
+        if (endDate.HasValue)
+        {
+            query = query.Where(result =>
+                result.TestDate <= endDate.Value);
+        }
+
+        return await query.CountAsync(cancellationToken);
+    }
+
+
+    public async Task<List<DateOnly>> GetTestDatesForClinicActivityReportAsync(
+    DateOnly? startDate,
+    DateOnly? endDate,
+    CancellationToken cancellationToken = default)
+    {
+        if (startDate.HasValue &&
+            endDate.HasValue &&
+            startDate.Value > endDate.Value)
+        {
+            throw new ArgumentException(
+                "The start date cannot be later than the end date.");
+        }
+
+        await using var dbContext =
+            await CreateDbContextAsync(cancellationToken);
+
+        var query = dbContext.LaboratoryResults
+            .AsNoTracking()
+            .Where(result => !result.IsArchived);
+
+        if (startDate.HasValue)
+        {
+            query = query.Where(result =>
+                result.TestDate >= startDate.Value);
+        }
+
+        if (endDate.HasValue)
+        {
+            query = query.Where(result =>
+                result.TestDate <= endDate.Value);
+        }
+
+        return await query
+            .OrderBy(result => result.TestDate)
+            .Select(result => result.TestDate)
+            .ToListAsync(cancellationToken);
+    }
+
+
+    public async Task<List<int>> GetPatientIdsForClinicActivityReportAsync(
+    DateOnly? startDate,
+    DateOnly? endDate,
+    CancellationToken cancellationToken = default)
+    {
+        if (startDate.HasValue &&
+            endDate.HasValue &&
+            startDate.Value > endDate.Value)
+        {
+            throw new ArgumentException(
+                "The start date cannot be later than the end date.");
+        }
+
+        await using var dbContext =
+            await CreateDbContextAsync(cancellationToken);
+
+        var query = dbContext.LaboratoryResults
+            .AsNoTracking()
+            .Where(result => !result.IsArchived);
+
+        if (startDate.HasValue)
+        {
+            query = query.Where(result =>
+                result.TestDate >= startDate.Value);
+        }
+
+        if (endDate.HasValue)
+        {
+            query = query.Where(result =>
+                result.TestDate <= endDate.Value);
+        }
+
+        return await query
+            .Select(result => result.PatientId)
+            .Distinct()
+            .ToListAsync(cancellationToken);
+    }
+
+
+
 }

@@ -329,4 +329,117 @@ public class PregnancyRepository
 
         await dbContext.SaveChangesAsync(cancellationToken);
     }
+
+
+    public async Task<int> GetPregnancyCountForClinicActivityReportAsync(
+    DateOnly? startDate,
+    DateOnly? endDate,
+    CancellationToken cancellationToken = default)
+    {
+        if (startDate.HasValue &&
+            endDate.HasValue &&
+            startDate.Value > endDate.Value)
+        {
+            throw new ArgumentException(
+                "The start date cannot be later than the end date.");
+        }
+
+        // Interpret report dates using Philippine time.
+        TimeZoneInfo clinicTimeZone =
+            TimeZoneInfo.FindSystemTimeZoneById(
+                "Singapore Standard Time");
+
+        DateTime? startUtc = startDate.HasValue
+            ? TimeZoneInfo.ConvertTimeToUtc(
+                startDate.Value.ToDateTime(TimeOnly.MinValue),
+                clinicTimeZone)
+            : null;
+
+        // Exclusive upper boundary includes the entire end date.
+        DateTime? endUtcExclusive = endDate.HasValue
+            ? TimeZoneInfo.ConvertTimeToUtc(
+                endDate.Value.AddDays(1).ToDateTime(TimeOnly.MinValue),
+                clinicTimeZone)
+            : null;
+
+        await using var dbContext =
+            await CreateDbContextAsync(cancellationToken);
+
+        var query = dbContext.Pregnancies
+            .AsNoTracking()
+            .AsQueryable();
+
+        if (startUtc.HasValue)
+        {
+            query = query.Where(pregnancy =>
+                pregnancy.CreatedAtUtc >= startUtc.Value);
+        }
+
+        if (endUtcExclusive.HasValue)
+        {
+            query = query.Where(pregnancy =>
+                pregnancy.CreatedAtUtc < endUtcExclusive.Value);
+        }
+
+        return await query.CountAsync(cancellationToken);
+    }
+
+
+
+    public async Task<List<DateTime>> GetRegistrationDatesForClinicActivityReportAsync(
+    DateOnly? startDate,
+    DateOnly? endDate,
+    CancellationToken cancellationToken = default)
+    {
+        if (startDate.HasValue &&
+            endDate.HasValue &&
+            startDate.Value > endDate.Value)
+        {
+            throw new ArgumentException(
+                "The start date cannot be later than the end date.");
+        }
+
+        // Interpret report dates using Philippine time.
+        TimeZoneInfo clinicTimeZone =
+            TimeZoneInfo.FindSystemTimeZoneById(
+                "Singapore Standard Time");
+
+        DateTime? startUtc = startDate.HasValue
+            ? TimeZoneInfo.ConvertTimeToUtc(
+                startDate.Value.ToDateTime(TimeOnly.MinValue),
+                clinicTimeZone)
+            : null;
+
+        // Exclusive upper boundary includes the entire end date.
+        DateTime? endUtcExclusive = endDate.HasValue
+            ? TimeZoneInfo.ConvertTimeToUtc(
+                endDate.Value.AddDays(1).ToDateTime(TimeOnly.MinValue),
+                clinicTimeZone)
+            : null;
+
+        await using var dbContext =
+            await CreateDbContextAsync(cancellationToken);
+
+        var query = dbContext.Pregnancies
+            .AsNoTracking()
+            .AsQueryable();
+
+        if (startUtc.HasValue)
+        {
+            query = query.Where(pregnancy =>
+                pregnancy.CreatedAtUtc >= startUtc.Value);
+        }
+
+        if (endUtcExclusive.HasValue)
+        {
+            query = query.Where(pregnancy =>
+                pregnancy.CreatedAtUtc < endUtcExclusive.Value);
+        }
+
+        return await query
+            .OrderBy(pregnancy => pregnancy.CreatedAtUtc)
+            .Select(pregnancy => pregnancy.CreatedAtUtc)
+            .ToListAsync(cancellationToken);
+    }
+
 }

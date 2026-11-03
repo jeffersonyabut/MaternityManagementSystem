@@ -158,6 +158,56 @@ public class PregnancyService
     }
 
 
+    public async Task<int> GetPregnancyRegistrationCountForClinicActivityReportAsync(
+    DateOnly? startDate,
+    DateOnly? endDate,
+    CancellationToken cancellationToken = default)
+    {
+        _authorizationService.EnsureAuthenticated();
+
+        if (startDate.HasValue &&
+            endDate.HasValue &&
+            startDate.Value > endDate.Value)
+        {
+            throw new ArgumentException(
+                "The start date cannot be later than the end date.");
+        }
+
+        return await _pregnancyRepository
+            .GetPregnancyCountForClinicActivityReportAsync(
+                startDate,
+                endDate,
+                cancellationToken);
+    }
+
+
+    public async Task<List<DateTime>> GetPregnancyRegistrationDatesForClinicActivityReportAsync(
+    DateOnly? startDate,
+    DateOnly? endDate,
+    CancellationToken cancellationToken = default)
+    {
+        _authorizationService.EnsureAuthenticated();
+
+        if (startDate.HasValue &&
+            endDate.HasValue &&
+            startDate.Value > endDate.Value)
+        {
+            throw new ArgumentException(
+                "The start date cannot be later than the end date.");
+        }
+
+        return await _pregnancyRepository
+            .GetRegistrationDatesForClinicActivityReportAsync(
+                startDate,
+                endDate,
+                cancellationToken);
+    }
+
+
+
+
+
+
     public async Task<Pregnancy> UpdatePregnancyAsync(
         Pregnancy updatedPregnancy,
         CancellationToken cancellationToken = default)

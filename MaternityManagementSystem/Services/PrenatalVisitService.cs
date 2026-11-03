@@ -122,6 +122,74 @@ public class PrenatalVisitService
             cancellationToken);
     }
 
+    public async Task<int> GetPrenatalVisitCountForClinicActivityReportAsync(
+    DateOnly? startDate,
+    DateOnly? endDate,
+    CancellationToken cancellationToken = default)
+    {
+        _authorizationService.EnsureAuthenticated();
+
+        if (startDate.HasValue &&
+            endDate.HasValue &&
+            startDate.Value > endDate.Value)
+        {
+            throw new ArgumentException(
+                "The start date cannot be later than the end date.");
+        }
+
+        return await _prenatalVisitRepository
+            .GetPrenatalVisitCountForClinicActivityReportAsync(
+                startDate,
+                endDate,
+                cancellationToken);
+    }
+
+
+    public async Task<List<DateOnly>> GetPrenatalVisitDatesForClinicActivityReportAsync(
+    DateOnly? startDate,
+    DateOnly? endDate,
+    CancellationToken cancellationToken = default)
+    {
+        _authorizationService.EnsureAuthenticated();
+
+        if (startDate.HasValue &&
+            endDate.HasValue &&
+            startDate.Value > endDate.Value)
+        {
+            throw new ArgumentException(
+                "The start date cannot be later than the end date.");
+        }
+
+        return await _prenatalVisitRepository
+            .GetVisitDatesForClinicActivityReportAsync(
+                startDate,
+                endDate,
+                cancellationToken);
+    }
+
+    public async Task<List<int>> GetPatientIdsForClinicActivityReportAsync(
+    DateOnly? startDate,
+    DateOnly? endDate,
+    CancellationToken cancellationToken = default)
+    {
+        _authorizationService.EnsureAuthenticated();
+
+        if (startDate.HasValue &&
+            endDate.HasValue &&
+            startDate.Value > endDate.Value)
+        {
+            throw new ArgumentException(
+                "The start date cannot be later than the end date.");
+        }
+
+        return await _prenatalVisitRepository
+            .GetPatientIdsForClinicActivityReportAsync(
+                startDate,
+                endDate,
+                cancellationToken);
+    }
+
+
     public async Task<PrenatalVisit> UpdateVisitAsync(
         PrenatalVisit updatedVisit,
         CancellationToken cancellationToken = default)

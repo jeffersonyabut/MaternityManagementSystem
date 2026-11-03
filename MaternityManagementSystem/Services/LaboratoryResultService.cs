@@ -158,6 +158,76 @@ public class LaboratoryResultService
     }
 
 
+    public async Task<int> GetLaboratoryResultCountForClinicActivityReportAsync(
+    DateOnly? startDate,
+    DateOnly? endDate,
+    CancellationToken cancellationToken = default)
+    {
+        _authorizationService.EnsureAuthenticated();
+
+        if (startDate.HasValue &&
+            endDate.HasValue &&
+            startDate.Value > endDate.Value)
+        {
+            throw new ArgumentException(
+                "The start date cannot be later than the end date.");
+        }
+
+        return await _laboratoryResultRepository
+            .GetLaboratoryResultCountForClinicActivityReportAsync(
+                startDate,
+                endDate,
+                cancellationToken);
+    }
+
+
+    public async Task<List<DateOnly>> GetLaboratoryResultDatesForClinicActivityReportAsync(
+    DateOnly? startDate,
+    DateOnly? endDate,
+    CancellationToken cancellationToken = default)
+    {
+        _authorizationService.EnsureAuthenticated();
+
+        if (startDate.HasValue &&
+            endDate.HasValue &&
+            startDate.Value > endDate.Value)
+        {
+            throw new ArgumentException(
+                "The start date cannot be later than the end date.");
+        }
+
+        return await _laboratoryResultRepository
+            .GetTestDatesForClinicActivityReportAsync(
+                startDate,
+                endDate,
+                cancellationToken);
+    }
+
+
+    public async Task<List<int>> GetPatientIdsForClinicActivityReportAsync(
+    DateOnly? startDate,
+    DateOnly? endDate,
+    CancellationToken cancellationToken = default)
+    {
+        _authorizationService.EnsureAuthenticated();
+
+        if (startDate.HasValue &&
+            endDate.HasValue &&
+            startDate.Value > endDate.Value)
+        {
+            throw new ArgumentException(
+                "The start date cannot be later than the end date.");
+        }
+
+        return await _laboratoryResultRepository
+            .GetPatientIdsForClinicActivityReportAsync(
+                startDate,
+                endDate,
+                cancellationToken);
+    }
+
+
+
     public async Task<LaboratoryResult> UpdateLaboratoryResultAsync(
         LaboratoryResult updatedLaboratoryResult,
         CancellationToken cancellationToken = default)

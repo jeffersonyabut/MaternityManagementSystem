@@ -1,3 +1,4 @@
+
 using System.Windows;
 using System.Windows.Controls;
 using MaternityManagementSystem.Repositories;
@@ -15,6 +16,7 @@ namespace MaternityManagementSystem.Views
         private readonly LaboratoryResultsReportViewModel _laboratoryResultsViewModel;
         private readonly AppointmentReportViewModel _appointmentReportViewModel;
         private readonly PregnancySummaryReportViewModel _pregnancySummaryViewModel;
+        private readonly ClinicActivityReportViewModel _clinicActivityViewModel;
 
         public ReportsView()
         {
@@ -95,6 +97,26 @@ namespace MaternityManagementSystem.Views
             _pregnancySummaryViewModel =
                 new PregnancySummaryReportViewModel(
                     pregnancySummaryReportService);
+
+            // Clinic Activity Report
+            var prenatalVisitService =
+                new PrenatalVisitService(
+                    new PrenatalVisitRepository(),
+                    new PregnancyRepository(),
+                    authorizationService,
+                    app.SessionService);
+
+            var clinicActivityReportService =
+                new ClinicActivityReportService(
+                    patientService,
+                    pregnancyService,
+                    prenatalVisitService,
+                    laboratoryResultService,
+                    appointmentService);
+
+            _clinicActivityViewModel =
+                new ClinicActivityReportViewModel(
+                    clinicActivityReportService);
 
             DataContext = _viewModel;
         }
@@ -193,6 +215,24 @@ namespace MaternityManagementSystem.Views
                     "Pregnancy Summary Report Error",
                     MessageBoxButton.OK,
                     MessageBoxImage.Error);
+            }
+        }
+
+        private void ClinicActivityReportButton_Click(
+            object sender,
+            RoutedEventArgs e)
+        {
+            if (Window.GetWindow(this) is DashboardWindow dashboard)
+            {
+                var reportView =
+                    new ClinicActivityReportView
+                    {
+                        DataContext = _clinicActivityViewModel
+                    };
+
+                reportView.BackRequested += (s, args) => dashboard.ShowReports();
+
+                dashboard.NavigateToReportView(reportView);
             }
         }
     }
