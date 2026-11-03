@@ -201,6 +201,78 @@ public class AppointmentRepository
             .ToListAsync(cancellationToken);
     }
 
+
+    public async Task<List<Appointment>> GetForReportAsync(
+    DateOnly? startDate,
+    DateOnly? endDate,
+    string? searchTerm,
+    string? status,
+    CancellationToken cancellationToken = default)
+    {
+        if (startDate.HasValue &&
+            endDate.HasValue &&
+            startDate.Value > endDate.Value)
+        {
+            throw new ArgumentException(
+                "The start date cannot be later than the end date.");
+        }
+
+        await using var dbContext =
+            await CreateDbContextAsync(cancellationToken);
+
+        var query = dbContext.Appointments
+            .AsNoTracking()
+            .Include(appointment => appointment.Patient)
+            .Include(appointment => appointment.Pregnancy)
+            .Where(appointment => !appointment.IsArchived);
+
+        // Date range
+        if (startDate.HasValue)
+        {
+            query = query.Where(appointment =>
+                appointment.AppointmentDate >= startDate.Value);
+        }
+
+        if (endDate.HasValue)
+        {
+            query = query.Where(appointment =>
+                appointment.AppointmentDate <= endDate.Value);
+        }
+
+        // Patient name or patient number
+        if (!string.IsNullOrWhiteSpace(searchTerm))
+        {
+            var search = searchTerm.Trim();
+
+            query = query.Where(appointment =>
+                appointment.Patient.PatientNumber.Contains(search) ||
+                appointment.Patient.FirstName.Contains(search) ||
+                (appointment.Patient.MiddleName != null &&
+                 appointment.Patient.MiddleName.Contains(search)) ||
+                appointment.Patient.LastName.Contains(search));
+        }
+
+        // Appointment status
+        if (!string.IsNullOrWhiteSpace(status) &&
+            !string.Equals(
+                status,
+                "All",
+                StringComparison.OrdinalIgnoreCase))
+        {
+            query = query.Where(appointment =>
+                appointment.Status == status);
+        }
+
+        return await query
+            .OrderBy(appointment => appointment.AppointmentDate)
+            .ThenBy(appointment => appointment.StartTime)
+            .ThenBy(appointment => appointment.Patient.LastName)
+            .ToListAsync(cancellationToken);
+    }
+
+
+
+
     // UPDATE
 
     public async Task UpdateAsync(

@@ -183,6 +183,60 @@ public class AppointmentService
             cancellationToken);
     }
 
+    public Task<List<Appointment>> GetForReportAsync(
+    DateOnly? startDate,
+    DateOnly? endDate,
+    string? searchTerm,
+    string? status,
+    CancellationToken cancellationToken = default)
+    {
+        _authorizationService.EnsureAuthenticated();
+
+        if (startDate.HasValue &&
+            endDate.HasValue &&
+            startDate.Value > endDate.Value)
+        {
+            throw new ArgumentException(
+                "The start date cannot be later than the end date.");
+        }
+
+        if (!string.IsNullOrWhiteSpace(status))
+        {
+            string normalizedStatus = status.Trim();
+
+            string[] allowedStatuses =
+            [
+                "Scheduled",
+                "Confirmed",
+                "Completed",
+                "Cancelled",
+                "No-show"
+            ];
+
+            if (!normalizedStatus.Equals(
+                    "All",
+                    StringComparison.OrdinalIgnoreCase) &&
+                !allowedStatuses.Contains(
+                    normalizedStatus,
+                    StringComparer.OrdinalIgnoreCase))
+            {
+                throw new ArgumentException(
+                    "Invalid appointment status.",
+                    nameof(status));
+            }
+        }
+
+        return _appointmentRepository.GetForReportAsync(
+            startDate,
+            endDate,
+            searchTerm,
+            status,
+            cancellationToken);
+    }
+
+
+
+
     // UPDATE / RESCHEDULE
 
     public async Task<Appointment> UpdateAppointmentAsync(

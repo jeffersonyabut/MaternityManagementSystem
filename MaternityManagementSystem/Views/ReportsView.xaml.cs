@@ -1,3 +1,4 @@
+
 using System.Windows;
 using System.Windows.Controls;
 using MaternityManagementSystem.Repositories;
@@ -13,6 +14,7 @@ namespace MaternityManagementSystem.Views
         private readonly PatientMasterListViewModel _viewModel;
         private readonly PrenatalCareReportViewModel _prenatalCareViewModel;
         private readonly LaboratoryResultsReportViewModel _laboratoryResultsViewModel;
+        private readonly AppointmentReportViewModel _appointmentReportViewModel;
 
         public ReportsView()
         {
@@ -60,6 +62,23 @@ namespace MaternityManagementSystem.Views
             _laboratoryResultsViewModel =
                 new LaboratoryResultsReportViewModel(
                     laboratoryResultsReportService);
+
+            // Appointment Report
+            var appointmentService =
+                new AppointmentService(
+                    new AppointmentRepository(),
+                    new PatientRepository(),
+                    new PregnancyRepository(),
+                    authorizationService,
+                    app.SessionService);
+
+            var appointmentReportService =
+                new AppointmentReportService(
+                    appointmentService);
+
+            _appointmentReportViewModel =
+                new AppointmentReportViewModel(
+                    appointmentReportService);
 
             DataContext = _viewModel;
         }
@@ -111,6 +130,22 @@ namespace MaternityManagementSystem.Views
                 var reportView =
                     new LaboratoryResultsReportView(
                         _laboratoryResultsViewModel);
+
+                reportView.BackRequested += dashboard.ShowReports;
+
+                dashboard.NavigateToReportView(reportView);
+            }
+        }
+
+        private void AppointmentReportButton_Click(
+            object sender,
+            RoutedEventArgs e)
+        {
+            if (Window.GetWindow(this) is DashboardWindow dashboard)
+            {
+                var reportView =
+                    new AppointmentReportView(
+                        _appointmentReportViewModel);
 
                 reportView.BackRequested += dashboard.ShowReports;
 

@@ -183,12 +183,9 @@
                     </Button>
 
                     <!-- Appointment Report -->
-                    <Border Background="White"
-                            BorderBrush="#EAE7F0"
-                            BorderThickness="1"
-                            CornerRadius="12"
-                            Padding="20"
-                            Margin="0,0,10,10">
+                    <Button Style="{StaticResource ReportCardButtonStyle}"
+                            Margin="0,0,10,10"
+                            Click="AppointmentReportButton_Click">
 
                         <StackPanel>
                             <TextBlock Text="Appointment Report"
@@ -202,7 +199,7 @@
                                        TextWrapping="Wrap"
                                        Margin="0,7,0,0"/>
                         </StackPanel>
-                    </Border>
+                    </Button>
 
                     <!-- Pregnancy Summary -->
                     <Border Background="White"
