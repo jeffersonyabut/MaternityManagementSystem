@@ -8,6 +8,7 @@ using MaternityManagementSystem.Navigation;
 using MaternityManagementSystem.Repositories;
 using MaternityManagementSystem.Services;
 using MaternityManagementSystem.Services.Reports;
+using MaternityManagementSystem.ViewModels;
 using MaternityManagementSystem.ViewModels.Reports;
 using MaternityManagementSystem.Views;
 using MaternityManagementSystem.Views.Reports;
@@ -41,6 +42,12 @@ public partial class DashboardWindow : Window
         }
 
         UserInfoText.Text = $"{user.Username} · {user.Role}";
+
+        StaffManagementButton.Visibility = user.IsAdmin
+            ? Visibility.Visible
+            : Visibility.Collapsed;
+
+        StaffManagementButton.Click += StaffManagementButton_Click;
 
         DataContext = _navigationService;
     }
@@ -358,4 +365,55 @@ public partial class DashboardWindow : Window
 
         _navigationService.NavigateToView(registrationView);
     }
+
+
+    // STAFF MANAGEMENT NAVIGATION
+
+    private void StaffManagementButton_Click(
+        object sender,
+        RoutedEventArgs e)
+    {
+        ShowStaffManagement();
+    }
+
+    public void ShowStaffManagement()
+    {
+        var app = (App)Application.Current;
+
+        var sessionService = app.SessionService;
+
+        var authorizationService = new AuthorizationService(
+            sessionService);
+
+        var staffRepository = new StaffRepository();
+
+        var auditLogRepository = new AuditLogRepository();
+
+        var auditLogService = new AuditLogService(
+            auditLogRepository,
+            sessionService);
+
+        var staffManagementService = new StaffManagementService(
+            staffRepository,
+            authorizationService,
+            auditLogService,
+            sessionService);
+
+        var viewModel = new StaffManagementViewModel(
+            staffManagementService);
+
+        var view = new StaffManagementView
+        {
+            DataContext = viewModel
+        };
+
+        _navigationService.NavigateToView(view);
+
+        view.Loaded += async (_, _) =>
+        {
+            await viewModel.LoadStaffAsync();
+        };
+    }
+
+
 }

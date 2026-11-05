@@ -18,16 +18,10 @@ public sealed class AuthorizationService
         _sessionService.IsAuthenticated;
 
     public bool IsAdmin =>
-        string.Equals(
-            _sessionService.CurrentUser?.Role,
-            "Admin",
-            StringComparison.OrdinalIgnoreCase);
+        _sessionService.CurrentUser?.IsAdmin == true;
 
-    public bool IsNurseOrMidwife =>
-        string.Equals(
-            _sessionService.CurrentUser?.Role,
-            "Nurse/Midwife",
-            StringComparison.OrdinalIgnoreCase);
+    public bool IsStaff =>
+        _sessionService.CurrentUser?.IsStaff == true;
 
     public bool CanManageStaff => IsAdmin;
 

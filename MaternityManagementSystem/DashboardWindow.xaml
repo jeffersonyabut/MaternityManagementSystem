@@ -204,6 +204,31 @@
 
 
 
+                    <!-- Staff Management Navigation Button -->
+                    <Button x:Name="StaffManagementButton"
+                            Content="Staff Management"
+                            HorizontalAlignment="Stretch">
+
+                        <Button.Style>
+                            <Style TargetType="{x:Type Button}"
+                                   BasedOn="{StaticResource SidebarButtonStyle}">
+
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding CurrentPage}"
+                                                 Value="StaffManagementView">
+                                        <Setter Property="Background"
+                                                Value="#6554C0"/>
+                                        <Setter Property="Foreground"
+                                                Value="White"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+
+                            </Style>
+                        </Button.Style>
+                    </Button>
+
+
+
                 </StackPanel>
 
                 <!-- Sidebar Footer -->

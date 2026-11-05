@@ -1,0 +1,161 @@
+<Window x:Class="MaternityManagementSystem.Dialogs.StaffEditDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Edit Staff Account"
+        Width="480"
+        SizeToContent="Height"
+        WindowStartupLocation="CenterOwner"
+        WindowStyle="None"
+        ResizeMode="NoResize"
+        AllowsTransparency="True"
+        Background="Transparent"
+        ShowInTaskbar="False">
+
+    <Window.Resources>
+
+        <Style x:Key="EditTextBoxStyle"
+               TargetType="TextBox">
+            <Setter Property="MinHeight" Value="44"/>
+            <Setter Property="Padding" Value="12,10"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="Foreground" Value="#FF171717"/>
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="BorderBrush" Value="#FFD1D5DB"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+        </Style>
+
+        <Style x:Key="EditButtonStyle"
+               TargetType="Button">
+            <Setter Property="MinWidth" Value="110"/>
+            <Setter Property="MinHeight" Value="42"/>
+            <Setter Property="Padding" Value="18,9"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="BorderThickness" Value="0"/>
+        </Style>
+
+        <Style x:Key="EditFieldLabelStyle"
+               TargetType="TextBlock">
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Foreground" Value="#FF374151"/>
+            <Setter Property="Margin" Value="0,0,0,7"/>
+        </Style>
+
+    </Window.Resources>
+
+    <Border Background="#FFFAFAFA"
+            CornerRadius="16"
+            Padding="28"
+            BorderThickness="1"
+            BorderBrush="#FFE5E7EB">
+
+        <StackPanel>
+
+            <!-- Header -->
+            <Border Width="52"
+                    Height="52"
+                    CornerRadius="26"
+                    Background="#FFEDE9FE"
+                    HorizontalAlignment="Left"
+                    Margin="0,0,0,18">
+
+                <TextBlock Text="✎"
+                           FontSize="24"
+                           Foreground="#FF6554C0"
+                           HorizontalAlignment="Center"
+                           VerticalAlignment="Center"/>
+            </Border>
+
+            <TextBlock Text="Edit Staff Account"
+                       FontSize="21"
+                       FontWeight="SemiBold"
+                       Foreground="#FF171717"
+                       Margin="0,0,0,7"/>
+
+            <TextBlock Text="Update the account username and assigned role."
+                       FontSize="13"
+                       Foreground="#FF6B7280"
+                       TextWrapping="Wrap"
+                       Margin="0,0,0,24"/>
+
+            <!-- Account ID -->
+            <TextBlock Text="ACCOUNT ID"
+                       Style="{StaticResource EditFieldLabelStyle}"/>
+
+            <TextBlock x:Name="AccountIdText"
+                       FontSize="13"
+                       Foreground="#FF6B7280"
+                       Margin="0,0,0,18"/>
+
+            <!-- Username -->
+            <TextBlock Text="USERNAME"
+                       Style="{StaticResource EditFieldLabelStyle}"/>
+
+            <TextBox x:Name="UsernameTextBox"
+                     Style="{StaticResource EditTextBoxStyle}"
+                     MaxLength="100"
+                     Margin="0,0,0,18"/>
+
+            <!-- Role -->
+            <TextBlock Text="ACCOUNT ROLE"
+                       Style="{StaticResource EditFieldLabelStyle}"/>
+
+            <ComboBox x:Name="RoleComboBox"
+                      MinHeight="44"
+                      Padding="10,8"
+                      FontSize="13"
+                      Margin="0,0,0,18">
+
+                <ComboBoxItem Content="Admin"
+                              Tag="Admin"/>
+
+                <ComboBoxItem Content="Staff"
+                              Tag="Staff"/>
+
+            </ComboBox>
+
+            <!-- Account status -->
+            <TextBlock Text="ACCOUNT STATUS"
+                       Style="{StaticResource EditFieldLabelStyle}"/>
+
+            <TextBlock x:Name="AccountStatusText"
+                       FontSize="13"
+                       FontWeight="SemiBold"
+                       Margin="0,0,0,22"/>
+
+            <!-- Validation -->
+            <TextBlock x:Name="ValidationText"
+                       Foreground="#FFDC2626"
+                       FontSize="12"
+                       TextWrapping="Wrap"
+                       Margin="0,0,0,18"
+                       Visibility="Collapsed"/>
+
+            <!-- Actions -->
+            <StackPanel Orientation="Horizontal"
+                        HorizontalAlignment="Right">
+
+                <Button x:Name="CancelButton"
+                        Content="Cancel"
+                        Style="{StaticResource EditButtonStyle}"
+                        Background="#FFF3F4F6"
+                        Foreground="#FF374151"
+                        Margin="0,0,10,0"
+                        IsCancel="True"/>
+
+                <Button x:Name="SaveButton"
+                        Content="Save Changes"
+                        Style="{StaticResource EditButtonStyle}"
+                        Background="#FF6554C0"
+                        Foreground="White"
+                        IsDefault="True"/>
+
+            </StackPanel>
+
+        </StackPanel>
+    </Border>
+
+</Window>

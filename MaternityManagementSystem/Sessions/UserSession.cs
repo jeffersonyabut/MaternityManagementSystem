@@ -1,3 +1,4 @@
+
 namespace MaternityManagementSystem.Sessions;
 
 public sealed class UserSession
@@ -17,5 +18,11 @@ public sealed class UserSession
         string.Equals(
             Role,
             "Admin",
+            StringComparison.OrdinalIgnoreCase);
+
+    public bool IsStaff =>
+        string.Equals(
+            Role,
+            "Staff",
             StringComparison.OrdinalIgnoreCase);
 }

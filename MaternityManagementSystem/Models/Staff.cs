@@ -1,3 +1,4 @@
+
 namespace MaternityManagementSystem.Models;
 
 public class Staff
@@ -9,7 +10,7 @@ public class Staff
     // Store a password hash, never the original password.
     public string PasswordHash { get; set; } = string.Empty;
 
-    public string Role { get; set; } = "Nurse/Midwife";
+    public string Role { get; set; } = StaffRoles.Staff;
 
     public bool IsActive { get; set; } = true;
 
