@@ -42,7 +42,7 @@ public class VitalSignServiceTests
                            log.Action == "Created");
 
         Assert.NotNull(auditLog);
-        Assert.Equal("test-nurse", auditLog.Username);
+        Assert.Equal("test-staff", auditLog.Username);
     }
 
     [Fact]
@@ -146,7 +146,7 @@ public class VitalSignServiceTests
                            log.Action == "Updated");
 
         Assert.NotNull(auditLog);
-        Assert.Equal("test-nurse", auditLog.Username);
+        Assert.Equal("test-staff", auditLog.Username);
     }
 
     [Fact]
@@ -262,12 +262,18 @@ public class VitalSignServiceTests
     private static async Task<VitalSignService> CreateServiceAsync(
         TestDatabase testDatabase)
     {
-        var sessionService = await CreateAuthenticatedSessionAsync(testDatabase);
+        var sessionService =
+            await CreateAuthenticatedSessionAsync(testDatabase);
+
+        var authorizationService =
+            new AuthorizationService(
+                sessionService,
+                new StaffRepository(testDatabase.Factory));
 
         return new VitalSignService(
             new VitalSignRepository(testDatabase.Factory),
             new PrenatalVisitRepository(testDatabase.Factory),
-            new AuthorizationService(sessionService),
+            authorizationService,
             sessionService);
     }
 
@@ -276,10 +282,15 @@ public class VitalSignServiceTests
     {
         var sessionService = new SessionService();
 
+        var authorizationService =
+            new AuthorizationService(
+                sessionService,
+                new StaffRepository(testDatabase.Factory));
+
         return new VitalSignService(
             new VitalSignRepository(testDatabase.Factory),
             new PrenatalVisitRepository(testDatabase.Factory),
-            new AuthorizationService(sessionService),
+            authorizationService,
             sessionService);
     }
 
@@ -287,15 +298,16 @@ public class VitalSignServiceTests
         TestDatabase testDatabase)
     {
         int staffId;
+        string securityStamp;
 
         await using (var dbContext =
             await testDatabase.Factory.CreateDbContextAsync())
         {
             var staff = new Staff
             {
-                Username = "test-nurse",
+                Username = "test-staff",
                 PasswordHash = "test-password-hash",
-                Role = "Nurse/Midwife",
+                Role = StaffRoles.Staff,
                 IsActive = true,
                 CreatedAtUtc = DateTime.UtcNow
             };
@@ -304,6 +316,7 @@ public class VitalSignServiceTests
             await dbContext.SaveChangesAsync();
 
             staffId = staff.Id;
+            securityStamp = staff.SecurityStamp;
         }
 
         var sessionService = new SessionService();
@@ -311,8 +324,9 @@ public class VitalSignServiceTests
         sessionService.StartSession(
             new UserSession(
                 staffId,
-                "test-nurse",
-                "Nurse/Midwife"));
+                "test-staff",
+                StaffRoles.Staff,
+                securityStamp));
 
         return sessionService;
     }

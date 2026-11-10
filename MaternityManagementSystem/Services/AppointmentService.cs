@@ -49,7 +49,7 @@ public class AppointmentService
         Appointment appointment,
         CancellationToken cancellationToken = default)
     {
-        _authorizationService.EnsureAuthenticated();
+        await _authorizationService.EnsureAuthenticatedAsync();
 
         ArgumentNullException.ThrowIfNull(appointment);
 
@@ -106,11 +106,11 @@ public class AppointmentService
 
     // RETRIEVE
 
-    public Task<Appointment?> GetByIdAsync(
+    public async Task<Appointment?> GetByIdAsync(
         int appointmentId,
         CancellationToken cancellationToken = default)
     {
-        _authorizationService.EnsureAuthenticated();
+        await _authorizationService.EnsureAuthenticatedAsync();
 
         if (appointmentId <= 0)
         {
@@ -118,58 +118,58 @@ public class AppointmentService
                 nameof(appointmentId));
         }
 
-        return _appointmentRepository.GetByIdAsync(
+        return await _appointmentRepository.GetByIdAsync(
             appointmentId,
             cancellationToken);
     }
 
-    public Task<List<Appointment>> GetAllAsync(
+    public async Task<List<Appointment>> GetAllAsync(
         CancellationToken cancellationToken = default)
     {
-        _authorizationService.EnsureAuthenticated();
+        await _authorizationService.EnsureAuthenticatedAsync();
 
-        return _appointmentRepository.GetAllAsync(
+        return await _appointmentRepository.GetAllAsync(
             cancellationToken);
     }
 
-    public Task<List<Appointment>> GetByPatientIdAsync(
+    public async Task<List<Appointment>> GetByPatientIdAsync(
         int patientId,
         CancellationToken cancellationToken = default)
     {
-        _authorizationService.EnsureAuthenticated();
+        await _authorizationService.EnsureAuthenticatedAsync();
 
         if (patientId <= 0)
         {
             throw new ArgumentOutOfRangeException(nameof(patientId));
         }
 
-        return _appointmentRepository.GetByPatientIdAsync(
+        return await _appointmentRepository.GetByPatientIdAsync(
             patientId,
             cancellationToken);
     }
 
-    public Task<List<Appointment>> GetByPregnancyIdAsync(
+    public async Task<List<Appointment>> GetByPregnancyIdAsync(
         int pregnancyId,
         CancellationToken cancellationToken = default)
     {
-        _authorizationService.EnsureAuthenticated();
+        await _authorizationService.EnsureAuthenticatedAsync();
 
         if (pregnancyId <= 0)
         {
             throw new ArgumentOutOfRangeException(nameof(pregnancyId));
         }
 
-        return _appointmentRepository.GetByPregnancyIdAsync(
+        return await _appointmentRepository.GetByPregnancyIdAsync(
             pregnancyId,
             cancellationToken);
     }
 
-    public Task<List<Appointment>> GetByDateRangeAsync(
+    public async Task<List<Appointment>> GetByDateRangeAsync(
         DateOnly startDate,
         DateOnly endDate,
         CancellationToken cancellationToken = default)
     {
-        _authorizationService.EnsureAuthenticated();
+        await _authorizationService.EnsureAuthenticatedAsync();
 
         if (endDate < startDate)
         {
@@ -177,20 +177,20 @@ public class AppointmentService
                 "The end date cannot be earlier than the start date.");
         }
 
-        return _appointmentRepository.GetByDateRangeAsync(
+        return await _appointmentRepository.GetByDateRangeAsync(
             startDate,
             endDate,
             cancellationToken);
     }
 
-    public Task<List<Appointment>> GetForReportAsync(
-    DateOnly? startDate,
-    DateOnly? endDate,
-    string? searchTerm,
-    string? status,
-    CancellationToken cancellationToken = default)
+    public async Task<List<Appointment>> GetForReportAsync(
+        DateOnly? startDate,
+        DateOnly? endDate,
+        string? searchTerm,
+        string? status,
+        CancellationToken cancellationToken = default)
     {
-        _authorizationService.EnsureAuthenticated();
+        await _authorizationService.EnsureAuthenticatedAsync();
 
         if (startDate.HasValue &&
             endDate.HasValue &&
@@ -226,7 +226,7 @@ public class AppointmentService
             }
         }
 
-        return _appointmentRepository.GetForReportAsync(
+        return await _appointmentRepository.GetForReportAsync(
             startDate,
             endDate,
             searchTerm,
@@ -234,14 +234,14 @@ public class AppointmentService
             cancellationToken);
     }
 
-
+    // CLINIC ACTIVITY REPORT
 
     public async Task<int> GetAppointmentCountForClinicActivityReportAsync(
-    DateOnly? startDate,
-    DateOnly? endDate,
-    CancellationToken cancellationToken = default)
+        DateOnly? startDate,
+        DateOnly? endDate,
+        CancellationToken cancellationToken = default)
     {
-        _authorizationService.EnsureAuthenticated();
+        await _authorizationService.EnsureAuthenticatedAsync();
 
         if (startDate.HasValue &&
             endDate.HasValue &&
@@ -258,13 +258,12 @@ public class AppointmentService
                 cancellationToken);
     }
 
-
     public async Task<List<DateOnly>> GetAppointmentDatesForClinicActivityReportAsync(
-    DateOnly? startDate,
-    DateOnly? endDate,
-    CancellationToken cancellationToken = default)
+        DateOnly? startDate,
+        DateOnly? endDate,
+        CancellationToken cancellationToken = default)
     {
-        _authorizationService.EnsureAuthenticated();
+        await _authorizationService.EnsureAuthenticatedAsync();
 
         if (startDate.HasValue &&
             endDate.HasValue &&
@@ -281,13 +280,12 @@ public class AppointmentService
                 cancellationToken);
     }
 
-
     public async Task<List<int>> GetPatientIdsForClinicActivityReportAsync(
-    DateOnly? startDate,
-    DateOnly? endDate,
-    CancellationToken cancellationToken = default)
+        DateOnly? startDate,
+        DateOnly? endDate,
+        CancellationToken cancellationToken = default)
     {
-        _authorizationService.EnsureAuthenticated();
+        await _authorizationService.EnsureAuthenticatedAsync();
 
         if (startDate.HasValue &&
             endDate.HasValue &&
@@ -304,13 +302,12 @@ public class AppointmentService
                 cancellationToken);
     }
 
-
     public async Task<List<string>> GetStatusesForClinicActivityReportAsync(
-    DateOnly? startDate,
-    DateOnly? endDate,
-    CancellationToken cancellationToken = default)
+        DateOnly? startDate,
+        DateOnly? endDate,
+        CancellationToken cancellationToken = default)
     {
-        _authorizationService.EnsureAuthenticated();
+        await _authorizationService.EnsureAuthenticatedAsync();
 
         if (startDate.HasValue &&
             endDate.HasValue &&
@@ -327,14 +324,13 @@ public class AppointmentService
                 cancellationToken);
     }
 
-
     // UPDATE / RESCHEDULE
 
     public async Task<Appointment> UpdateAppointmentAsync(
         Appointment updatedAppointment,
         CancellationToken cancellationToken = default)
     {
-        _authorizationService.EnsureAuthenticated();
+        await _authorizationService.EnsureAuthenticatedAsync();
 
         ArgumentNullException.ThrowIfNull(updatedAppointment);
 
@@ -376,8 +372,6 @@ public class AppointmentService
 
         NormalizeFields(updatedAppointment);
 
-        // Allow corrections to appointment details without changing
-        // the schedule of an appointment that is already in the past.
         bool scheduleChanged =
             existingAppointment.AppointmentDate !=
                 updatedAppointment.AppointmentDate ||
@@ -452,7 +446,7 @@ public class AppointmentService
         string? cancellationReason,
         CancellationToken cancellationToken = default)
     {
-        _authorizationService.EnsureAuthenticated();
+        await _authorizationService.EnsureAuthenticatedAsync();
 
         if (appointmentId <= 0)
         {
@@ -527,7 +521,7 @@ public class AppointmentService
         string newStatus,
         CancellationToken cancellationToken = default)
     {
-        _authorizationService.EnsureAuthenticated();
+        await _authorizationService.EnsureAuthenticatedAsync();
 
         if (appointmentId <= 0)
         {
@@ -612,7 +606,7 @@ public class AppointmentService
         string? archiveReason,
         CancellationToken cancellationToken = default)
     {
-        _authorizationService.EnsureAuthenticated();
+        await _authorizationService.EnsureAuthenticatedAsync();
 
         if (appointmentId <= 0)
         {
@@ -725,7 +719,6 @@ public class AppointmentService
                 continue;
             }
 
-            // Only scheduled or confirmed appointments reserve a time slot.
             if (existing.Status is not ("Scheduled" or "Confirmed"))
             {
                 continue;

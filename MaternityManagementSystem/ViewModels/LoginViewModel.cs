@@ -69,7 +69,8 @@ public partial class LoginViewModel : ObservableObject
             var session = new UserSession(
                 staff.Id,
                 staff.Username,
-                staff.Role);
+                staff.Role,
+                staff.SecurityStamp);
 
             _sessionService.StartSession(session);
 

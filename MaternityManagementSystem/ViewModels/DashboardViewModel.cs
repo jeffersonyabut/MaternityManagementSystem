@@ -67,7 +67,7 @@ public partial class DashboardViewModel : ObservableObject
     public ObservableCollection<ISeries> AppointmentStatusSeries { get; } = new();
 
     public DashboardViewModel()
-        : this(new DashboardAnalyticsService())
+        : this(new DashboardAnalyticsService(new AuthorizationService(new SessionService())))
     {
     }
 
@@ -123,72 +123,53 @@ public partial class DashboardViewModel : ObservableObject
         RegistrationSeries.Add(new LineSeries<int>
         {
             Name = "New Patients",
-
             Values = MonthlyRegistrations
                 .Select(item => item.Count)
                 .ToArray(),
-
-            // Smooth line
             LineSmoothness = 0.35,
-
-            // Main purple line
             Stroke = new SolidColorPaint(PrimaryPurple)
             {
                 StrokeThickness = 3
             },
-
-            // Subtle area fill
             Fill = new SolidColorPaint(
                 new SKColor(121, 82, 179, 30)),
-
-            // Point markers
             GeometrySize = 10,
-
             GeometryFill = new SolidColorPaint(PrimaryPurple),
-
             GeometryStroke = new SolidColorPaint(SKColors.White)
             {
                 StrokeThickness = 2
-            },
-
-
+            }
         });
 
         RegistrationXAxis = new[]
         {
-        new Axis
-        {
-            Labels = MonthlyRegistrations
-                .Select(item => item.Label)
-                .ToArray(),
-
-            LabelsPaint = new SolidColorPaint(
-                new SKColor(119, 113, 132)),
-
-            TextSize = 11,
-
-            SeparatorsPaint = null
-        }
-    };
+            new Axis
+            {
+                Labels = MonthlyRegistrations
+                    .Select(item => item.Label)
+                    .ToArray(),
+                LabelsPaint = new SolidColorPaint(
+                    new SKColor(119, 113, 132)),
+                TextSize = 11,
+                SeparatorsPaint = null
+            }
+        };
 
         RegistrationYAxis = new[]
         {
-        new Axis
-        {
-            MinLimit = 0,
-
-            LabelsPaint = new SolidColorPaint(
-                new SKColor(119, 113, 132)),
-
-            TextSize = 11,
-
-            SeparatorsPaint = new SolidColorPaint(
-                new SKColor(234, 231, 240))
+            new Axis
             {
-                StrokeThickness = 1
+                MinLimit = 0,
+                LabelsPaint = new SolidColorPaint(
+                    new SKColor(119, 113, 132)),
+                TextSize = 11,
+                SeparatorsPaint = new SolidColorPaint(
+                    new SKColor(234, 231, 240))
+                {
+                    StrokeThickness = 1
+                }
             }
-        }
-    };
+        };
     }
 
     private void UpdatePrenatalVisitChart()
@@ -198,58 +179,45 @@ public partial class DashboardViewModel : ObservableObject
         PrenatalVisitSeries.Add(new ColumnSeries<int>
         {
             Name = "Prenatal Visits",
-
             Values = MonthlyPrenatalVisits
                 .Select(item => item.Count)
                 .ToArray(),
-
             Fill = new SolidColorPaint(PrimaryPurple),
-
             Stroke = null,
-
-            // Space between columns
             Padding = 10,
-
-            // Rounded corners
             Rx = 6,
             Ry = 6
         });
 
         PrenatalXAxis = new[]
         {
-        new Axis
-        {
-            Labels = MonthlyPrenatalVisits
-                .Select(item => item.Label)
-                .ToArray(),
-
-            LabelsPaint = new SolidColorPaint(
-                new SKColor(119, 113, 132)),
-
-            TextSize = 11,
-
-            SeparatorsPaint = null
-        }
-    };
+            new Axis
+            {
+                Labels = MonthlyPrenatalVisits
+                    .Select(item => item.Label)
+                    .ToArray(),
+                LabelsPaint = new SolidColorPaint(
+                    new SKColor(119, 113, 132)),
+                TextSize = 11,
+                SeparatorsPaint = null
+            }
+        };
 
         PrenatalYAxis = new[]
         {
-        new Axis
-        {
-            MinLimit = 0,
-
-            LabelsPaint = new SolidColorPaint(
-                new SKColor(119, 113, 132)),
-
-            TextSize = 11,
-
-            SeparatorsPaint = new SolidColorPaint(
-                new SKColor(234, 231, 240))
+            new Axis
             {
-                StrokeThickness = 1
+                MinLimit = 0,
+                LabelsPaint = new SolidColorPaint(
+                    new SKColor(119, 113, 132)),
+                TextSize = 11,
+                SeparatorsPaint = new SolidColorPaint(
+                    new SKColor(234, 231, 240))
+                {
+                    StrokeThickness = 1
+                }
             }
-        }
-    };
+        };
     }
 
     private void UpdateAppointmentStatusChart()
@@ -258,11 +226,11 @@ public partial class DashboardViewModel : ObservableObject
 
         var statuses = new[]
         {
-        new { Name = "Scheduled", Color = PrimaryPurple },
-        new { Name = "Confirmed", Color = LightPurple },
-        new { Name = "Completed", Color = SoftPurple },
-        new { Name = "Cancelled", Color = new SKColor(180, 160, 195) }
-    };
+            new { Name = "Scheduled", Color = PrimaryPurple },
+            new { Name = "Confirmed", Color = LightPurple },
+            new { Name = "Completed", Color = SoftPurple },
+            new { Name = "Cancelled", Color = new SKColor(180, 160, 195) }
+        };
 
         foreach (var status in statuses)
         {
@@ -273,28 +241,15 @@ public partial class DashboardViewModel : ObservableObject
             {
                 Name = status.Name,
                 Values = new[] { count },
-
-                // Keep zero-count statuses in the legend,
-                // but exclude them from hover tooltips.
                 IsHoverable = count > 0,
                 IsVisibleAtLegend = true,
-
-                // Doughnut appearance
                 InnerRadius = 65,
-
-                // Segment spacing
                 Pushout = 2,
-
-                // Segment colors
                 Fill = new SolidColorPaint(status.Color),
-
-                // White separation between segments
                 Stroke = new SolidColorPaint(SKColors.White)
                 {
                     StrokeThickness = 3
                 },
-
-                // Smooth animation
                 AnimationsSpeed = TimeSpan.FromMilliseconds(500)
             });
         }

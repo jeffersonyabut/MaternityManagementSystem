@@ -1,4 +1,5 @@
 
+using MaternityManagementSystem.Repositories;
 using MaternityManagementSystem.Sessions;
 
 namespace MaternityManagementSystem.Services;
@@ -6,12 +7,22 @@ namespace MaternityManagementSystem.Services;
 public sealed class AuthorizationService
 {
     private readonly SessionService _sessionService;
+    private readonly StaffRepository _staffRepository;
 
     public AuthorizationService(SessionService sessionService)
+        : this(sessionService, new StaffRepository())
+    {
+    }
+
+    public AuthorizationService(
+        SessionService sessionService,
+        StaffRepository staffRepository)
     {
         ArgumentNullException.ThrowIfNull(sessionService);
+        ArgumentNullException.ThrowIfNull(staffRepository);
 
         _sessionService = sessionService;
+        _staffRepository = staffRepository;
     }
 
     public bool IsAuthenticated =>
@@ -29,18 +40,43 @@ public sealed class AuthorizationService
 
     public bool CanViewAuditLogs => IsAdmin;
 
-    public void EnsureAuthenticated()
+    public async Task EnsureAuthenticatedAsync()
     {
-        if (!IsAuthenticated)
+        var currentUser = _sessionService.CurrentUser;
+
+        if (currentUser is null)
         {
             throw new UnauthorizedAccessException(
                 "You must be logged in to perform this action.");
         }
+
+        var staff = await _staffRepository.GetByIdAsync(
+            currentUser.StaffId);
+
+        bool sessionIsValid =
+            staff is not null &&
+            staff.IsActive &&
+            string.Equals(
+                staff.Role,
+                currentUser.Role,
+                StringComparison.OrdinalIgnoreCase) &&
+            string.Equals(
+                staff.SecurityStamp,
+                currentUser.SecurityStamp,
+                StringComparison.Ordinal);
+
+        if (!sessionIsValid)
+        {
+            _sessionService.EndSession();
+
+            throw new UnauthorizedAccessException(
+                "Your account is no longer authorized. Please sign in again.");
+        }
     }
 
-    public void EnsureAdmin()
+    public async Task EnsureAdminAsync()
     {
-        EnsureAuthenticated();
+        await EnsureAuthenticatedAsync();
 
         if (!IsAdmin)
         {

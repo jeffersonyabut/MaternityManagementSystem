@@ -31,7 +31,7 @@ public class PatientService
         Patient patient,
         CancellationToken cancellationToken = default)
     {
-        _authorizationService.EnsureAuthenticated();
+        await _authorizationService.EnsureAuthenticatedAsync();
         ArgumentNullException.ThrowIfNull(patient);
 
         ValidatePatient(patient);
@@ -82,7 +82,7 @@ public class PatientService
         Patient patient,
         CancellationToken cancellationToken = default)
     {
-        _authorizationService.EnsureAuthenticated();
+        await _authorizationService.EnsureAuthenticatedAsync();
         ArgumentNullException.ThrowIfNull(patient);
 
         if (patient.Id <= 0)
@@ -176,7 +176,7 @@ public class PatientService
     int patientId,
     CancellationToken cancellationToken = default)
     {
-        _authorizationService.EnsureAuthenticated();
+        await _authorizationService.EnsureAuthenticatedAsync();
 
         if (patientId <= 0)
         {
@@ -192,7 +192,7 @@ public class PatientService
         string patientNumber,
         CancellationToken cancellationToken = default)
     {
-        _authorizationService.EnsureAuthenticated();
+        await _authorizationService.EnsureAuthenticatedAsync();
 
         ArgumentException.ThrowIfNullOrWhiteSpace(patientNumber);
 
@@ -204,7 +204,7 @@ public class PatientService
     public async Task<List<Patient>> GetAllPatientsAsync(
         CancellationToken cancellationToken = default)
     {
-        _authorizationService.EnsureAuthenticated();
+        await _authorizationService.EnsureAuthenticatedAsync();
 
         return await _patientRepository.GetAllAsync(
             cancellationToken);
@@ -218,7 +218,7 @@ public class PatientService
         string? searchTerm = null,
         CancellationToken cancellationToken = default)
     {
-        _authorizationService.EnsureAuthenticated();
+        await _authorizationService.EnsureAuthenticatedAsync();
 
         return await _patientRepository.GetPatientMasterListAsync(
             startUtc,
@@ -234,7 +234,7 @@ public class PatientService
         string searchTerm,
         CancellationToken cancellationToken = default)
     {
-        _authorizationService.EnsureAuthenticated();
+        await _authorizationService.EnsureAuthenticatedAsync();
 
         ArgumentNullException.ThrowIfNull(searchTerm);
 
@@ -249,7 +249,7 @@ public class PatientService
         int pageSize,
         CancellationToken cancellationToken = default)
     {
-        _authorizationService.EnsureAuthenticated();
+        await _authorizationService.EnsureAuthenticatedAsync();
 
         ArgumentNullException.ThrowIfNull(searchTerm);
 
@@ -264,7 +264,7 @@ public class PatientService
         string searchTerm,
         CancellationToken cancellationToken = default)
     {
-        _authorizationService.EnsureAuthenticated();
+        await _authorizationService.EnsureAuthenticatedAsync();
 
         ArgumentNullException.ThrowIfNull(searchTerm);
 
@@ -396,7 +396,7 @@ public class PatientService
     int patientId,
     CancellationToken cancellationToken = default)
     {
-        _authorizationService.EnsureAuthenticated();
+        await _authorizationService.EnsureAuthenticatedAsync();
 
         if (patientId <= 0)
         {
@@ -415,7 +415,7 @@ public class PatientService
     string? searchTerm = null,
     CancellationToken cancellationToken = default)
     {
-        _authorizationService.EnsureAuthenticated();
+        await _authorizationService.EnsureAuthenticatedAsync();
 
         if (startDate.HasValue &&
             endDate.HasValue &&
@@ -440,7 +440,7 @@ public class PatientService
     DateOnly? endDate,
     CancellationToken cancellationToken = default)
     {
-        _authorizationService.EnsureAuthenticated();
+        await _authorizationService.EnsureAuthenticatedAsync();
 
         if (startDate.HasValue &&
             endDate.HasValue &&
@@ -463,7 +463,7 @@ public class PatientService
     DateOnly? endDate,
     CancellationToken cancellationToken = default)
     {
-        _authorizationService.EnsureAuthenticated();
+        await _authorizationService.EnsureAuthenticatedAsync();
 
         if (startDate.HasValue &&
             endDate.HasValue &&

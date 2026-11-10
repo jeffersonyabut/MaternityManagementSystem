@@ -45,7 +45,7 @@ public class LaboratoryResultService
         LaboratoryResult laboratoryResult,
         CancellationToken cancellationToken = default)
     {
-        _authorizationService.EnsureAuthenticated();
+        await _authorizationService.EnsureAuthenticatedAsync();
 
         ArgumentNullException.ThrowIfNull(laboratoryResult);
 
@@ -82,11 +82,11 @@ public class LaboratoryResultService
             cancellationToken);
     }
 
-    public Task<LaboratoryResult?> GetByIdAsync(
+    public async Task<LaboratoryResult?> GetByIdAsync(
         int laboratoryResultId,
         CancellationToken cancellationToken = default)
     {
-        _authorizationService.EnsureAuthenticated();
+        await _authorizationService.EnsureAuthenticatedAsync();
 
         if (laboratoryResultId <= 0)
         {
@@ -94,32 +94,32 @@ public class LaboratoryResultService
                 nameof(laboratoryResultId));
         }
 
-        return _laboratoryResultRepository.GetByIdAsync(
+        return await _laboratoryResultRepository.GetByIdAsync(
             laboratoryResultId,
             cancellationToken);
     }
 
-    public Task<List<LaboratoryResult>> GetByPatientIdAsync(
+    public async Task<List<LaboratoryResult>> GetByPatientIdAsync(
         int patientId,
         CancellationToken cancellationToken = default)
     {
-        _authorizationService.EnsureAuthenticated();
+        await _authorizationService.EnsureAuthenticatedAsync();
 
         if (patientId <= 0)
         {
             throw new ArgumentOutOfRangeException(nameof(patientId));
         }
 
-        return _laboratoryResultRepository.GetByPatientIdAsync(
+        return await _laboratoryResultRepository.GetByPatientIdAsync(
             patientId,
             cancellationToken);
     }
 
-    public Task<List<LaboratoryResult>> GetByPrenatalVisitIdAsync(
+    public async Task<List<LaboratoryResult>> GetByPrenatalVisitIdAsync(
         int prenatalVisitId,
         CancellationToken cancellationToken = default)
     {
-        _authorizationService.EnsureAuthenticated();
+        await _authorizationService.EnsureAuthenticatedAsync();
 
         if (prenatalVisitId <= 0)
         {
@@ -127,19 +127,19 @@ public class LaboratoryResultService
                 nameof(prenatalVisitId));
         }
 
-        return _laboratoryResultRepository.GetByPrenatalVisitIdAsync(
+        return await _laboratoryResultRepository.GetByPrenatalVisitIdAsync(
             prenatalVisitId,
             cancellationToken);
     }
 
-    public Task<List<LaboratoryResult>> GetForReportAsync(
-    DateOnly? startDate,
-    DateOnly? endDate,
-    string? searchTerm,
-    string? testName,
-    CancellationToken cancellationToken = default)
+    public async Task<List<LaboratoryResult>> GetForReportAsync(
+        DateOnly? startDate,
+        DateOnly? endDate,
+        string? searchTerm,
+        string? testName,
+        CancellationToken cancellationToken = default)
     {
-        _authorizationService.EnsureAuthenticated();
+        await _authorizationService.EnsureAuthenticatedAsync();
 
         if (startDate.HasValue &&
             endDate.HasValue &&
@@ -149,7 +149,7 @@ public class LaboratoryResultService
                 "The start date cannot be later than the end date.");
         }
 
-        return _laboratoryResultRepository.GetForReportAsync(
+        return await _laboratoryResultRepository.GetForReportAsync(
             startDate,
             endDate,
             searchTerm,
@@ -157,13 +157,12 @@ public class LaboratoryResultService
             cancellationToken);
     }
 
-
     public async Task<int> GetLaboratoryResultCountForClinicActivityReportAsync(
-    DateOnly? startDate,
-    DateOnly? endDate,
-    CancellationToken cancellationToken = default)
+        DateOnly? startDate,
+        DateOnly? endDate,
+        CancellationToken cancellationToken = default)
     {
-        _authorizationService.EnsureAuthenticated();
+        await _authorizationService.EnsureAuthenticatedAsync();
 
         if (startDate.HasValue &&
             endDate.HasValue &&
@@ -180,13 +179,12 @@ public class LaboratoryResultService
                 cancellationToken);
     }
 
-
     public async Task<List<DateOnly>> GetLaboratoryResultDatesForClinicActivityReportAsync(
-    DateOnly? startDate,
-    DateOnly? endDate,
-    CancellationToken cancellationToken = default)
+        DateOnly? startDate,
+        DateOnly? endDate,
+        CancellationToken cancellationToken = default)
     {
-        _authorizationService.EnsureAuthenticated();
+        await _authorizationService.EnsureAuthenticatedAsync();
 
         if (startDate.HasValue &&
             endDate.HasValue &&
@@ -203,13 +201,12 @@ public class LaboratoryResultService
                 cancellationToken);
     }
 
-
     public async Task<List<int>> GetPatientIdsForClinicActivityReportAsync(
-    DateOnly? startDate,
-    DateOnly? endDate,
-    CancellationToken cancellationToken = default)
+        DateOnly? startDate,
+        DateOnly? endDate,
+        CancellationToken cancellationToken = default)
     {
-        _authorizationService.EnsureAuthenticated();
+        await _authorizationService.EnsureAuthenticatedAsync();
 
         if (startDate.HasValue &&
             endDate.HasValue &&
@@ -226,13 +223,11 @@ public class LaboratoryResultService
                 cancellationToken);
     }
 
-
-
     public async Task<LaboratoryResult> UpdateLaboratoryResultAsync(
         LaboratoryResult updatedLaboratoryResult,
         CancellationToken cancellationToken = default)
     {
-        _authorizationService.EnsureAuthenticated();
+        await _authorizationService.EnsureAuthenticatedAsync();
 
         ArgumentNullException.ThrowIfNull(updatedLaboratoryResult);
 
@@ -323,7 +318,7 @@ public class LaboratoryResultService
         string? archiveReason,
         CancellationToken cancellationToken = default)
     {
-        _authorizationService.EnsureAuthenticated();
+        await _authorizationService.EnsureAuthenticatedAsync();
 
         if (laboratoryResultId <= 0)
         {

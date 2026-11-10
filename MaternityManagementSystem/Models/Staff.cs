@@ -10,6 +10,9 @@ public class Staff
     // Store a password hash, never the original password.
     public string PasswordHash { get; set; } = string.Empty;
 
+    // Changes whenever existing authenticated sessions must be invalidated.
+    public string SecurityStamp { get; set; } = Guid.NewGuid().ToString("N");
+
     public string Role { get; set; } = StaffRoles.Staff;
 
     public bool IsActive { get; set; } = true;

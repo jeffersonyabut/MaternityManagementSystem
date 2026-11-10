@@ -32,7 +32,7 @@ public sealed class StaffManagementService
 
     public async Task<IReadOnlyList<StaffDisplayModel>> GetAllStaffAsync()
     {
-        _authorizationService.EnsureAdmin();
+        await _authorizationService.EnsureAdminAsync();
 
         List<Staff> staffMembers =
             await _staffRepository.GetAllAsync();
@@ -51,7 +51,8 @@ public sealed class StaffManagementService
 
     public async Task<bool> IsUsernameAvailableAsync(string username)
     {
-        _authorizationService.EnsureAdmin();
+
+        await _authorizationService.EnsureAdminAsync();
 
         if (string.IsNullOrWhiteSpace(username))
         {
@@ -68,7 +69,7 @@ public sealed class StaffManagementService
     string password,
     string role)
     {
-        _authorizationService.EnsureAdmin();
+        await _authorizationService.EnsureAdminAsync();
 
         username = username?.Trim() ?? string.Empty;
 
@@ -147,7 +148,8 @@ public sealed class StaffManagementService
     string username,
     string role)
     {
-        _authorizationService.EnsureAdmin();
+        await _authorizationService.EnsureAdminAsync();
+
 
         username = username?.Trim() ?? string.Empty;
 
@@ -241,7 +243,8 @@ public sealed class StaffManagementService
     int staffId,
     bool isActive)
     {
-        _authorizationService.EnsureAdmin();
+
+        await _authorizationService.EnsureAdminAsync();
 
         if (staffId <= 0)
         {
@@ -309,11 +312,14 @@ public sealed class StaffManagementService
     }
 
 
+
     public async Task ResetStaffPasswordAsync(
-    int staffId,
-    string newPassword)
+        int staffId,
+        string newPassword)
     {
-        _authorizationService.EnsureAdmin();
+
+        await _authorizationService.EnsureAdminAsync();
+
 
         if (staffId <= 0)
         {
@@ -340,9 +346,15 @@ public sealed class StaffManagementService
                 "Staff account was not found.");
         }
 
-        string passwordHash = PasswordHasher.HashPassword(newPassword);
-
         UserSession currentUser = _sessionService.CurrentUser!;
+
+        if (staff.Id == currentUser.StaffId)
+        {
+            throw new InvalidOperationException(
+                "You cannot reset your own password through Staff Management.");
+        }
+
+        string passwordHash = PasswordHasher.HashPassword(newPassword);
 
         AuditLog auditLog = new()
         {

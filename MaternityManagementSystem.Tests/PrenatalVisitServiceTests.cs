@@ -379,6 +379,7 @@ public class PrenatalVisitServiceTests
         TestDatabase testDatabase)
     {
         int staffId;
+        string securityStamp;
 
         await using (var dbContext =
             await testDatabase.Factory.CreateDbContextAsync())
@@ -387,7 +388,7 @@ public class PrenatalVisitServiceTests
             {
                 Username = "test-nurse",
                 PasswordHash = "test-password-hash",
-                Role = "Nurse/Midwife",
+                Role = StaffRoles.Staff,
                 IsActive = true,
                 CreatedAtUtc = DateTime.UtcNow
             };
@@ -396,6 +397,7 @@ public class PrenatalVisitServiceTests
             await dbContext.SaveChangesAsync();
 
             staffId = staff.Id;
+            securityStamp = staff.SecurityStamp;
         }
 
         var sessionService = new SessionService();
@@ -404,10 +406,13 @@ public class PrenatalVisitServiceTests
             new UserSession(
                 staffId,
                 "test-nurse",
-                "Nurse/Midwife"));
+                StaffRoles.Staff,
+                securityStamp));
 
         var authorizationService =
-            new AuthorizationService(sessionService);
+            new AuthorizationService(
+                sessionService,
+                new StaffRepository(testDatabase.Factory));
 
         return new PrenatalVisitService(
             new PrenatalVisitRepository(testDatabase.Factory),

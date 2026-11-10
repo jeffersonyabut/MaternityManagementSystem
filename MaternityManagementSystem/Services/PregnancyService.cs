@@ -1,6 +1,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using MaternityManagementSystem.Models;
@@ -37,7 +38,7 @@ public class PregnancyService
         Pregnancy pregnancy,
         CancellationToken cancellationToken = default)
     {
-        _authorizationService.EnsureAuthenticated();
+        await _authorizationService.EnsureAuthenticatedAsync();
 
         ArgumentNullException.ThrowIfNull(pregnancy);
 
@@ -89,7 +90,7 @@ public class PregnancyService
         int patientId,
         CancellationToken cancellationToken = default)
     {
-        _authorizationService.EnsureAuthenticated();
+        await _authorizationService.EnsureAuthenticatedAsync();
 
         return await _pregnancyRepository.GetByPatientIdAsync(
             patientId,
@@ -100,22 +101,21 @@ public class PregnancyService
         int pregnancyId,
         CancellationToken cancellationToken = default)
     {
-        _authorizationService.EnsureAuthenticated();
+        await _authorizationService.EnsureAuthenticatedAsync();
 
         return await _pregnancyRepository.GetByIdAsync(
             pregnancyId,
             cancellationToken);
     }
 
-
-    public Task<List<Pregnancy>> GetForReportAsync(
-    DateOnly? startDate,
-    DateOnly? endDate,
-    string? searchTerm,
-    string? status,
-    CancellationToken cancellationToken = default)
+    public async Task<List<Pregnancy>> GetForReportAsync(
+        DateOnly? startDate,
+        DateOnly? endDate,
+        string? searchTerm,
+        string? status,
+        CancellationToken cancellationToken = default)
     {
-        _authorizationService.EnsureAuthenticated();
+        await _authorizationService.EnsureAuthenticatedAsync();
 
         if (startDate.HasValue &&
             endDate.HasValue &&
@@ -149,7 +149,7 @@ public class PregnancyService
             }
         }
 
-        return _pregnancyRepository.GetForReportAsync(
+        return await _pregnancyRepository.GetForReportAsync(
             startDate,
             endDate,
             searchTerm,
@@ -157,13 +157,12 @@ public class PregnancyService
             cancellationToken);
     }
 
-
     public async Task<int> GetPregnancyRegistrationCountForClinicActivityReportAsync(
-    DateOnly? startDate,
-    DateOnly? endDate,
-    CancellationToken cancellationToken = default)
+        DateOnly? startDate,
+        DateOnly? endDate,
+        CancellationToken cancellationToken = default)
     {
-        _authorizationService.EnsureAuthenticated();
+        await _authorizationService.EnsureAuthenticatedAsync();
 
         if (startDate.HasValue &&
             endDate.HasValue &&
@@ -180,13 +179,12 @@ public class PregnancyService
                 cancellationToken);
     }
 
-
     public async Task<List<DateTime>> GetPregnancyRegistrationDatesForClinicActivityReportAsync(
-    DateOnly? startDate,
-    DateOnly? endDate,
-    CancellationToken cancellationToken = default)
+        DateOnly? startDate,
+        DateOnly? endDate,
+        CancellationToken cancellationToken = default)
     {
-        _authorizationService.EnsureAuthenticated();
+        await _authorizationService.EnsureAuthenticatedAsync();
 
         if (startDate.HasValue &&
             endDate.HasValue &&
@@ -203,16 +201,11 @@ public class PregnancyService
                 cancellationToken);
     }
 
-
-
-
-
-
     public async Task<Pregnancy> UpdatePregnancyAsync(
         Pregnancy updatedPregnancy,
         CancellationToken cancellationToken = default)
     {
-        _authorizationService.EnsureAuthenticated();
+        await _authorizationService.EnsureAuthenticatedAsync();
 
         ArgumentNullException.ThrowIfNull(updatedPregnancy);
 

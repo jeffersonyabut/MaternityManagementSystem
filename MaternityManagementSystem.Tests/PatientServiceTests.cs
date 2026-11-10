@@ -17,6 +17,7 @@ public class PatientServiceTests
         TestDatabase testDatabase)
     {
         int staffId;
+        string securityStamp;
 
         await using (var dbContext =
             await testDatabase.Factory.CreateDbContextAsync())
@@ -25,7 +26,7 @@ public class PatientServiceTests
             {
                 Username = "patient-test-user",
                 PasswordHash = "test-password-hash",
-                Role = "Nurse/Midwife",
+                Role = StaffRoles.Staff,
                 IsActive = true,
                 CreatedAtUtc = DateTime.UtcNow
             };
@@ -34,6 +35,7 @@ public class PatientServiceTests
             await dbContext.SaveChangesAsync();
 
             staffId = staff.Id;
+            securityStamp = staff.SecurityStamp;
         }
 
         var sessionService = new SessionService();
@@ -42,10 +44,13 @@ public class PatientServiceTests
             new UserSession(
                 staffId,
                 "patient-test-user",
-                "Nurse/Midwife"));
+                StaffRoles.Staff,
+                securityStamp));
 
         var authorizationService =
-            new AuthorizationService(sessionService);
+            new AuthorizationService(
+                sessionService,
+                new StaffRepository(testDatabase.Factory));
 
         return new PatientService(
             new PatientRepository(testDatabase.Factory),
@@ -256,7 +261,9 @@ public class PatientServiceTests
 
         var service = new PatientService(
             new PatientRepository(testDatabase.Factory),
-            new AuthorizationService(sessionService),
+            new AuthorizationService(
+                sessionService,
+                new StaffRepository(testDatabase.Factory)),
             sessionService);
 
         var patient = CreateValidPatient();

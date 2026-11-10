@@ -9,16 +9,20 @@ public class AuditLogService
 {
     private readonly AuditLogRepository _auditLogRepository;
     private readonly SessionService _sessionService;
+    private readonly AuthorizationService _authorizationService;
 
     public AuditLogService(
         AuditLogRepository auditLogRepository,
-        SessionService sessionService)
+        SessionService sessionService,
+        AuthorizationService authorizationService)
     {
         ArgumentNullException.ThrowIfNull(auditLogRepository);
         ArgumentNullException.ThrowIfNull(sessionService);
+        ArgumentNullException.ThrowIfNull(authorizationService);
 
         _auditLogRepository = auditLogRepository;
         _sessionService = sessionService;
+        _authorizationService = authorizationService;
     }
 
     public async Task LogAsync(
@@ -45,15 +49,42 @@ public class AuditLogService
         await _auditLogRepository.AddAsync(auditLog);
     }
 
-    public Task<List<AuditLog>> GetRecentAsync(int count = 100)
+    public async Task<List<AuditLog>> GetRecentAsync(int count = 100)
     {
-        return _auditLogRepository.GetRecentAsync(count);
+        await _authorizationService.EnsureAdminAsync();
+
+        if (count < 1 || count > 500)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(count),
+                "Audit log count must be between 1 and 500.");
+        }
+
+        return await _auditLogRepository.GetRecentAsync(count);
     }
 
-    public Task<List<AuditLog>> GetByEntityAsync(
+    public async Task<List<AuditLog>> GetByEntityAsync(
         string entityType,
         int entityId)
     {
-        return _auditLogRepository.GetByEntityAsync(entityType, entityId);
+        await _authorizationService.EnsureAdminAsync();
+
+        if (string.IsNullOrWhiteSpace(entityType))
+        {
+            throw new ArgumentException(
+                "Entity type is required.",
+                nameof(entityType));
+        }
+
+        if (entityId <= 0)
+        {
+            throw new ArgumentException(
+                "Invalid entity ID.",
+                nameof(entityId));
+        }
+
+        return await _auditLogRepository.GetByEntityAsync(
+            entityType.Trim(),
+            entityId);
     }
 }

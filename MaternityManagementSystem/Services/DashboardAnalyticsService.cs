@@ -23,9 +23,21 @@ public class DashboardAnalyticsService
         "No-show"
     };
 
+    private readonly AuthorizationService _authorizationService;
+
+    public DashboardAnalyticsService(
+        AuthorizationService authorizationService)
+    {
+        ArgumentNullException.ThrowIfNull(authorizationService);
+
+        _authorizationService = authorizationService;
+    }
+
     public async Task<DashboardData> GetDashboardDataAsync(
         CancellationToken cancellationToken = default)
     {
+        await _authorizationService.EnsureAuthenticatedAsync();
+
         await using var dbContext = new ClinicDbContext();
 
         TimeZoneInfo philippinesTimeZone =
@@ -191,7 +203,6 @@ public class DashboardAnalyticsService
             .ToList();
 
         // Upcoming appointments
-        // Include future times today and all future dates.
         var upcomingAppointments =
             await dbContext.Appointments
                 .AsNoTracking()

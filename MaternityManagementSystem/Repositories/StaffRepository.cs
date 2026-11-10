@@ -2,15 +2,36 @@
 using Microsoft.EntityFrameworkCore;
 using MaternityManagementSystem.Data;
 using MaternityManagementSystem.Models;
+using Microsoft.Data.Sqlite;
 
 namespace MaternityManagementSystem.Repositories;
 
 public class StaffRepository
 {
+
+    private readonly IDbContextFactory<ClinicDbContext>? _contextFactory;
+
+    public StaffRepository()
+    {
+    }
+
+    public StaffRepository(
+        IDbContextFactory<ClinicDbContext> contextFactory)
+    {
+        ArgumentNullException.ThrowIfNull(contextFactory);
+
+        _contextFactory = contextFactory;
+    }
+
+    private ClinicDbContext CreateDbContext()
+    {
+        return _contextFactory?.CreateDbContext()
+            ?? new ClinicDbContext();
+    }
+
     public async Task<Staff?> GetByUsernameAsync(string username)
     {
-        await using var db = new ClinicDbContext();
-
+        await using var db = CreateDbContext();
         return await db.StaffMembers
             .FirstOrDefaultAsync(staff =>
                 staff.Username == username);
@@ -18,8 +39,7 @@ public class StaffRepository
 
     public async Task<Staff?> GetByIdAsync(int staffId)
     {
-        await using var db = new ClinicDbContext();
-
+        await using var db = CreateDbContext();
         return await db.StaffMembers
             .AsNoTracking()
             .FirstOrDefaultAsync(staff =>
@@ -28,8 +48,7 @@ public class StaffRepository
 
     public async Task<List<Staff>> GetAllAsync()
     {
-        await using var db = new ClinicDbContext();
-
+        await using var db = CreateDbContext();
         return await db.StaffMembers
             .AsNoTracking()
             .OrderBy(staff => staff.Username)
@@ -40,8 +59,7 @@ public class StaffRepository
         string username,
         int? excludedStaffId = null)
     {
-        await using var db = new ClinicDbContext();
-
+        await using var db = CreateDbContext();
         string normalizedUsername = username.Trim().ToLower();
 
         return await db.StaffMembers.AnyAsync(staff =>
@@ -52,8 +70,7 @@ public class StaffRepository
 
     public async Task AddAsync(Staff staff)
     {
-        await using var db = new ClinicDbContext();
-
+        await using var db = CreateDbContext();
         db.StaffMembers.Add(staff);
         await db.SaveChangesAsync();
     }
@@ -62,8 +79,7 @@ public class StaffRepository
         Staff staff,
         AuditLog auditLog)
     {
-        await using var db = new ClinicDbContext();
-
+        await using var db = CreateDbContext();
         await using var transaction =
             await db.Database.BeginTransactionAsync();
 
@@ -81,6 +97,15 @@ public class StaffRepository
 
             await transaction.CommitAsync();
         }
+        catch (DbUpdateException ex)
+            when (IsUsernameUniqueConstraintViolation(ex))
+        {
+            await transaction.RollbackAsync();
+
+            throw new InvalidOperationException(
+                "This username is already taken.",
+                ex);
+        }
         catch
         {
             await transaction.RollbackAsync();
@@ -94,8 +119,7 @@ public class StaffRepository
     string role,
     AuditLog auditLog)
     {
-        await using var db = new ClinicDbContext();
-
+        await using var db = CreateDbContext();
         await using var transaction =
             await db.Database.BeginTransactionAsync();
 
@@ -139,6 +163,15 @@ public class StaffRepository
 
             return true;
         }
+        catch (DbUpdateException ex)
+            when (IsUsernameUniqueConstraintViolation(ex))
+        {
+            await transaction.RollbackAsync();
+
+            throw new InvalidOperationException(
+                "This username is already taken.",
+                ex);
+        }
         catch
         {
             await transaction.RollbackAsync();
@@ -152,8 +185,7 @@ public class StaffRepository
         bool isActive,
         AuditLog auditLog)
     {
-        await using var db = new ClinicDbContext();
-
+        await using var db = CreateDbContext();
         await using var transaction =
             await db.Database.BeginTransactionAsync();
 
@@ -209,8 +241,7 @@ public class StaffRepository
     string passwordHash,
     AuditLog auditLog)
     {
-        await using var db = new ClinicDbContext();
-
+        await using var db = CreateDbContext();
         await using var transaction =
             await db.Database.BeginTransactionAsync();
 
@@ -225,6 +256,7 @@ public class StaffRepository
             }
 
             staff.PasswordHash = passwordHash;
+            staff.SecurityStamp = Guid.NewGuid().ToString("N");
 
             auditLog.EntityId = staff.Id;
 
@@ -246,8 +278,30 @@ public class StaffRepository
 
     public async Task<bool> HasAnyStaffAsync()
     {
-        await using var db = new ClinicDbContext();
-
+        await using var db = CreateDbContext();
         return await db.StaffMembers.AnyAsync();
     }
+
+
+    private static bool IsUsernameUniqueConstraintViolation(
+        Exception exception)
+    {
+        for (Exception? current = exception;
+             current is not null;
+             current = current.InnerException)
+        {
+            if (current is SqliteException sqliteException &&
+                sqliteException.SqliteErrorCode == 19 &&
+                sqliteException.SqliteExtendedErrorCode == 2067 &&
+                sqliteException.Message.Contains(
+                    "StaffMembers.Username",
+                    StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
 }

@@ -21,16 +21,22 @@ namespace MaternityManagementSystem.Views
         {
             InitializeComponent();
 
-            _viewModel = new DashboardViewModel();
-            DataContext = _viewModel;
-
             var app = (App)Application.Current;
+
+            var authorizationService = new AuthorizationService(
+                app.SessionService);
+
+            var analyticsService = new DashboardAnalyticsService(
+                authorizationService);
+
+            _viewModel = new DashboardViewModel(analyticsService);
+            DataContext = _viewModel;
 
             _appointmentService = new AppointmentService(
                 new AppointmentRepository(),
                 new PatientRepository(),
                 new PregnancyRepository(),
-                new AuthorizationService(app.SessionService),
+                authorizationService,
                 app.SessionService);
 
             Loaded += DashboardView_Loaded;

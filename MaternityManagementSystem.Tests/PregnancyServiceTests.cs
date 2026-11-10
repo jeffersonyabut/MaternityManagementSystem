@@ -19,6 +19,7 @@ public class PregnancyServiceTests
         PatientRepository patientRepository)
     {
         int staffId;
+        string securityStamp;
 
         await using (var dbContext =
             await testDatabase.Factory.CreateDbContextAsync())
@@ -27,7 +28,7 @@ public class PregnancyServiceTests
             {
                 Username = "pregnancy-test-user",
                 PasswordHash = "test-password-hash",
-                Role = "Nurse/Midwife",
+                Role = StaffRoles.Staff,
                 IsActive = true,
                 CreatedAtUtc = DateTime.UtcNow
             };
@@ -36,6 +37,7 @@ public class PregnancyServiceTests
             await dbContext.SaveChangesAsync();
 
             staffId = staff.Id;
+            securityStamp = staff.SecurityStamp;
         }
 
         var sessionService = new SessionService();
@@ -44,10 +46,13 @@ public class PregnancyServiceTests
             new UserSession(
                 staffId,
                 "pregnancy-test-user",
-                "Nurse/Midwife"));
+                StaffRoles.Staff,
+                securityStamp));
 
         var authorizationService =
-            new AuthorizationService(sessionService);
+            new AuthorizationService(
+                sessionService,
+                new StaffRepository(testDatabase.Factory));
 
         return new PregnancyService(
             pregnancyRepository,
@@ -135,11 +140,9 @@ public class PregnancyServiceTests
             Notes = "Test pregnancy record"
         };
 
-        // Act
         var createdPregnancy =
             await service.CreatePregnancyAsync(pregnancy);
 
-        // Assert: pregnancy persistence
         Assert.NotNull(createdPregnancy);
         Assert.True(createdPregnancy.Id > 0);
         Assert.Equal(patientId, createdPregnancy.PatientId);
@@ -153,7 +156,6 @@ public class PregnancyServiceTests
         Assert.Equal("Current", savedPregnancy.Status);
         Assert.Equal("Test pregnancy record", savedPregnancy.Notes);
 
-        // Assert: audit log persistence
         await using var auditContext =
             await testDatabase.Factory.CreateDbContextAsync();
 
@@ -228,18 +230,15 @@ public class PregnancyServiceTests
             Notes = "Updated pregnancy notes"
         };
 
-        // Act
         var result =
             await service.UpdatePregnancyAsync(updatedPregnancy);
 
-        // Assert: returned result
         Assert.Equal(originalPregnancy.Id, result.Id);
         Assert.Equal(patientId, result.PatientId);
         Assert.Equal("Completed", result.Status);
         Assert.Equal("Updated pregnancy notes", result.Notes);
         Assert.NotNull(result.UpdatedAtUtc);
 
-        // Assert: database persistence
         var savedPregnancy =
             await pregnancyRepository.GetByIdAsync(
                 originalPregnancy.Id);
@@ -253,7 +252,6 @@ public class PregnancyServiceTests
             "Updated pregnancy notes",
             savedPregnancy.Notes);
 
-        // Assert: audit log persistence
         await using var auditContext =
             await testDatabase.Factory.CreateDbContextAsync();
 
@@ -269,7 +267,6 @@ public class PregnancyServiceTests
         Assert.Equal(originalPregnancy.Id, auditLog.EntityId);
         Assert.NotNull(auditLog.StaffId);
 
-        // Assert: record version persistence
         await using var versionContext =
             await testDatabase.Factory.CreateDbContextAsync();
 
@@ -283,7 +280,6 @@ public class PregnancyServiceTests
         Assert.Equal("Pregnancy", version.EntityType);
         Assert.NotNull(version.StaffId);
 
-        // Verify only the three changed fields were captured.
         using var previousDocument =
             JsonDocument.Parse(version.PreviousValuesJson);
 
@@ -296,7 +292,6 @@ public class PregnancyServiceTests
         Assert.Equal(3, newValues.EnumerateObject().Count());
         Assert.Equal(3, previousValues.EnumerateObject().Count());
 
-        // Status
         Assert.True(newValues.TryGetProperty(
             nameof(Pregnancy.Status), out var newStatus));
 
@@ -307,7 +302,6 @@ public class PregnancyServiceTests
 
         Assert.Equal("Current", previousStatus.GetString());
 
-        // PregnancyEndDate
         Assert.True(newValues.TryGetProperty(
             nameof(Pregnancy.PregnancyEndDate), out var newEndDate));
 
@@ -318,7 +312,6 @@ public class PregnancyServiceTests
 
         Assert.Equal(JsonValueKind.Null, previousEndDate.ValueKind);
 
-        // Notes
         Assert.True(newValues.TryGetProperty(
             nameof(Pregnancy.Notes), out var newNotes));
 
@@ -329,14 +322,12 @@ public class PregnancyServiceTests
 
         Assert.Equal("Original notes", previousNotes.GetString());
 
-        // Unchanged fields must not appear.
         Assert.False(newValues.TryGetProperty(
             nameof(Pregnancy.LastMenstrualPeriod), out _));
 
         Assert.False(newValues.TryGetProperty(
             nameof(Pregnancy.EstimatedDueDate), out _));
     }
-
 
     [Fact]
     public async Task UpdatePregnancyAsync_WhenNoValuesChanged_DoesNotCreateAuditOrVersion()
@@ -396,14 +387,11 @@ public class PregnancyServiceTests
             Notes = originalPregnancy.Notes
         };
 
-        // Act
         var result =
             await service.UpdatePregnancyAsync(updatedPregnancy);
 
-        // Assert
         Assert.Equal(originalPregnancy.Id, result.Id);
 
-        // Verify that no update audit or version was created.
         await using var verificationContext =
             await testDatabase.Factory.CreateDbContextAsync();
 
@@ -421,7 +409,6 @@ public class PregnancyServiceTests
         Assert.Equal(0, updatedAuditCount);
         Assert.Equal(0, versionCount);
     }
-
 
     [Fact]
     public async Task UpdatePregnancyAsync_WhenPregnancyDoesNotExist_ThrowsInvalidOperationException()

@@ -37,7 +37,8 @@ public class VitalSignService
         VitalSign vitalSign,
         CancellationToken cancellationToken = default)
     {
-        _authorizationService.EnsureAuthenticated();
+        await _authorizationService.EnsureAuthenticatedAsync();
+
         ArgumentNullException.ThrowIfNull(vitalSign);
 
         if (vitalSign.PrenatalVisitId <= 0)
@@ -82,24 +83,24 @@ public class VitalSignService
             cancellationToken);
     }
 
-    public Task<VitalSign?> GetByIdAsync(
+    public async Task<VitalSign?> GetByIdAsync(
         int vitalSignId,
         CancellationToken cancellationToken = default)
     {
-        _authorizationService.EnsureAuthenticated();
+        await _authorizationService.EnsureAuthenticatedAsync();
 
-        return _vitalSignRepository.GetByIdAsync(
+        return await _vitalSignRepository.GetByIdAsync(
             vitalSignId,
             cancellationToken);
     }
 
-    public Task<List<VitalSign>> GetByPrenatalVisitIdAsync(
+    public async Task<List<VitalSign>> GetByPrenatalVisitIdAsync(
         int prenatalVisitId,
         CancellationToken cancellationToken = default)
     {
-        _authorizationService.EnsureAuthenticated();
+        await _authorizationService.EnsureAuthenticatedAsync();
 
-        return _vitalSignRepository.GetByPrenatalVisitIdAsync(
+        return await _vitalSignRepository.GetByPrenatalVisitIdAsync(
             prenatalVisitId,
             cancellationToken);
     }
@@ -108,7 +109,8 @@ public class VitalSignService
         VitalSign updatedVitalSign,
         CancellationToken cancellationToken = default)
     {
-        _authorizationService.EnsureAuthenticated();
+        await _authorizationService.EnsureAuthenticatedAsync();
+
         ArgumentNullException.ThrowIfNull(updatedVitalSign);
 
         if (updatedVitalSign.Id <= 0)
@@ -203,7 +205,7 @@ public class VitalSignService
         string? archiveReason,
         CancellationToken cancellationToken = default)
     {
-        _authorizationService.EnsureAuthenticated();
+        await _authorizationService.EnsureAuthenticatedAsync();
 
         if (vitalSignId <= 0)
         {

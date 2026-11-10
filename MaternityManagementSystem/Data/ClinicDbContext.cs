@@ -70,6 +70,10 @@ public class ClinicDbContext : DbContext
             entity.Property(staff => staff.PasswordHash)
                   .IsRequired();
 
+            entity.Property(staff => staff.SecurityStamp)
+                  .IsRequired()
+                  .HasMaxLength(32);
+
             entity.Property(staff => staff.Role)
                   .IsRequired()
                   .HasMaxLength(50);

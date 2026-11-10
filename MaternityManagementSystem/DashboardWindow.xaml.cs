@@ -391,7 +391,8 @@ public partial class DashboardWindow : Window
 
         var auditLogService = new AuditLogService(
             auditLogRepository,
-            sessionService);
+            sessionService,
+            authorizationService);
 
         var staffManagementService = new StaffManagementService(
             staffRepository,

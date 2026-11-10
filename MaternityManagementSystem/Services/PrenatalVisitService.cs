@@ -36,7 +36,7 @@ public class PrenatalVisitService
         PrenatalVisit prenatalVisit,
         CancellationToken cancellationToken = default)
     {
-        _authorizationService.EnsureAuthenticated();
+        await _authorizationService.EnsureAuthenticatedAsync();
 
         ArgumentNullException.ThrowIfNull(prenatalVisit);
 
@@ -88,7 +88,7 @@ public class PrenatalVisitService
         int pregnancyId,
         CancellationToken cancellationToken = default)
     {
-        _authorizationService.EnsureAuthenticated();
+        await _authorizationService.EnsureAuthenticatedAsync();
 
         return await _prenatalVisitRepository.GetByPregnancyIdAsync(
             pregnancyId,
@@ -99,7 +99,7 @@ public class PrenatalVisitService
         int visitId,
         CancellationToken cancellationToken = default)
     {
-        _authorizationService.EnsureAuthenticated();
+        await _authorizationService.EnsureAuthenticatedAsync();
 
         return await _prenatalVisitRepository.GetByIdAsync(
             visitId,
@@ -107,10 +107,10 @@ public class PrenatalVisitService
     }
 
     public async Task<PrenatalVisit?> GetForReportByIdAsync(
-    int visitId,
-    CancellationToken cancellationToken = default)
+        int visitId,
+        CancellationToken cancellationToken = default)
     {
-        _authorizationService.EnsureAuthenticated();
+        await _authorizationService.EnsureAuthenticatedAsync();
 
         if (visitId <= 0)
         {
@@ -123,11 +123,11 @@ public class PrenatalVisitService
     }
 
     public async Task<int> GetPrenatalVisitCountForClinicActivityReportAsync(
-    DateOnly? startDate,
-    DateOnly? endDate,
-    CancellationToken cancellationToken = default)
+        DateOnly? startDate,
+        DateOnly? endDate,
+        CancellationToken cancellationToken = default)
     {
-        _authorizationService.EnsureAuthenticated();
+        await _authorizationService.EnsureAuthenticatedAsync();
 
         if (startDate.HasValue &&
             endDate.HasValue &&
@@ -144,13 +144,12 @@ public class PrenatalVisitService
                 cancellationToken);
     }
 
-
     public async Task<List<DateOnly>> GetPrenatalVisitDatesForClinicActivityReportAsync(
-    DateOnly? startDate,
-    DateOnly? endDate,
-    CancellationToken cancellationToken = default)
+        DateOnly? startDate,
+        DateOnly? endDate,
+        CancellationToken cancellationToken = default)
     {
-        _authorizationService.EnsureAuthenticated();
+        await _authorizationService.EnsureAuthenticatedAsync();
 
         if (startDate.HasValue &&
             endDate.HasValue &&
@@ -168,11 +167,11 @@ public class PrenatalVisitService
     }
 
     public async Task<List<int>> GetPatientIdsForClinicActivityReportAsync(
-    DateOnly? startDate,
-    DateOnly? endDate,
-    CancellationToken cancellationToken = default)
+        DateOnly? startDate,
+        DateOnly? endDate,
+        CancellationToken cancellationToken = default)
     {
-        _authorizationService.EnsureAuthenticated();
+        await _authorizationService.EnsureAuthenticatedAsync();
 
         if (startDate.HasValue &&
             endDate.HasValue &&
@@ -189,12 +188,11 @@ public class PrenatalVisitService
                 cancellationToken);
     }
 
-
     public async Task<PrenatalVisit> UpdateVisitAsync(
         PrenatalVisit updatedVisit,
         CancellationToken cancellationToken = default)
     {
-        _authorizationService.EnsureAuthenticated();
+        await _authorizationService.EnsureAuthenticatedAsync();
 
         ArgumentNullException.ThrowIfNull(updatedVisit);
 

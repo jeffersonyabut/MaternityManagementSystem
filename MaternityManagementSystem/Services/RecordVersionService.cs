@@ -24,7 +24,8 @@ public class RecordVersionService
         int entityId,
         CancellationToken cancellationToken = default)
     {
-        _authorizationService.EnsureAuthenticated();
+        await _authorizationService.EnsureAuthenticatedAsync();
+
 
         ArgumentException.ThrowIfNullOrWhiteSpace(entityType);
 
