@@ -1,9 +1,12 @@
+
 using MaternityManagementSystem.Services;
+using MaternityManagementSystem.Repositories;
+using MaternityManagementSystem.Views;
+using MaternityManagementSystem.Data;
+using Microsoft.EntityFrameworkCore;
 using System;
 using System.Threading.Tasks;
 using System.Windows;
-using MaternityManagementSystem.Repositories;
-using MaternityManagementSystem.Views;
 
 namespace MaternityManagementSystem;
 
@@ -17,9 +20,17 @@ public partial class App : Application
 
         try
         {
+            // 1. Initialize the database and apply pending migrations.
+            await using (var db = new ClinicDbContext())
+            {
+                await db.Database.MigrateAsync();
+            }
+
+            // 2. Check whether an administrator/staff account exists.
             var repository = new StaffRepository();
             bool hasStaff = await repository.HasAnyStaffAsync();
 
+            // 3. Show initial admin setup if no staff exists.
             if (!hasStaff)
             {
                 var setupWindow = new AdminSetupWindow();
@@ -32,17 +43,17 @@ public partial class App : Application
                 }
             }
 
+            // 4. Launch the main application.
             var mainWindow = new MainWindow();
 
             MainWindow = mainWindow;
             mainWindow.Show();
         }
-        catch (Exception)
+        catch (Exception ex)
         {
             MessageBox.Show(
-                "Golddie could not initialize its database. " +
-                "Please check the database configuration.",
-                "Startup Error",
+                ex.ToString(),
+                "Golddie Database Initialization Error",
                 MessageBoxButton.OK,
                 MessageBoxImage.Error);
 
