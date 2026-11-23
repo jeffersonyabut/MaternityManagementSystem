@@ -228,6 +228,31 @@
                     </Button>
 
 
+                    <!-- Audit Log Management Navigation Button -->
+                    <Button x:Name="AuditLogManagementButton"
+                            Content="Audit Log Management"
+                            HorizontalAlignment="Stretch"
+                            Click="AuditLogManagementButton_Click">
+
+                        <Button.Style>
+                            <Style TargetType="{x:Type Button}"
+                                   BasedOn="{StaticResource SidebarButtonStyle}">
+
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding CurrentPage}"
+                                                 Value="AuditLogManagementView">
+                                        <Setter Property="Background"
+                                                Value="#6554C0"/>
+                                        <Setter Property="Foreground"
+                                                Value="White"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+
+                            </Style>
+                        </Button.Style>
+                    </Button>
+
+
 
                 </StackPanel>
 

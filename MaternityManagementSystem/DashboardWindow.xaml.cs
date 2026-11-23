@@ -47,6 +47,12 @@ public partial class DashboardWindow : Window
             ? Visibility.Visible
             : Visibility.Collapsed;
 
+        AuditLogManagementButton.Visibility = user.IsAdmin
+            ? Visibility.Visible
+            : Visibility.Collapsed;
+
+        AuditLogManagementButton.Click += AuditLogManagementButton_Click;
+
         StaffManagementButton.Click += StaffManagementButton_Click;
 
         DataContext = _navigationService;
@@ -376,6 +382,13 @@ public partial class DashboardWindow : Window
         ShowStaffManagement();
     }
 
+    private void AuditLogManagementButton_Click(
+    object sender,
+    RoutedEventArgs e)
+    {
+        ShowAuditLogManagement();
+    }
+
     public void ShowStaffManagement()
     {
         var app = (App)Application.Current;
@@ -415,6 +428,50 @@ public partial class DashboardWindow : Window
             await viewModel.LoadStaffAsync();
         };
     }
+
+
+
+    // AUDIT LOG MANAGEMENT NAVIGATION
+
+    public void ShowAuditLogManagement()
+    {
+        var app = (App)Application.Current;
+
+        var sessionService = app.SessionService;
+
+        var authorizationService = new AuthorizationService(
+            sessionService);
+
+        var staffRepository = new StaffRepository();
+
+        var auditLogRepository = new AuditLogRepository();
+
+        var auditLogService = new AuditLogService(
+            auditLogRepository,
+            sessionService,
+            authorizationService);
+
+        var staffManagementService = new StaffManagementService(
+            staffRepository,
+            authorizationService,
+            auditLogService,
+            sessionService);
+
+        var viewModel = new AuditLogManagementViewModel(
+            auditLogService,
+            staffManagementService);
+
+        var view = new AuditLogManagementView(viewModel);
+
+        view.Loaded += async (_, _) =>
+        {
+            await viewModel.LoadCommand.ExecuteAsync(null);
+        };
+
+        _navigationService.NavigateToView(view);
+    }
+
+
 
 
 }

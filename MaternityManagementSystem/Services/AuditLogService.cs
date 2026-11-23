@@ -87,4 +87,87 @@ public class AuditLogService
             entityType.Trim(),
             entityId);
     }
+
+    public async Task<AuditLogPage> GetPageAsync(
+        AuditLogQuery query)
+    {
+        await _authorizationService.EnsureAdminAsync();
+
+        ArgumentNullException.ThrowIfNull(query);
+
+        if (query.Page < 1)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(query.Page),
+                "Page number must be at least 1.");
+        }
+
+        if (query.PageSize != 10)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(query.PageSize),
+                "Audit log page size must be exactly 10.");
+        }
+
+        if (query.StartDateUtc.HasValue &&
+            query.EndDateUtc.HasValue &&
+            query.StartDateUtc.Value > query.EndDateUtc.Value)
+        {
+            throw new ArgumentException(
+                "Start date cannot be later than end date.");
+        }
+
+        return await _auditLogRepository.GetPageAsync(query);
+    }
+
+    public async Task<AuditLogSummary> GetSummaryAsync()
+    {
+        await _authorizationService.EnsureAdminAsync();
+
+        TimeZoneInfo philippineTimeZone =
+            TimeZoneInfo.FindSystemTimeZoneById("Singapore Standard Time");
+
+        DateTime todayInPhilippineTime =
+            TimeZoneInfo.ConvertTimeFromUtc(
+                DateTime.UtcNow,
+                philippineTimeZone).Date;
+
+        DateTime tomorrowInPhilippineTime =
+            todayInPhilippineTime.AddDays(1);
+
+        DateTime startOfTodayUtc =
+            TimeZoneInfo.ConvertTimeToUtc(
+                DateTime.SpecifyKind(
+                    todayInPhilippineTime,
+                    DateTimeKind.Unspecified),
+                philippineTimeZone);
+
+        DateTime startOfTomorrowUtc =
+            TimeZoneInfo.ConvertTimeToUtc(
+                DateTime.SpecifyKind(
+                    tomorrowInPhilippineTime,
+                    DateTimeKind.Unspecified),
+                philippineTimeZone);
+
+        return await _auditLogRepository.GetSummaryAsync(
+            startOfTodayUtc,
+            startOfTomorrowUtc);
+    }
+
+
+    public async Task<IReadOnlyList<string>> GetAvailableActionsAsync()
+    {
+        await _authorizationService.EnsureAdminAsync();
+
+        return await _auditLogRepository.GetAvailableActionsAsync();
+    }
+
+    public async Task<IReadOnlyList<string>> GetAvailableEntityTypesAsync()
+    {
+        await _authorizationService.EnsureAdminAsync();
+
+        return await _auditLogRepository.GetAvailableEntityTypesAsync();
+    }
+
+
 }

@@ -1,0 +1,433 @@
+<UserControl x:Class="MaternityManagementSystem.Views.AuditLogManagementView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <UserControl.Resources>
+
+        <SolidColorBrush x:Key="PrimaryBrush" Color="#6554C0"/>
+        <SolidColorBrush x:Key="PageBrush" Color="#F6F7FB"/>
+        <SolidColorBrush x:Key="TextBrush" Color="#25243A"/>
+        <SolidColorBrush x:Key="MutedBrush" Color="#85849A"/>
+        <SolidColorBrush x:Key="BorderBrush" Color="#EAEAF1"/>
+
+        <Style x:Key="SummaryCardStyle" TargetType="Border">
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="CornerRadius" Value="12"/>
+            <Setter Property="Padding" Value="20"/>
+            <Setter Property="BorderBrush" Value="#EAEAF1"/>
+            <Setter Property="BorderThickness" Value="1"/>
+        </Style>
+
+        <Style x:Key="AuditDataGridStyle" TargetType="DataGrid">
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="RowHeight" Value="58"/>
+            <Setter Property="ColumnHeaderHeight" Value="44"/>
+            <Setter Property="GridLinesVisibility" Value="None"/>
+            <Setter Property="HeadersVisibility" Value="Column"/>
+            <Setter Property="CanUserAddRows" Value="False"/>
+            <Setter Property="CanUserDeleteRows" Value="False"/>
+            <Setter Property="CanUserResizeRows" Value="False"/>
+            <Setter Property="AutoGenerateColumns" Value="False"/>
+            <Setter Property="SelectionMode" Value="Single"/>
+            <Setter Property="SelectionUnit" Value="FullRow"/>
+            <Setter Property="IsReadOnly" Value="True"/>
+            <Setter Property="HorizontalGridLinesBrush" Value="#F0F0F4"/>
+        </Style>
+
+        <Style TargetType="DataGridColumnHeader">
+            <Setter Property="Background" Value="#FAFAFC"/>
+            <Setter Property="Foreground" Value="#77768B"/>
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Padding" Value="14,0"/>
+            <Setter Property="BorderThickness" Value="0,0,0,1"/>
+            <Setter Property="BorderBrush" Value="#EAEAF1"/>
+        </Style>
+
+        <Style TargetType="DataGridCell">
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="14,0"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="Foreground" Value="#343348"/>
+        </Style>
+
+        <Style TargetType="DataGridRow">
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="BorderThickness" Value="0,0,0,1"/>
+            <Setter Property="BorderBrush" Value="#F0F0F4"/>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="#F8F7FD"/>
+                </Trigger>
+                <Trigger Property="IsSelected" Value="True">
+                    <Setter Property="Background" Value="#F0EEFA"/>
+                    <Setter Property="Foreground" Value="#25243A"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+    </UserControl.Resources>
+
+    <Grid Background="{StaticResource PageBrush}">
+
+        <ScrollViewer VerticalScrollBarVisibility="Auto"
+                      HorizontalScrollBarVisibility="Disabled">
+
+            <StackPanel Margin="30">
+
+                <!-- PAGE HEADER -->
+
+                <Grid Margin="0,0,0,26">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <StackPanel VerticalAlignment="Center">
+                        <TextBlock Text="Audit Log Management"
+                                   FontSize="27"
+                                   FontWeight="Bold"
+                                   Foreground="{StaticResource TextBrush}"/>
+
+                        <TextBlock Text="Monitor and review recorded clinic system activities."
+                                   FontSize="13"
+                                   Foreground="{StaticResource MutedBrush}"
+                                   Margin="0,7,0,0"/>
+                    </StackPanel>
+
+                    <Button Grid.Column="1"
+                            Content="Refresh"
+                            Command="{Binding RefreshCommand}"
+                            Background="White"
+                            Foreground="#6554C0"
+                            BorderBrush="#6554C0"
+                            BorderThickness="1"
+                            Padding="18,8"
+                            MinHeight="40"
+                            FontWeight="SemiBold"
+                            FontSize="12"
+                            Cursor="Hand"
+                            VerticalAlignment="Center"/>
+                </Grid>
+
+                <!-- SUMMARY CARDS -->
+
+                <UniformGrid Columns="3" Margin="0,0,0,24">
+
+                    <Border Style="{StaticResource SummaryCardStyle}"
+                            Margin="0,0,10,0">
+                        <StackPanel>
+                            <TextBlock Text="TOTAL ACTIVITIES"
+                                       FontSize="10"
+                                       FontWeight="SemiBold"
+                                       Foreground="{StaticResource MutedBrush}"/>
+
+                            <TextBlock Text="{Binding TotalActivities}"
+                                       FontSize="29"
+                                       FontWeight="Bold"
+                                       Foreground="{StaticResource TextBrush}"
+                                       Margin="0,12,0,4"/>
+
+                            <TextBlock Text="All recorded actions"
+                                       FontSize="11"
+                                       Foreground="{StaticResource MutedBrush}"/>
+                        </StackPanel>
+                    </Border>
+
+                    <Border Style="{StaticResource SummaryCardStyle}"
+                            Margin="10,0">
+                        <StackPanel>
+                            <TextBlock Text="TODAY'S ACTIVITIES"
+                                       FontSize="10"
+                                       FontWeight="SemiBold"
+                                       Foreground="{StaticResource MutedBrush}"/>
+
+                            <TextBlock Text="{Binding TodayActivities}"
+                                       FontSize="29"
+                                       FontWeight="Bold"
+                                       Foreground="#24966B"
+                                       Margin="0,12,0,4"/>
+
+                            <TextBlock Text="Activities recorded today"
+                                       FontSize="11"
+                                       Foreground="{StaticResource MutedBrush}"/>
+                        </StackPanel>
+                    </Border>
+
+                    <Border Style="{StaticResource SummaryCardStyle}"
+                            Margin="10,0,0,0">
+                        <StackPanel>
+                            <TextBlock Text="LATEST ACTION"
+                                       FontSize="10"
+                                       FontWeight="SemiBold"
+                                       Foreground="{StaticResource MutedBrush}"/>
+
+                            <TextBlock Text="{Binding LatestActivity.Action,
+                                                     TargetNullValue=No activity yet}"
+                                       FontSize="23"
+                                       FontWeight="Bold"
+                                       Foreground="#6554C0"
+                                       Margin="0,12,0,4"
+                                       TextTrimming="CharacterEllipsis"/>
+
+                            <TextBlock Text="{Binding LatestActivity.Username,
+                                                     TargetNullValue=No recorded activity}"
+                                       FontSize="11"
+                                       Foreground="{StaticResource MutedBrush}"/>
+                        </StackPanel>
+                    </Border>
+
+                </UniformGrid>
+
+                <!-- ACTIVITY TABLE -->
+
+                <Border Background="White"
+                        CornerRadius="12"
+                        BorderBrush="#EAEAF1"
+                        BorderThickness="1">
+
+                    <StackPanel>
+
+                        <!-- TABLE HEADER -->
+
+                        <Grid Margin="22,20,22,18">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+
+                            <StackPanel>
+                                <TextBlock Text="Activity Records"
+                                           FontSize="17"
+                                           FontWeight="Bold"
+                                           Foreground="{StaticResource TextBrush}"/>
+
+                                <TextBlock Text="Review recorded actions performed within the clinic system."
+                                           FontSize="11"
+                                           Foreground="{StaticResource MutedBrush}"
+                                           Margin="0,5,0,0"/>
+                            </StackPanel>
+
+                            <TextBlock Grid.Column="1"
+                                       Text="READ-ONLY RECORDS"
+                                       FontSize="10"
+                                       FontWeight="SemiBold"
+                                       Foreground="{StaticResource PrimaryBrush}"
+                                       VerticalAlignment="Center"/>
+                        </Grid>
+
+                        <Border Height="1" Background="#EAEAF1"/>
+
+                        <!-- SEARCH -->
+
+                        <Grid Margin="22,18,22,10">
+                            <TextBox Height="38"
+                                     FontSize="12"
+                                     Padding="12,9"
+                                     VerticalContentAlignment="Center"
+                                     BorderBrush="#E4E3EB"
+                                     BorderThickness="1"
+                                     Background="White"
+                                     ToolTip="Search username, action, entity, or details"
+                                     Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"/>
+                        </Grid>
+
+                        <!-- FILTERS -->
+
+                        <Grid Margin="22,0,22,18">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="1.3*"/>
+                                <ColumnDefinition Width="1*"/>
+                                <ColumnDefinition Width="1*"/>
+                                <ColumnDefinition Width="1*"/>
+                                <ColumnDefinition Width="1*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+
+                            <ComboBox Grid.Column="0"
+                                      Height="38"
+                                      Margin="0,0,8,0"
+                                      Padding="8,5"
+                                      VerticalContentAlignment="Center"
+                                      ItemsSource="{Binding StaffOptions}"
+                                      DisplayMemberPath="DisplayName"
+                                      SelectedItem="{Binding SelectedStaffOption, Mode=TwoWay}"
+                                      ToolTip="Filter by staff account"/>
+
+
+                            <ComboBox Grid.Column="1"
+                                      Height="38"
+                                      Margin="0,0,8,0"
+                                      Padding="8,5"
+                                      VerticalContentAlignment="Center"
+                                      ItemsSource="{Binding ActionOptions}"
+                                      SelectedItem="{Binding SelectedAction, Mode=TwoWay}"/>
+
+                            <ComboBox Grid.Column="2"
+                                      Height="38"
+                                      Margin="0,0,8,0"
+                                      Padding="8,5"
+                                      VerticalContentAlignment="Center"
+                                      ItemsSource="{Binding EntityTypeOptions}"
+                                      SelectedItem="{Binding SelectedEntityType, Mode=TwoWay}"/>
+
+                            <DatePicker Grid.Column="3"
+                                        Height="38"
+                                        Margin="0,0,8,0"
+                                        SelectedDate="{Binding StartDate, Mode=TwoWay}"
+                                        ToolTip="Start date"/>
+
+                            <DatePicker Grid.Column="4"
+                                        Height="38"
+                                        Margin="0,0,8,0"
+                                        SelectedDate="{Binding EndDate, Mode=TwoWay}"
+                                        ToolTip="End date"/>
+
+                            <Button Grid.Column="5"
+                                    Content="Apply"
+                                    Command="{Binding ApplyFiltersCommand}"
+                                    Background="{StaticResource PrimaryBrush}"
+                                    Foreground="White"
+                                    BorderThickness="0"
+                                    Padding="16,0"
+                                    MinHeight="38"
+                                    FontSize="12"
+                                    FontWeight="SemiBold"
+                                    Cursor="Hand"/>
+                        </Grid>
+
+                        <!-- FILTER ACTIONS -->
+
+                        <Grid Margin="22,0,22,16">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+
+                            <TextBlock Text="{Binding StatusMessage}"
+                                       FontSize="11"
+                                       Foreground="{StaticResource MutedBrush}"
+                                       VerticalAlignment="Center"
+                                       TextTrimming="CharacterEllipsis"/>
+
+                            <Button Grid.Column="1"
+                                    Content="Clear Filters"
+                                    Command="{Binding ClearFiltersCommand}"
+                                    Background="White"
+                                    Foreground="#55546A"
+                                    BorderBrush="#E4E3EB"
+                                    BorderThickness="1"
+                                    Padding="14,7"
+                                    FontSize="11"
+                                    FontWeight="SemiBold"
+                                    Cursor="Hand"/>
+                        </Grid>
+
+                        <!-- DATA GRID -->
+
+                        <DataGrid x:Name="AuditDataGrid"
+                                  Style="{StaticResource AuditDataGridStyle}"
+                                  ItemsSource="{Binding AuditLogs}"
+                                  SelectedItem="{Binding SelectedAuditLog, Mode=TwoWay}"
+                                  MinHeight="250"
+                                  MaxHeight="500">
+
+                            <DataGrid.Columns>
+
+                                <DataGridTextColumn Header="DATE &amp; TIME (PHT)"
+                                                    Binding="{Binding OccurredAtPhilippineTime, StringFormat={}{0:MMM dd, yyyy hh:mm:ss tt}}"
+                                                    Width="1.8*"/>
+
+                                <DataGridTextColumn Header="STAFF ACCOUNT"
+                                                    Binding="{Binding Username}"
+                                                    Width="1.3*"/>
+
+                                <DataGridTextColumn Header="ACTION"
+                                                    Binding="{Binding Action}"
+                                                    Width="1.1*"/>
+
+                                <DataGridTextColumn Header="ENTITY"
+                                                    Binding="{Binding EntityType}"
+                                                    Width="1.3*"/>
+
+                                <DataGridTextColumn Header="RECORD ID"
+                                                    Binding="{Binding EntityId, TargetNullValue=—}"
+                                                    Width="0.8*"/>
+
+                            </DataGrid.Columns>
+
+                        </DataGrid>
+
+                        <!-- VIEW DETAILS ACTION -->
+
+                        <Grid Margin="22,12,22,4">
+                            <Button Content="View Details"
+                                    Click="ViewDetailsButton_Click"
+                                    HorizontalAlignment="Right"
+                                    Background="#6554C0"
+                                    Foreground="White"
+                                    BorderThickness="0"
+                                    Padding="18,9"
+                                    MinHeight="38"
+                                    FontSize="12"
+                                    FontWeight="SemiBold"
+                                    Cursor="Hand"/>
+                        </Grid>
+
+
+
+                        <!-- FOOTER / PAGINATION -->
+
+                        <Border BorderBrush="#EAEAF1"
+                                BorderThickness="0,1,0,0"
+                                Padding="22,15">
+
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+
+                                <TextBlock Text="{Binding PaginationText}"
+                                           FontSize="11"
+                                           Foreground="{StaticResource MutedBrush}"
+                                           VerticalAlignment="Center"/>
+
+                                <StackPanel Grid.Column="1"
+                                            Orientation="Horizontal">
+
+                                    <Button Content="Previous"
+                                            Command="{Binding PreviousPageCommand}"
+                                            Background="White"
+                                            Foreground="#55546A"
+                                            BorderBrush="#E4E3EB"
+                                            BorderThickness="1"
+                                            Padding="12,7"
+                                            Margin="0,0,8,0"
+                                            FontSize="11"
+                                            FontWeight="SemiBold"
+                                            Cursor="Hand"/>
+
+                                    <Button Content="Next"
+                                            Command="{Binding NextPageCommand}"
+                                            Background="{StaticResource PrimaryBrush}"
+                                            Foreground="White"
+                                            BorderThickness="0"
+                                            Padding="16,7"
+                                            FontSize="11"
+                                            FontWeight="SemiBold"
+                                            Cursor="Hand"/>
+
+                                </StackPanel>
+                            </Grid>
+
+                        </Border>
+
+                    </StackPanel>
+                </Border>
+
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
+</UserControl>
