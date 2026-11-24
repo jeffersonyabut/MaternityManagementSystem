@@ -27,9 +27,6 @@ namespace MaternityManagementSystem.Views
         private const double FooterTop = PageHeight - 42;
         private const double ContentBottom = FooterTop - 18;
 
-        private static readonly TimeZoneInfo ClinicTimeZone =
-            TimeZoneInfo.FindSystemTimeZoneById("Singapore Standard Time");
-
         private static readonly Brush PrimaryBrush =
             new SolidColorBrush(Color.FromRgb(121, 82, 179));
 
@@ -89,7 +86,8 @@ namespace MaternityManagementSystem.Views
 
                 var document = CreatePrintDocument(
                     _viewModel.Report,
-                    clinicName);
+                    clinicName,
+                    app.RegionalSettings);
 
                 var viewer = new DocumentViewer
                 {
@@ -221,8 +219,11 @@ namespace MaternityManagementSystem.Views
 
         private static FixedDocument CreatePrintDocument(
             PrenatalCareReport report,
-            string clinicName)
+            string clinicName,
+            RegionalSettingsService regionalSettingsService)
         {
+            ArgumentNullException.ThrowIfNull(regionalSettingsService);
+
             var document = new FixedDocument();
 
             document.DocumentPaginator.PageSize =
@@ -230,7 +231,8 @@ namespace MaternityManagementSystem.Views
 
             var composer = new ReportPageComposer(
                 report,
-                clinicName);
+                clinicName,
+                regionalSettingsService);
 
             composer.AddReportSummary();
 
@@ -346,18 +348,18 @@ namespace MaternityManagementSystem.Views
             return string.IsNullOrWhiteSpace(value) ? "—" : value;
         }
 
-        private static string FormatDate(DateOnly date)
+        private static string FormatDate(
+            DateOnly date,
+            RegionalSettingsService regionalSettingsService)
         {
-            return date.ToString("MMM dd, yyyy");
+            return regionalSettingsService.FormatDate(date);
         }
 
-        private static string FormatDateTime(DateTime utc)
+        private static string FormatDateTime(
+            DateTime utc,
+            RegionalSettingsService regionalSettingsService)
         {
-            var local = TimeZoneInfo.ConvertTimeFromUtc(
-                DateTime.SpecifyKind(utc, DateTimeKind.Utc),
-                ClinicTimeZone);
-
-            return local.ToString("MMM dd, yyyy hh:mm tt");
+            return regionalSettingsService.FormatDateTime(utc);
         }
 
         private static string FormatNumber<T>(T? value)
@@ -374,16 +376,22 @@ namespace MaternityManagementSystem.Views
 
             private readonly PrenatalCareReport _report;
             private readonly string _clinicName;
+            private readonly RegionalSettingsService _regionalSettingsService;
 
             private FixedPage _currentPage = null!;
             private double _currentTop;
 
             public ReportPageComposer(
                 PrenatalCareReport report,
-                string clinicName)
+                string clinicName,
+                RegionalSettingsService regionalSettingsService)
             {
+                ArgumentNullException.ThrowIfNull(regionalSettingsService);
+
                 _report = report;
                 _clinicName = clinicName;
+                _regionalSettingsService = regionalSettingsService;
+
                 CreateNewPage();
             }
 
@@ -422,7 +430,7 @@ namespace MaternityManagementSystem.Views
 
                 AddTextToPage(
                     _currentPage,
-                    $"Generated: {FormatDateTime(_report.GeneratedAtUtc)}",
+                    $"Generated: {FormatDateTime(_report.GeneratedAtUtc, _regionalSettingsService)}",
                     MarginSize,
                     73,
                     ContentWidth,
@@ -516,9 +524,13 @@ namespace MaternityManagementSystem.Views
                     new[]
                     {
                         "Visit Date From",
-                        _report.StartDate?.ToString("MMM dd, yyyy") ?? "Any",
+                        _report.StartDate.HasValue
+                            ? FormatDate(_report.StartDate.Value, _regionalSettingsService)
+                            : "Any",
                         "Visit Date To",
-                        _report.EndDate?.ToString("MMM dd, yyyy") ?? "Any",
+                        _report.EndDate.HasValue
+                            ? FormatDate(_report.EndDate.Value, _regionalSettingsService)
+                            : "Any",
                         "Search Term",
                         Display(_report.SearchTerm)
                     }
@@ -550,7 +562,7 @@ namespace MaternityManagementSystem.Views
                             !string.IsNullOrWhiteSpace(value)));
 
                 AddSectionTitle(
-                    $"PRENATAL VISIT · {FormatDate(visit.VisitDate)}");
+                    $"PRENATAL VISIT · {FormatDate(visit.VisitDate, _regionalSettingsService)}");
 
                 EnsureSpace(90);
 
@@ -588,7 +600,7 @@ namespace MaternityManagementSystem.Views
                     .OrderBy(v => v.RecordedAtUtc)
                     .Select(v => new string[]
                     {
-                        FormatDateTime(v.RecordedAtUtc),
+                        FormatDateTime(v.RecordedAtUtc, _regionalSettingsService),
                         $"{FormatNumber(v.SystolicBloodPressure)}/" +
                         $"{FormatNumber(v.DiastolicBloodPressure)}",
                         FormatNumber(v.HeartRate),

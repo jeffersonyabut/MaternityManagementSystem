@@ -5,16 +5,18 @@ namespace MaternityManagementSystem.Services.Reports;
 
 public class PatientReportService
 {
-    private static readonly TimeZoneInfo ClinicTimeZone =
-        TimeZoneInfo.FindSystemTimeZoneById("Singapore Standard Time");
-
     private readonly PatientService _patientService;
+    private readonly RegionalSettingsService _regionalSettingsService;
 
-    public PatientReportService(PatientService patientService)
+    public PatientReportService(
+        PatientService patientService,
+        RegionalSettingsService regionalSettingsService)
     {
         ArgumentNullException.ThrowIfNull(patientService);
+        ArgumentNullException.ThrowIfNull(regionalSettingsService);
 
         _patientService = patientService;
+        _regionalSettingsService = regionalSettingsService;
     }
 
     public async Task<PatientMasterListReport> GeneratePatientMasterListAsync(
@@ -33,12 +35,13 @@ public class PatientReportService
         }
 
         DateTime? startUtc = startDate.HasValue
-            ? ConvertPhilippineDateToUtc(startDate.Value)
+            ? _regionalSettingsService.ConvertLocalToUtc(
+                startDate.Value.ToDateTime(TimeOnly.MinValue))
             : null;
 
         DateTime? endUtc = endDate.HasValue
-            ? ConvertPhilippineDateToUtc(
-                endDate.Value.AddDays(1))
+            ? _regionalSettingsService.ConvertLocalToUtc(
+                endDate.Value.AddDays(1).ToDateTime(TimeOnly.MinValue))
             : null;
 
         List<Models.Patient> patients =
@@ -60,17 +63,5 @@ public class PatientReportService
                 : searchTerm.Trim(),
             Patients = patients
         };
-    }
-
-    private static DateTime ConvertPhilippineDateToUtc(
-        DateOnly date)
-    {
-        DateTime philippineLocalDate = DateTime.SpecifyKind(
-            date.ToDateTime(TimeOnly.MinValue),
-            DateTimeKind.Unspecified);
-
-        return TimeZoneInfo.ConvertTimeToUtc(
-            philippineLocalDate,
-            ClinicTimeZone);
     }
 }

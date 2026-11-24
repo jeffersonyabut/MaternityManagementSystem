@@ -48,8 +48,11 @@ public partial class LaboratoryResultsDialog : Window
             return;
         }
 
+        var app = (App)Application.Current;
+
         var historyViewModel = new LaboratoryResultHistoryViewModel(
             _recordVersionService,
+            app.RegionalSettings,
             laboratoryResult.Id);
 
         await historyViewModel.LoadHistoryAsync();

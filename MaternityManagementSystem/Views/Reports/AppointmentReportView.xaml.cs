@@ -27,8 +27,6 @@ public partial class AppointmentReportView : UserControl
     private const double FooterTop = PageHeight - 42;
     private const double ContentBottom = FooterTop - 18;
 
-    private static readonly TimeZoneInfo ClinicTimeZone =
-        TimeZoneInfo.FindSystemTimeZoneById("Singapore Standard Time");
 
     private static readonly Brush PrimaryBrush =
         new SolidColorBrush(Color.FromRgb(121, 82, 179));
@@ -88,7 +86,8 @@ public partial class AppointmentReportView : UserControl
 
             var document = CreatePrintDocument(
                 _viewModel.Report,
-                clinicName);
+                clinicName,
+                app.RegionalSettings);
 
             var viewer = new DocumentViewer
             {
@@ -220,7 +219,8 @@ public partial class AppointmentReportView : UserControl
 
     private static FixedDocument CreatePrintDocument(
         AppointmentReport report,
-        string clinicName)
+        string clinicName,
+        RegionalSettingsService regionalSettingsService)
     {
         var document = new FixedDocument();
 
@@ -229,7 +229,8 @@ public partial class AppointmentReportView : UserControl
 
         var composer = new ReportPageComposer(
             report,
-            clinicName);
+            clinicName,
+            regionalSettingsService);
 
         composer.AddReportSummary();
         composer.AddAppointments();
@@ -341,17 +342,7 @@ public partial class AppointmentReportView : UserControl
         return string.IsNullOrWhiteSpace(value) ? "—" : value;
     }
 
-    private static string FormatDate(DateOnly date)
-    {
-        return date.ToString("MMM dd, yyyy");
-    }
 
-    private static string FormatDate(DateOnly? date)
-    {
-        return date.HasValue
-            ? FormatDate(date.Value)
-            : "Any";
-    }
 
     private static string FormatTime(TimeOnly time)
     {
@@ -365,14 +356,7 @@ public partial class AppointmentReportView : UserControl
             : "—";
     }
 
-    private static string FormatDateTime(DateTime utc)
-    {
-        var local = TimeZoneInfo.ConvertTimeFromUtc(
-            DateTime.SpecifyKind(utc, DateTimeKind.Utc),
-            ClinicTimeZone);
 
-        return local.ToString("MMM dd, yyyy hh:mm tt");
-    }
 
     private sealed class ReportPageComposer
     {
@@ -404,16 +388,19 @@ public partial class AppointmentReportView : UserControl
 
         private readonly AppointmentReport _report;
         private readonly string _clinicName;
+        private readonly RegionalSettingsService _regionalSettingsService;
 
         private FixedPage _currentPage = null!;
         private double _currentTop;
 
         public ReportPageComposer(
             AppointmentReport report,
-            string clinicName)
+            string clinicName,
+            RegionalSettingsService regionalSettingsService)
         {
             _report = report;
             _clinicName = clinicName;
+            _regionalSettingsService = regionalSettingsService;
 
             CreateNewPage();
         }
@@ -453,7 +440,7 @@ public partial class AppointmentReportView : UserControl
 
             AddTextToPage(
                 _currentPage,
-                $"Generated: {FormatDateTime(_report.GeneratedAtUtc)}",
+                $"Generated: {_regionalSettingsService.FormatDateTime(_report.GeneratedAtUtc)}",
                 MarginSize,
                 73,
                 ContentWidth,
@@ -545,9 +532,13 @@ public partial class AppointmentReportView : UserControl
                 new[]
                 {
                     "Appointment Date From",
-                    FormatDate(_report.StartDate),
+                    _report.StartDate.HasValue
+                        ? _regionalSettingsService.FormatDate(_report.StartDate.Value)
+                        : "Any",
                     "Appointment Date To",
-                    FormatDate(_report.EndDate)
+                    _report.EndDate.HasValue
+                        ? _regionalSettingsService.FormatDate(_report.EndDate.Value)
+                        : "Any",
                 },
                 new[]
                 {
@@ -613,7 +604,7 @@ public partial class AppointmentReportView : UserControl
 
                 var values = new[]
                 {
-                    FormatDate(appointment.AppointmentDate),
+                    _regionalSettingsService.FormatDate(appointment.AppointmentDate),
                     FormatTime(appointment.StartTime),
                     FormatTime(appointment.EndTime),
                     Display(patient?.PatientNumber),

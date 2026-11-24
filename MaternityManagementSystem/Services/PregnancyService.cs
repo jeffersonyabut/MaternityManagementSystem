@@ -16,6 +16,7 @@ public class PregnancyService
     private readonly PatientRepository _patientRepository;
     private readonly AuthorizationService _authorizationService;
     private readonly SessionService _sessionService;
+    private readonly RegionalSettingsService? _regionalSettingsService;
 
     public PregnancyService(
         PregnancyRepository pregnancyRepository,
@@ -32,6 +33,22 @@ public class PregnancyService
         _patientRepository = patientRepository;
         _authorizationService = authorizationService;
         _sessionService = sessionService;
+    }
+
+    public PregnancyService(
+    PregnancyRepository pregnancyRepository,
+    PatientRepository patientRepository,
+    AuthorizationService authorizationService,
+    SessionService sessionService,
+    RegionalSettingsService regionalSettingsService)
+    : this(
+        pregnancyRepository,
+        patientRepository,
+        authorizationService,
+        sessionService)
+    {
+        ArgumentNullException.ThrowIfNull(regionalSettingsService);
+        _regionalSettingsService = regionalSettingsService;
     }
 
     public async Task<Pregnancy> CreatePregnancyAsync(
@@ -172,10 +189,13 @@ public class PregnancyService
                 "The start date cannot be later than the end date.");
         }
 
+        var (startUtc, endUtcExclusive) =
+            ConvertClinicActivityDateRangeToUtc(startDate, endDate);
+
         return await _pregnancyRepository
             .GetPregnancyCountForClinicActivityReportAsync(
-                startDate,
-                endDate,
+                startUtc,
+                endUtcExclusive,
                 cancellationToken);
     }
 
@@ -194,10 +214,13 @@ public class PregnancyService
                 "The start date cannot be later than the end date.");
         }
 
+        var (startUtc, endUtcExclusive) =
+            ConvertClinicActivityDateRangeToUtc(startDate, endDate);
+
         return await _pregnancyRepository
             .GetRegistrationDatesForClinicActivityReportAsync(
-                startDate,
-                endDate,
+                startUtc,
+                endUtcExclusive,
                 cancellationToken);
     }
 
@@ -310,6 +333,31 @@ public class PregnancyService
 
         return existingPregnancy;
     }
+
+    private (DateTime? StartUtc, DateTime? EndUtcExclusive)
+    ConvertClinicActivityDateRangeToUtc(
+        DateOnly? startDate,
+        DateOnly? endDate)
+    {
+        if (_regionalSettingsService is null)
+        {
+            throw new InvalidOperationException(
+                "Regional settings must be provided to generate Clinic Activity Report registration data.");
+        }
+
+        DateTime? startUtc = startDate.HasValue
+            ? _regionalSettingsService.ConvertLocalToUtc(
+                startDate.Value.ToDateTime(TimeOnly.MinValue))
+            : null;
+
+        DateTime? endUtcExclusive = endDate.HasValue
+            ? _regionalSettingsService.ConvertLocalToUtc(
+                endDate.Value.AddDays(1).ToDateTime(TimeOnly.MinValue))
+            : null;
+
+        return (startUtc, endUtcExclusive);
+    }
+
 
     private static void NormalizePregnancy(Pregnancy pregnancy)
     {

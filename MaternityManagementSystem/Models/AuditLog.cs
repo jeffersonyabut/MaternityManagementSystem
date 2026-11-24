@@ -1,11 +1,10 @@
 
+using System.ComponentModel.DataAnnotations.Schema;
+
 namespace MaternityManagementSystem.Models;
 
 public class AuditLog
 {
-    private static readonly TimeZoneInfo PhilippineTimeZone =
-        TimeZoneInfo.FindSystemTimeZoneById("Singapore Standard Time");
-
     public int Id { get; set; }
 
     public int? StaffId { get; set; }
@@ -24,9 +23,8 @@ public class AuditLog
 
     public DateTime OccurredAtUtc { get; set; } = DateTime.UtcNow;
 
-    // Display-only conversion. The database timestamp remains UTC.
-    public DateTime OccurredAtPhilippineTime =>
-        TimeZoneInfo.ConvertTimeFromUtc(
-            DateTime.SpecifyKind(OccurredAtUtc, DateTimeKind.Utc),
-            PhilippineTimeZone);
+    // Display-only property. Never stored in the database.
+    [NotMapped]
+    public string OccurredAtRegionalDisplay { get; set; } =
+        string.Empty;
 }

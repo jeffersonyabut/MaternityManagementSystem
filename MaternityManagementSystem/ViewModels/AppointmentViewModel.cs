@@ -111,6 +111,9 @@ public partial class AppointmentViewModel : ObservableObject
     private bool isLoadingPatientOptions;
 
     // GENERAL STATE
+    [ObservableProperty]
+    private string defaultDurationMessage =
+    "Loading appointment duration...";
 
     [ObservableProperty]
     private bool isBusy;
@@ -126,6 +129,25 @@ public partial class AppointmentViewModel : ObservableObject
 
     [ObservableProperty]
     private string searchText = string.Empty;
+
+    public async Task LoadDefaultAppointmentDurationAsync()
+    {
+        try
+        {
+            int duration =
+                await _appointmentService
+                    .GetDefaultAppointmentDurationMinutesAsync();
+
+            DefaultDurationMessage =
+                $"If no end time is provided, the appointment will use a {duration}-minute duration.";
+        }
+        catch
+        {
+            DefaultDurationMessage =
+                "If no end time is provided, the configured appointment duration will be applied.";
+        }
+    }
+
 
     // PATIENT LOADING AND SEARCH
 

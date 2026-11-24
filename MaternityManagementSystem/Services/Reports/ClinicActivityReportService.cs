@@ -11,33 +11,34 @@ namespace MaternityManagementSystem.Services.Reports;
 
 public class ClinicActivityReportService
 {
-    private static readonly TimeZoneInfo ClinicTimeZone =
-        TimeZoneInfo.FindSystemTimeZoneById("Singapore Standard Time");
-
     private readonly PatientService _patientService;
     private readonly PregnancyService _pregnancyService;
     private readonly PrenatalVisitService _prenatalVisitService;
     private readonly LaboratoryResultService _laboratoryResultService;
     private readonly AppointmentService _appointmentService;
+    private readonly RegionalSettingsService _regionalSettingsService;
 
     public ClinicActivityReportService(
         PatientService patientService,
         PregnancyService pregnancyService,
         PrenatalVisitService prenatalVisitService,
         LaboratoryResultService laboratoryResultService,
-        AppointmentService appointmentService)
+        AppointmentService appointmentService,
+        RegionalSettingsService regionalSettingsService)
     {
         ArgumentNullException.ThrowIfNull(patientService);
         ArgumentNullException.ThrowIfNull(pregnancyService);
         ArgumentNullException.ThrowIfNull(prenatalVisitService);
         ArgumentNullException.ThrowIfNull(laboratoryResultService);
         ArgumentNullException.ThrowIfNull(appointmentService);
+        ArgumentNullException.ThrowIfNull(regionalSettingsService);
 
         _patientService = patientService;
         _pregnancyService = pregnancyService;
         _prenatalVisitService = prenatalVisitService;
         _laboratoryResultService = laboratoryResultService;
         _appointmentService = appointmentService;
+        _regionalSettingsService = regionalSettingsService;
     }
 
     public async Task<ClinicActivityReport> GenerateClinicActivityReportAsync(
@@ -61,8 +62,6 @@ public class ClinicActivityReportService
             StartDate = startDate,
             EndDate = endDate
         };
-
-        // Overall activity totals
 
         report.TotalPatientRegistrations =
             await _patientService
@@ -99,9 +98,6 @@ public class ClinicActivityReportService
                     endDate,
                     cancellationToken);
 
-        // Appointment status breakdown.
-        // These are the current statuses of appointments in the selected period.
-
         var appointmentStatuses =
             await _appointmentService
                 .GetStatusesForClinicActivityReportAsync(
@@ -123,9 +119,6 @@ public class ClinicActivityReportService
 
         report.NoShowAppointments = CountStatus(
             appointmentStatuses, "No-show");
-
-        // Unique patients with recorded activity.
-        // Registration and pregnancy creation alone do not count.
 
         var servedPatientIds = new HashSet<int>();
 
@@ -155,8 +148,6 @@ public class ClinicActivityReportService
         servedPatientIds.UnionWith(appointmentPatientIds);
 
         report.UniquePatientsServed = servedPatientIds.Count;
-
-        // Retrieve dates for monthly activity.
 
         var patientRegistrationDates =
             await _patientService
@@ -193,8 +184,6 @@ public class ClinicActivityReportService
                     endDate,
                     cancellationToken);
 
-        // Convert UTC registration timestamps to Philippine local dates.
-
         var patientRegistrationLocalDates =
             patientRegistrationDates
                 .Select(ConvertUtcToClinicDate)
@@ -204,8 +193,6 @@ public class ClinicActivityReportService
             pregnancyRegistrationDates
                 .Select(ConvertUtcToClinicDate)
                 .ToList();
-
-        // Determine the monthly reporting period.
 
         var activityMonths = new List<DateOnly>();
 
@@ -251,18 +238,16 @@ public class ClinicActivityReportService
             firstMonth = activityMonths.Count > 0
                 ? activityMonths.Min()
                 : GetMonthStart(DateOnly.FromDateTime(
-                    TimeZoneInfo.ConvertTimeFromUtc(
-                        DateTime.UtcNow,
-                        ClinicTimeZone)));
+                    _regionalSettingsService.ConvertUtcToLocal(
+                        DateTime.UtcNow)));
 
             lastMonth = activityMonths.Count > 0
                 ? activityMonths.Max()
                 : firstMonth;
         }
 
-        // Create chronological monthly buckets, including months with no activity.
-
-        var monthlySummaries = new Dictionary<DateOnly, ClinicActivityMonthlySummary>();
+        var monthlySummaries =
+            new Dictionary<DateOnly, ClinicActivityMonthlySummary>();
 
         for (DateOnly month = firstMonth;
              month <= lastMonth;
@@ -273,8 +258,6 @@ public class ClinicActivityReportService
                 Month = month.ToString("MMM yyyy")
             };
         }
-
-        // Populate monthly registration counts.
 
         foreach (DateOnly date in patientRegistrationLocalDates)
         {
@@ -295,8 +278,6 @@ public class ClinicActivityReportService
                 summary.PregnancyRecords++;
             }
         }
-
-        // Populate monthly clinical activity counts.
 
         foreach (DateOnly date in prenatalVisitDates)
         {
@@ -347,18 +328,10 @@ public class ClinicActivityReportService
                 StringComparison.OrdinalIgnoreCase));
     }
 
-    private static DateOnly ConvertUtcToClinicDate(DateTime utcDate)
+    private DateOnly ConvertUtcToClinicDate(DateTime utcDate)
     {
-        DateTime normalizedUtc = DateTime.SpecifyKind(
-            utcDate,
-            DateTimeKind.Utc);
-
-        DateTime clinicDateTime =
-            TimeZoneInfo.ConvertTimeFromUtc(
-                normalizedUtc,
-                ClinicTimeZone);
-
-        return DateOnly.FromDateTime(clinicDateTime);
+        return DateOnly.FromDateTime(
+            _regionalSettingsService.ConvertUtcToLocal(utcDate));
     }
 
     private static DateOnly GetMonthStart(DateOnly date)

@@ -30,11 +30,14 @@ namespace MaternityManagementSystem.Views
             var patientService = new PatientService(
                 new PatientRepository(),
                 authorizationService,
-                app.SessionService);
+                app.SessionService,
+                app.RegionalSettings);
 
             // Patient Master List
             var patientReportService =
-                new PatientReportService(patientService);
+                new PatientReportService(
+                    patientService,
+                    app.RegionalSettings);
 
             _viewModel = new PatientMasterListViewModel(
                 patientReportService);
@@ -72,7 +75,8 @@ namespace MaternityManagementSystem.Views
                     new PatientRepository(),
                     new PregnancyRepository(),
                     authorizationService,
-                    app.SessionService);
+                    app.SessionService,
+                    app.RegionalSettings);
 
             var appointmentReportService =
                 new AppointmentReportService(
@@ -88,7 +92,8 @@ namespace MaternityManagementSystem.Views
                     new PregnancyRepository(),
                     new PatientRepository(),
                     authorizationService,
-                    app.SessionService);
+                    app.SessionService,
+                    app.RegionalSettings);
 
             var pregnancySummaryReportService =
                 new PregnancySummaryReportService(
@@ -106,17 +111,18 @@ namespace MaternityManagementSystem.Views
                     authorizationService,
                     app.SessionService);
 
-            var clinicActivityReportService =
-                new ClinicActivityReportService(
-                    patientService,
-                    pregnancyService,
-                    prenatalVisitService,
-                    laboratoryResultService,
-                    appointmentService);
+            var clinicActivityReportService = new ClinicActivityReportService(
+                patientService,
+                pregnancyService,
+                prenatalVisitService,
+                laboratoryResultService,
+                appointmentService,
+                app.RegionalSettings);
 
             _clinicActivityViewModel =
                 new ClinicActivityReportViewModel(
-                    clinicActivityReportService);
+                    clinicActivityReportService,
+                    app.RegionalSettings);
 
             DataContext = _viewModel;
         }

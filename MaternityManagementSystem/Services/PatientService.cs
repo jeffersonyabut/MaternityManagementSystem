@@ -1,3 +1,4 @@
+
 using MaternityManagementSystem.Models;
 using MaternityManagementSystem.Repositories;
 using MaternityManagementSystem.Sessions;
@@ -10,6 +11,7 @@ public class PatientService
     private readonly PatientRepository _patientRepository;
     private readonly AuthorizationService _authorizationService;
     private readonly SessionService _sessionService;
+    private readonly RegionalSettingsService? _regionalSettingsService;
 
     public PatientService(
         PatientRepository patientRepository,
@@ -25,7 +27,20 @@ public class PatientService
         _sessionService = sessionService;
     }
 
+    public PatientService(
+        PatientRepository patientRepository,
+        AuthorizationService authorizationService,
+        SessionService sessionService,
+        RegionalSettingsService regionalSettingsService)
+        : this(
+            patientRepository,
+            authorizationService,
+            sessionService)
+    {
+        ArgumentNullException.ThrowIfNull(regionalSettingsService);
 
+        _regionalSettingsService = regionalSettingsService;
+    }
 
     public async Task<Patient> RegisterPatientAsync(
         Patient patient,
@@ -76,8 +91,6 @@ public class PatientService
             cancellationToken);
     }
 
-
-
     public async Task<Patient> UpdatePatientAsync(
         Patient patient,
         CancellationToken cancellationToken = default)
@@ -94,20 +107,17 @@ public class PatientService
 
         ValidatePatient(patient);
 
-        // Retrieve the existing patient record.
         Patient? existingPatient =
             await _patientRepository.GetByIdAsync(
                 patient.Id,
                 cancellationToken);
 
-        // Ensure the patient exists before accessing its properties.
         if (existingPatient is null)
         {
             throw new InvalidOperationException(
                 "The patient record could not be found.");
         }
 
-        // Check whether any editable patient information actually changed.
         bool hasChanges =
             existingPatient.FirstName != patient.FirstName.Trim() ||
             existingPatient.MiddleName != NormalizeOptionalText(patient.MiddleName) ||
@@ -121,13 +131,11 @@ public class PatientService
             existingPatient.EmergencyContactName != NormalizeOptionalText(patient.EmergencyContactName) ||
             existingPatient.EmergencyContactNumber != NormalizeOptionalText(patient.EmergencyContactNumber);
 
-        // Return the existing record if nothing changed.
         if (!hasChanges)
         {
             return existingPatient;
         }
 
-        // Apply the updated patient information.
         existingPatient.FirstName = patient.FirstName.Trim();
         existingPatient.MiddleName = NormalizeOptionalText(patient.MiddleName);
         existingPatient.LastName = patient.LastName.Trim();
@@ -152,7 +160,6 @@ public class PatientService
                 "You must be logged in to update a patient.");
         }
 
-        // Create the audit entry.
         var auditLog = new AuditLog
         {
             StaffId = currentUser.StaffId,
@@ -162,7 +169,6 @@ public class PatientService
             Details = "Patient record updated."
         };
 
-        // Repository saves the patient, audit log, and version history together.
         await _patientRepository.UpdateAsync(
             existingPatient,
             auditLog,
@@ -171,10 +177,9 @@ public class PatientService
         return existingPatient;
     }
 
-
     public async Task<Patient?> GetPatientByIdAsync(
-    int patientId,
-    CancellationToken cancellationToken = default)
+        int patientId,
+        CancellationToken cancellationToken = default)
     {
         await _authorizationService.EnsureAuthenticatedAsync();
 
@@ -210,7 +215,6 @@ public class PatientService
             cancellationToken);
     }
 
-
     public async Task<List<Patient>> GetPatientMasterListAsync(
         DateTime? startUtc = null,
         DateTime? endUtc = null,
@@ -227,8 +231,6 @@ public class PatientService
             searchTerm,
             cancellationToken);
     }
-
-
 
     public async Task<List<Patient>> SearchPatientsAsync(
         string searchTerm,
@@ -272,7 +274,6 @@ public class PatientService
             searchTerm,
             cancellationToken);
     }
-
 
     private static void ValidatePatient(Patient patient)
     {
@@ -391,10 +392,9 @@ public class PatientService
         return value.Trim();
     }
 
-
     public async Task<IndividualPatientRecordReport?> GetIndividualPatientRecordReportAsync(
-    int patientId,
-    CancellationToken cancellationToken = default)
+        int patientId,
+        CancellationToken cancellationToken = default)
     {
         await _authorizationService.EnsureAuthenticatedAsync();
 
@@ -408,12 +408,11 @@ public class PatientService
             cancellationToken);
     }
 
-
     public async Task<PrenatalCareReport> GetPrenatalCareReportAsync(
-    DateOnly? startDate = null,
-    DateOnly? endDate = null,
-    string? searchTerm = null,
-    CancellationToken cancellationToken = default)
+        DateOnly? startDate = null,
+        DateOnly? endDate = null,
+        string? searchTerm = null,
+        CancellationToken cancellationToken = default)
     {
         await _authorizationService.EnsureAuthenticatedAsync();
 
@@ -432,39 +431,48 @@ public class PatientService
             cancellationToken);
     }
 
-
-
-
     public async Task<int> GetPatientRegistrationCountForClinicActivityReportAsync(
-    DateOnly? startDate,
-    DateOnly? endDate,
-    CancellationToken cancellationToken = default)
+        DateOnly? startDate,
+        DateOnly? endDate,
+        CancellationToken cancellationToken = default)
     {
         await _authorizationService.EnsureAuthenticatedAsync();
 
-        if (startDate.HasValue &&
-            endDate.HasValue &&
-            startDate.Value > endDate.Value)
-        {
-            throw new ArgumentException(
-                "The start date cannot be later than the end date.");
-        }
+        ValidateClinicActivityDateRange(startDate, endDate);
+
+        var (startUtc, endUtcExclusive) =
+            ConvertClinicActivityDateRangeToUtc(startDate, endDate);
 
         return await _patientRepository
             .GetRegistrationCountForClinicActivityReportAsync(
-                startDate,
-                endDate,
+                startUtc,
+                endUtcExclusive,
                 cancellationToken);
     }
 
-
     public async Task<List<DateTime>> GetPatientRegistrationDatesForClinicActivityReportAsync(
-    DateOnly? startDate,
-    DateOnly? endDate,
-    CancellationToken cancellationToken = default)
+        DateOnly? startDate,
+        DateOnly? endDate,
+        CancellationToken cancellationToken = default)
     {
         await _authorizationService.EnsureAuthenticatedAsync();
 
+        ValidateClinicActivityDateRange(startDate, endDate);
+
+        var (startUtc, endUtcExclusive) =
+            ConvertClinicActivityDateRangeToUtc(startDate, endDate);
+
+        return await _patientRepository
+            .GetRegistrationDatesForClinicActivityReportAsync(
+                startUtc,
+                endUtcExclusive,
+                cancellationToken);
+    }
+
+    private static void ValidateClinicActivityDateRange(
+        DateOnly? startDate,
+        DateOnly? endDate)
+    {
         if (startDate.HasValue &&
             endDate.HasValue &&
             startDate.Value > endDate.Value)
@@ -472,15 +480,29 @@ public class PatientService
             throw new ArgumentException(
                 "The start date cannot be later than the end date.");
         }
-
-        return await _patientRepository
-            .GetRegistrationDatesForClinicActivityReportAsync(
-                startDate,
-                endDate,
-                cancellationToken);
     }
 
+    private (DateTime? StartUtc, DateTime? EndUtcExclusive)
+        ConvertClinicActivityDateRangeToUtc(
+            DateOnly? startDate,
+            DateOnly? endDate)
+    {
+        if (_regionalSettingsService is null)
+        {
+            throw new InvalidOperationException(
+                "Regional settings must be provided to generate Clinic Activity Report registration data.");
+        }
 
+        DateTime? startUtc = startDate.HasValue
+            ? _regionalSettingsService.ConvertLocalToUtc(
+                startDate.Value.ToDateTime(TimeOnly.MinValue))
+            : null;
 
+        DateTime? endUtcExclusive = endDate.HasValue
+            ? _regionalSettingsService.ConvertLocalToUtc(
+                endDate.Value.AddDays(1).ToDateTime(TimeOnly.MinValue))
+            : null;
 
+        return (startUtc, endUtcExclusive);
+    }
 }

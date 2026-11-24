@@ -10,21 +10,23 @@ public partial class AuditLogManagementViewModel : ObservableObject
 {
     private const int PageSize = 10;
 
-    private static readonly TimeZoneInfo PhilippineTimeZone =
-        TimeZoneInfo.FindSystemTimeZoneById("Singapore Standard Time");
+    private readonly RegionalSettingsService _regionalSettingsService;
 
     private readonly AuditLogService _auditLogService;
     private readonly StaffManagementService _staffManagementService;
 
     public AuditLogManagementViewModel(
         AuditLogService auditLogService,
-        StaffManagementService staffManagementService)
+        StaffManagementService staffManagementService,
+        RegionalSettingsService regionalSettingsService)
     {
         ArgumentNullException.ThrowIfNull(auditLogService);
         ArgumentNullException.ThrowIfNull(staffManagementService);
+        ArgumentNullException.ThrowIfNull(regionalSettingsService);
 
         _auditLogService = auditLogService;
         _staffManagementService = staffManagementService;
+        _regionalSettingsService = regionalSettingsService;
     }
 
     // AUDIT LOG COLLECTION
@@ -247,7 +249,13 @@ public partial class AuditLogManagementViewModel : ObservableObject
         SelectedAuditLog = null;
 
         foreach (var log in result.Items)
+        {
+            log.OccurredAtRegionalDisplay =
+                _regionalSettingsService.FormatDateTime(
+                    log.OccurredAtUtc);
+
             AuditLogs.Add(log);
+        }
 
         HasRecords = AuditLogs.Count > 0;
 
@@ -388,9 +396,8 @@ public partial class AuditLogManagementViewModel : ObservableObject
             StartDate.Value.Date,
             DateTimeKind.Unspecified);
 
-        return TimeZoneInfo.ConvertTimeToUtc(
-            localDate,
-            PhilippineTimeZone);
+        return _regionalSettingsService.ConvertLocalToUtc(
+            localDate);
     }
 
     private DateTime? ConvertEndDateToUtc()
@@ -403,10 +410,10 @@ public partial class AuditLogManagementViewModel : ObservableObject
             DateTimeKind.Unspecified);
 
         DateTime exclusiveEndUtc =
-            TimeZoneInfo.ConvertTimeToUtc(
-                nextDay,
-                PhilippineTimeZone);
+            _regionalSettingsService.ConvertLocalToUtc(nextDay);
 
         return exclusiveEndUtc.AddTicks(-1);
     }
+
+
 }

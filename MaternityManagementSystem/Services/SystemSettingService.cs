@@ -1,6 +1,7 @@
 
 using MaternityManagementSystem.Models;
 using MaternityManagementSystem.Repositories;
+using System.Globalization;
 
 namespace MaternityManagementSystem.Services;
 
@@ -47,6 +48,7 @@ public sealed class SystemSettingService
 
         ValidateKey(key);
         ValidateValue(value);
+        ValidateRegionalSetting(key, value);
 
         var currentUser = _sessionService.CurrentUser
             ?? throw new UnauthorizedAccessException(
@@ -83,6 +85,57 @@ public sealed class SystemSettingService
             auditLog);
     }
 
+
+    private static void ValidateRegionalSetting(
+    string key,
+    string value)
+    {
+        if (key == SystemSettingKeys.Regional.TimeZone)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                throw new ArgumentException(
+                    "Time zone is required.");
+            }
+
+            try
+            {
+                TimeZoneInfo.FindSystemTimeZoneById(value);
+            }
+            catch (TimeZoneNotFoundException)
+            {
+                throw new ArgumentException(
+                    $"The time zone '{value}' is not supported.");
+            }
+            catch (InvalidTimeZoneException)
+            {
+                throw new ArgumentException(
+                    $"The time zone '{value}' is invalid.");
+            }
+        }
+
+        if (key == SystemSettingKeys.Regional.DateFormat)
+        {
+            if (string.IsNullOrWhiteSpace(value) ||
+                value.Length > 50)
+            {
+                throw new ArgumentException(
+                    "Date format must contain between 1 and 50 characters.");
+            }
+
+            try
+            {
+                _ = DateTime.Now.ToString(
+                    value,
+                    CultureInfo.InvariantCulture);
+            }
+            catch (FormatException)
+            {
+                throw new ArgumentException(
+                    "The specified date format is invalid.");
+            }
+        }
+    }
 
     private static void ValidateKey(string key)
     {

@@ -11,13 +11,16 @@ namespace MaternityManagementSystem.ViewModels;
 public partial class PrenatalVisitHistoryViewModel : ObservableObject
 {
     private readonly RecordVersionService _recordVersionService;
+    private readonly RegionalSettingsService _regionalSettingsService;
     private readonly int _visitId;
 
     public PrenatalVisitHistoryViewModel(
         RecordVersionService recordVersionService,
+        RegionalSettingsService regionalSettingsService,
         int visitId)
     {
         ArgumentNullException.ThrowIfNull(recordVersionService);
+        ArgumentNullException.ThrowIfNull(regionalSettingsService);
 
         if (visitId <= 0)
         {
@@ -25,6 +28,7 @@ public partial class PrenatalVisitHistoryViewModel : ObservableObject
         }
 
         _recordVersionService = recordVersionService;
+        _regionalSettingsService = regionalSettingsService;
         _visitId = visitId;
     }
 
@@ -60,12 +64,8 @@ public partial class PrenatalVisitHistoryViewModel : ObservableObject
                 var displayVersion = new RecordVersionDisplayViewModel
                 {
                     Username = version.Username,
-                    ChangedAtUtc = TimeZoneInfo.ConvertTimeFromUtc(
-                        DateTime.SpecifyKind(
-                            version.ChangedAtUtc,
-                            DateTimeKind.Utc),
-                        TimeZoneInfo.FindSystemTimeZoneById(
-                            "Singapore Standard Time"))
+                    ChangedAtUtc = _regionalSettingsService.ConvertUtcToLocal(
+                        version.ChangedAtUtc)
                 };
 
                 try

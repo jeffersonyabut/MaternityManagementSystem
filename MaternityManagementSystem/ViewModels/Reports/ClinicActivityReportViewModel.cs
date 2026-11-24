@@ -1,3 +1,4 @@
+
 using System.Collections.ObjectModel;
 using System.Linq;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -6,6 +7,7 @@ using LiveChartsCore;
 using LiveChartsCore.SkiaSharpView;
 using LiveChartsCore.SkiaSharpView.Painting;
 using MaternityManagementSystem.Models.Reports;
+using MaternityManagementSystem.Services;
 using MaternityManagementSystem.Services.Reports;
 using SkiaSharp;
 
@@ -14,6 +16,7 @@ namespace MaternityManagementSystem.ViewModels.Reports;
 public partial class ClinicActivityReportViewModel : ObservableObject
 {
     private readonly ClinicActivityReportService _reportService;
+    private readonly RegionalSettingsService _regionalSettingsService;
 
     private static readonly SKColor PrimaryPurple = new(121, 82, 179);
     private static readonly SKColor LightPurple = new(167, 139, 202);
@@ -51,17 +54,40 @@ public partial class ClinicActivityReportViewModel : ObservableObject
     public bool HasMonthlyActivity =>
         Report is not null && Report.MonthlyActivity.Count > 0;
 
+    public string GeneratedAtDisplay =>
+        Report is null
+            ? string.Empty
+            : _regionalSettingsService.FormatDateTime(
+                Report.GeneratedAtUtc);
+
+    public string StartDateDisplay =>
+        Report?.StartDate is DateOnly startDate
+            ? _regionalSettingsService.FormatDate(startDate)
+            : "All dates";
+
+    public string EndDateDisplay =>
+        Report?.EndDate is DateOnly endDate
+            ? _regionalSettingsService.FormatDate(endDate)
+            : "All dates";
+
     public ClinicActivityReportViewModel(
-        ClinicActivityReportService reportService)
+        ClinicActivityReportService reportService,
+        RegionalSettingsService regionalSettingsService)
     {
         ArgumentNullException.ThrowIfNull(reportService);
+        ArgumentNullException.ThrowIfNull(regionalSettingsService);
+
         _reportService = reportService;
+        _regionalSettingsService = regionalSettingsService;
     }
 
     partial void OnReportChanged(ClinicActivityReport? value)
     {
         OnPropertyChanged(nameof(HasGeneratedReport));
         OnPropertyChanged(nameof(HasMonthlyActivity));
+        OnPropertyChanged(nameof(GeneratedAtDisplay));
+        OnPropertyChanged(nameof(StartDateDisplay));
+        OnPropertyChanged(nameof(EndDateDisplay));
 
         UpdateMonthlyActivityChart();
     }
@@ -86,6 +112,7 @@ public partial class ClinicActivityReportViewModel : ObservableObject
             {
                 new Axis()
             };
+
             return;
         }
 

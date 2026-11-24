@@ -12,13 +12,16 @@ namespace MaternityManagementSystem.ViewModels;
 public partial class LaboratoryResultHistoryViewModel : ObservableObject
 {
     private readonly RecordVersionService _recordVersionService;
+    private readonly RegionalSettingsService _regionalSettingsService;
     private readonly int _laboratoryResultId;
 
     public LaboratoryResultHistoryViewModel(
         RecordVersionService recordVersionService,
+        RegionalSettingsService regionalSettingsService,
         int laboratoryResultId)
     {
         ArgumentNullException.ThrowIfNull(recordVersionService);
+        ArgumentNullException.ThrowIfNull(regionalSettingsService);
 
         if (laboratoryResultId <= 0)
         {
@@ -27,6 +30,7 @@ public partial class LaboratoryResultHistoryViewModel : ObservableObject
         }
 
         _recordVersionService = recordVersionService;
+        _regionalSettingsService = regionalSettingsService;
         _laboratoryResultId = laboratoryResultId;
     }
 
@@ -62,12 +66,8 @@ public partial class LaboratoryResultHistoryViewModel : ObservableObject
                 var displayVersion = new RecordVersionDisplayViewModel
                 {
                     Username = version.Username,
-                    ChangedAtUtc = TimeZoneInfo.ConvertTimeFromUtc(
-                        DateTime.SpecifyKind(
-                            version.ChangedAtUtc,
-                            DateTimeKind.Utc),
-                        TimeZoneInfo.FindSystemTimeZoneById(
-                            "Singapore Standard Time"))
+                    ChangedAtUtc = _regionalSettingsService.ConvertUtcToLocal(
+                        version.ChangedAtUtc)
                 };
 
                 try

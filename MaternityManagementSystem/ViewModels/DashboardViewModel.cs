@@ -66,10 +66,6 @@ public partial class DashboardViewModel : ObservableObject
 
     public ObservableCollection<ISeries> AppointmentStatusSeries { get; } = new();
 
-    public DashboardViewModel()
-        : this(new DashboardAnalyticsService(new AuthorizationService(new SessionService())))
-    {
-    }
 
     public DashboardViewModel(DashboardAnalyticsService analyticsService)
     {

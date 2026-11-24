@@ -15,6 +15,7 @@ public partial class PatientProfileViewModel : ObservableObject
     private readonly PatientService _patientService;
     private readonly PregnancyService _pregnancyService;
     private readonly RecordVersionService _recordVersionService;
+    private readonly RegionalSettingsService _regionalSettingsService;
     private readonly int _patientId;
     private readonly ObstetricHistoryService _obstetricHistoryService = new();
 
@@ -22,11 +23,13 @@ public partial class PatientProfileViewModel : ObservableObject
         PatientService patientService,
         PregnancyService pregnancyService,
         RecordVersionService recordVersionService,
+        RegionalSettingsService regionalSettingsService,
         int patientId)
     {
         ArgumentNullException.ThrowIfNull(patientService);
         ArgumentNullException.ThrowIfNull(pregnancyService);
         ArgumentNullException.ThrowIfNull(recordVersionService);
+        ArgumentNullException.ThrowIfNull(regionalSettingsService);
 
         if (patientId <= 0)
         {
@@ -36,6 +39,7 @@ public partial class PatientProfileViewModel : ObservableObject
         _patientService = patientService;
         _pregnancyService = pregnancyService;
         _recordVersionService = recordVersionService;
+        _regionalSettingsService = regionalSettingsService;
         _patientId = patientId;
     }
 
@@ -150,12 +154,8 @@ public partial class PatientProfileViewModel : ObservableObject
             var displayVersion = new RecordVersionDisplayViewModel
             {
                 Username = version.Username,
-                ChangedAtUtc = TimeZoneInfo.ConvertTimeFromUtc(
-                    DateTime.SpecifyKind(
-                        version.ChangedAtUtc,
-                        DateTimeKind.Utc),
-                    TimeZoneInfo.FindSystemTimeZoneById(
-                        "Singapore Standard Time"))
+                ChangedAtUtc = _regionalSettingsService.ConvertUtcToLocal(
+                    version.ChangedAtUtc)
             };
 
             try
@@ -253,14 +253,11 @@ public partial class PatientProfileViewModel : ObservableObject
         {
             var pregnancy = card.Pregnancy;
 
-            // Ongoing pregnancies do not yet contribute to the
-            // recorded living-child outcome.
             if (pregnancy.Status == "Current")
             {
                 continue;
             }
 
-            // Other or unclassified records may need review.
             if (pregnancy.Status != "Completed")
             {
                 hasIncompleteData = true;

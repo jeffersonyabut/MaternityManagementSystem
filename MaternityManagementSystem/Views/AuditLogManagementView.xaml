@@ -335,8 +335,8 @@
 
                             <DataGrid.Columns>
 
-                                <DataGridTextColumn Header="DATE &amp; TIME (PHT)"
-                                                    Binding="{Binding OccurredAtPhilippineTime, StringFormat={}{0:MMM dd, yyyy hh:mm:ss tt}}"
+                                <DataGridTextColumn Header="DATE &amp; TIME"
+                                                    Binding="{Binding OccurredAtRegionalDisplay}"
                                                     Width="1.8*"/>
 
                                 <DataGridTextColumn Header="STAFF ACCOUNT"

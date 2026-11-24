@@ -122,8 +122,11 @@ public partial class VitalSignsView : UserControl
 
         try
         {
+            var app = (App)Application.Current;
+
             var historyViewModel = new VitalSignHistoryViewModel(
                 _recordVersionService,
+                app.RegionalSettings,
                 vitalSign.Id);
 
             await historyViewModel.LoadHistoryAsync();

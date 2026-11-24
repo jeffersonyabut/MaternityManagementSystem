@@ -12,16 +12,20 @@ namespace MaternityManagementSystem.ViewModels;
 public partial class SystemSettingsViewModel : ObservableObject
 {
     private readonly SystemSettingService _systemSettingService;
+    private readonly RegionalSettingsService _regionalSettingsService;
 
     private readonly Dictionary<string, string> _originalValues =
         new(StringComparer.OrdinalIgnoreCase);
 
     public SystemSettingsViewModel(
-        SystemSettingService systemSettingService)
+        SystemSettingService systemSettingService,
+        RegionalSettingsService regionalSettingsService)
     {
         ArgumentNullException.ThrowIfNull(systemSettingService);
+        ArgumentNullException.ThrowIfNull(regionalSettingsService);
 
         _systemSettingService = systemSettingService;
+        _regionalSettingsService = regionalSettingsService;
     }
 
     // CLINIC PROFILE
@@ -216,6 +220,14 @@ public partial class SystemSettingsViewModel : ObservableObject
                 [SystemSettingKeys.Regional.DateFormat] = DateFormat.Trim()
             };
 
+            bool regionalSettingsChanged =
+                HasSettingChanged(
+                    updatedValues,
+                    SystemSettingKeys.Regional.TimeZone) ||
+                HasSettingChanged(
+                    updatedValues,
+                    SystemSettingKeys.Regional.DateFormat);
+
             foreach (var setting in updatedValues)
             {
                 if (_originalValues.TryGetValue(
@@ -234,6 +246,11 @@ public partial class SystemSettingsViewModel : ObservableObject
                     setting.Value);
             }
 
+            if (regionalSettingsChanged)
+            {
+                await _regionalSettingsService.RefreshAsync();
+            }
+
             foreach (var setting in updatedValues)
             {
                 _originalValues[setting.Key] = setting.Value;
@@ -243,11 +260,24 @@ public partial class SystemSettingsViewModel : ObservableObject
         }
         catch (Exception)
         {
-            StatusMessage = "Unable to save system settings.";
+            StatusMessage =
+                "Settings may have been saved, but an error occurred while applying them. Please reload and verify your settings.";
         }
         finally
         {
             IsBusy = false;
         }
+    }
+
+    private bool HasSettingChanged(
+        IReadOnlyDictionary<string, string> updatedValues,
+        string key)
+    {
+        return updatedValues.TryGetValue(key, out var updatedValue) &&
+               (!_originalValues.TryGetValue(key, out var originalValue) ||
+                !string.Equals(
+                    originalValue,
+                    updatedValue,
+                    StringComparison.Ordinal));
     }
 }

@@ -27,9 +27,6 @@ public partial class LaboratoryResultsReportView : UserControl
     private const double FooterTop = PageHeight - 42;
     private const double ContentBottom = FooterTop - 18;
 
-    private static readonly TimeZoneInfo ClinicTimeZone =
-        TimeZoneInfo.FindSystemTimeZoneById("Singapore Standard Time");
-
     private static readonly Brush PrimaryBrush =
         new SolidColorBrush(Color.FromRgb(121, 82, 179));
 
@@ -90,7 +87,8 @@ public partial class LaboratoryResultsReportView : UserControl
 
             var document = CreatePrintDocument(
                 _viewModel.Report,
-                clinicName);
+                clinicName,
+                app.RegionalSettings);
 
             var viewer = new DocumentViewer
             {
@@ -222,8 +220,11 @@ public partial class LaboratoryResultsReportView : UserControl
 
     private static FixedDocument CreatePrintDocument(
         LaboratoryResultsReport report,
-        string clinicName)
+        string clinicName,
+        RegionalSettingsService regionalSettingsService)
     {
+        ArgumentNullException.ThrowIfNull(regionalSettingsService);
+
         var document = new FixedDocument();
 
         document.DocumentPaginator.PageSize =
@@ -231,7 +232,8 @@ public partial class LaboratoryResultsReportView : UserControl
 
         var composer = new ReportPageComposer(
             report,
-            clinicName);
+            clinicName,
+            regionalSettingsService);
 
         composer.AddReportSummary();
 
@@ -357,25 +359,27 @@ public partial class LaboratoryResultsReportView : UserControl
         return string.IsNullOrWhiteSpace(value) ? "—" : value;
     }
 
-    private static string FormatDate(DateOnly date)
+    private static string FormatDate(
+        DateOnly date,
+        RegionalSettingsService regionalSettingsService)
     {
-        return date.ToString("MMM dd, yyyy");
+        return regionalSettingsService.FormatDate(date);
     }
 
-    private static string FormatDate(DateOnly? date)
+    private static string FormatDate(
+        DateOnly? date,
+        RegionalSettingsService regionalSettingsService)
     {
         return date.HasValue
-            ? FormatDate(date.Value)
+            ? FormatDate(date.Value, regionalSettingsService)
             : "Any";
     }
 
-    private static string FormatDateTime(DateTime utc)
+    private static string FormatDateTime(
+        DateTime utc,
+        RegionalSettingsService regionalSettingsService)
     {
-        var local = TimeZoneInfo.ConvertTimeFromUtc(
-            DateTime.SpecifyKind(utc, DateTimeKind.Utc),
-            ClinicTimeZone);
-
-        return local.ToString("MMM dd, yyyy hh:mm tt");
+        return regionalSettingsService.FormatDateTime(utc);
     }
 
     private sealed class ReportPageComposer
@@ -410,16 +414,24 @@ public partial class LaboratoryResultsReportView : UserControl
 
         private readonly LaboratoryResultsReport _report;
         private readonly string _clinicName;
+        private readonly RegionalSettingsService _regionalSettingsService;
 
         private FixedPage _currentPage = null!;
         private double _currentTop;
 
         public ReportPageComposer(
             LaboratoryResultsReport report,
-            string clinicName)
+            string clinicName,
+            RegionalSettingsService regionalSettingsService)
         {
             _report = report;
             _clinicName = clinicName;
+
+            _regionalSettingsService =
+                regionalSettingsService
+                ?? throw new ArgumentNullException(
+                    nameof(regionalSettingsService));
+
             CreateNewPage();
         }
 
@@ -458,7 +470,9 @@ public partial class LaboratoryResultsReportView : UserControl
 
             AddTextToPage(
                 _currentPage,
-                $"Generated: {FormatDateTime(_report.GeneratedAtUtc)}",
+                $"Generated: {FormatDateTime(
+                    _report.GeneratedAtUtc,
+                    _regionalSettingsService)}",
                 MarginSize,
                 73,
                 ContentWidth,
@@ -554,9 +568,13 @@ public partial class LaboratoryResultsReportView : UserControl
                 new[]
                 {
                     "Test Date From",
-                    FormatDate(_report.StartDate),
+                    FormatDate(
+                        _report.StartDate,
+                        _regionalSettingsService),
                     "Test Date To",
-                    FormatDate(_report.EndDate)
+                    FormatDate(
+                        _report.EndDate,
+                        _regionalSettingsService)
                 },
                 new[]
                 {
@@ -609,7 +627,9 @@ public partial class LaboratoryResultsReportView : UserControl
 
                 var values = new[]
                 {
-                    FormatDate(result.TestDate),
+                    FormatDate(
+                        result.TestDate,
+                        _regionalSettingsService),
                     Display(patient?.PatientNumber),
                     Display(patientName),
                     Display(result.TestName),

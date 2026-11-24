@@ -245,10 +245,11 @@
                                  materialDesign:HintAssist.Hint="End time (optional)"/>
                     </Grid>
 
-                    <TextBlock Text="If no end time is provided, the appointment will use a 30-minute duration."
+                    <TextBlock Text="{Binding DefaultDurationMessage}"
                                FontSize="12"
                                Opacity="0.65"
-                               Margin="0,12,0,0"/>
+                               Margin="0,12,0,0"
+                               TextWrapping="Wrap"/>
                 </StackPanel>
             </Border>
 

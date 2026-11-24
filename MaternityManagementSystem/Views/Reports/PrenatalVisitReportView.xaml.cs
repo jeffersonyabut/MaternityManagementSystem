@@ -7,6 +7,7 @@ using System.Windows.Controls;
 using System.Windows.Documents;
 using System.Windows.Media;
 using MaternityManagementSystem.Models.Reports;
+using MaternityManagementSystem.Services;
 using MaternityManagementSystem.ViewModels.Reports;
 
 namespace MaternityManagementSystem.Views.Reports;
@@ -25,9 +26,6 @@ public partial class PrenatalVisitReportView : UserControl
 
     private static readonly Brush LightPurpleBrush =
         new SolidColorBrush(Color.FromRgb(245, 242, 250));
-
-    private static readonly TimeZoneInfo ClinicTimeZone =
-        TimeZoneInfo.FindSystemTimeZoneById("Singapore Standard Time");
 
     public PrenatalVisitReportView()
     {
@@ -59,7 +57,11 @@ public partial class PrenatalVisitReportView : UserControl
                 return;
             }
 
-            var document = CreatePrintDocument(viewModel.Report);
+            var app = (App)Application.Current;
+
+            var document = CreatePrintDocument(
+                viewModel.Report,
+                app.RegionalSettings);
 
             var viewer = new DocumentViewer
             {
@@ -190,8 +192,11 @@ public partial class PrenatalVisitReportView : UserControl
     }
 
     private static FixedDocument CreatePrintDocument(
-        PrenatalVisitReport report)
+        PrenatalVisitReport report,
+        RegionalSettingsService regionalSettingsService)
     {
+        ArgumentNullException.ThrowIfNull(regionalSettingsService);
+
         var document = new FixedDocument();
 
         document.DocumentPaginator.PageSize =
@@ -234,7 +239,7 @@ public partial class PrenatalVisitReportView : UserControl
 
         AddText(
             page,
-            $"Generated: {FormatDateTime(report.GeneratedAtUtc)}",
+            $"Generated: {FormatDateTime(report.GeneratedAtUtc, regionalSettingsService)}",
             MarginSize,
             top,
             ContentWidth,
@@ -268,7 +273,7 @@ public partial class PrenatalVisitReportView : UserControl
         AddField(
             page,
             "Date of Birth",
-            report.Patient.DateOfBirth?.ToString("MMM dd, yyyy"),
+            FormatDate(report.Patient.DateOfBirth, regionalSettingsService),
             MarginSize,
             top,
             ContentWidth / 3);
@@ -304,7 +309,7 @@ public partial class PrenatalVisitReportView : UserControl
         AddField(
             page,
             "Last Menstrual Period",
-            report.Pregnancy.LastMenstrualPeriod?.ToString("MMM dd, yyyy"),
+            FormatDate(report.Pregnancy.LastMenstrualPeriod, regionalSettingsService),
             MarginSize + ContentWidth / 3,
             top,
             ContentWidth / 3);
@@ -312,7 +317,7 @@ public partial class PrenatalVisitReportView : UserControl
         AddField(
             page,
             "Estimated Due Date",
-            report.Pregnancy.EstimatedDueDate?.ToString("MMM dd, yyyy"),
+            FormatDate(report.Pregnancy.EstimatedDueDate, regionalSettingsService),
             MarginSize + (ContentWidth * 2 / 3),
             top,
             ContentWidth / 3);
@@ -324,7 +329,7 @@ public partial class PrenatalVisitReportView : UserControl
         AddField(
             page,
             "Visit Date",
-            report.PrenatalVisit.VisitDate.ToString("MMM dd, yyyy"),
+            FormatDate(report.PrenatalVisit.VisitDate, regionalSettingsService),
             MarginSize,
             top,
             ContentWidth);
@@ -370,7 +375,7 @@ public partial class PrenatalVisitReportView : UserControl
 
         var vitalRows = report.VitalSigns.Select(v => new[]
         {
-            FormatDateTime(v.RecordedAtUtc),
+            FormatDateTime(v.RecordedAtUtc, regionalSettingsService),
             $"{FormatNumber(v.SystolicBloodPressure)}/{FormatNumber(v.DiastolicBloodPressure)}",
             FormatNumber(v.HeartRate),
             FormatNumber(v.RespiratoryRate),
@@ -415,7 +420,7 @@ public partial class PrenatalVisitReportView : UserControl
 
         var labRows = report.LaboratoryResults.Select(r => new[]
         {
-            r.TestDate.ToString("MMM dd, yyyy"),
+            FormatDate(r.TestDate, regionalSettingsService),
             Display(r.TestName),
             Display(r.Result),
             Display(r.Unit),
@@ -699,20 +704,34 @@ public partial class PrenatalVisitReportView : UserControl
         return string.IsNullOrWhiteSpace(value) ? "—" : value;
     }
 
+    private static string FormatDate(
+        DateOnly? date,
+        RegionalSettingsService regionalSettingsService)
+    {
+        return date.HasValue
+            ? regionalSettingsService.FormatDate(date.Value)
+            : "—";
+    }
+
+    private static string FormatDate(
+        DateOnly date,
+        RegionalSettingsService regionalSettingsService)
+    {
+        return regionalSettingsService.FormatDate(date);
+    }
+
+    private static string FormatDateTime(
+        DateTime utc,
+        RegionalSettingsService regionalSettingsService)
+    {
+        return regionalSettingsService.FormatDateTime(utc);
+    }
+
     private static string FormatNumber<T>(T? value)
         where T : struct, IFormattable
     {
         return value.HasValue
             ? value.Value.ToString(null, null)
             : "—";
-    }
-
-    private static string FormatDateTime(DateTime utc)
-    {
-        var local = TimeZoneInfo.ConvertTimeFromUtc(
-            DateTime.SpecifyKind(utc, DateTimeKind.Utc),
-            ClinicTimeZone);
-
-        return local.ToString("MMM dd, yyyy hh:mm tt");
     }
 }

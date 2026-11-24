@@ -437,9 +437,10 @@ public partial class DashboardWindow : Window
         var auditLogRepository = new AuditLogRepository();
 
         var auditLogService = new AuditLogService(
-            auditLogRepository,
-            sessionService,
-            authorizationService);
+            new AuditLogRepository(),
+            _sessionService,
+            authorizationService,
+            app.RegionalSettings);
 
         var staffManagementService = new StaffManagementService(
             staffRepository,
@@ -448,7 +449,8 @@ public partial class DashboardWindow : Window
             sessionService);
 
         var viewModel = new StaffManagementViewModel(
-            staffManagementService);
+            staffManagementService,
+            app.RegionalSettings);
 
         var view = new StaffManagementView
         {
@@ -481,9 +483,10 @@ public partial class DashboardWindow : Window
         var auditLogRepository = new AuditLogRepository();
 
         var auditLogService = new AuditLogService(
-            auditLogRepository,
-            sessionService,
-            authorizationService);
+            new AuditLogRepository(),
+            _sessionService,
+            authorizationService,
+            app.RegionalSettings);
 
         var staffManagementService = new StaffManagementService(
             staffRepository,
@@ -493,7 +496,8 @@ public partial class DashboardWindow : Window
 
         var viewModel = new AuditLogManagementViewModel(
             auditLogService,
-            staffManagementService);
+            staffManagementService,
+            app.RegionalSettings);
 
         var view = new AuditLogManagementView(viewModel);
 
@@ -526,7 +530,8 @@ public partial class DashboardWindow : Window
             sessionService);
 
         var viewModel = new SystemSettingsViewModel(
-            systemSettingService);
+            systemSettingService,
+            app.RegionalSettings);
 
         var view = new SystemSettingsView
         {

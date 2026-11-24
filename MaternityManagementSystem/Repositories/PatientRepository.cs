@@ -587,35 +587,17 @@ public class PatientRepository
 
 
     public async Task<int> GetRegistrationCountForClinicActivityReportAsync(
-    DateOnly? startDate,
-    DateOnly? endDate,
-    CancellationToken cancellationToken = default)
+        DateTime? startUtc,
+        DateTime? endUtcExclusive,
+        CancellationToken cancellationToken = default)
     {
-        if (startDate.HasValue &&
-            endDate.HasValue &&
-            startDate.Value > endDate.Value)
+        if (startUtc.HasValue &&
+            endUtcExclusive.HasValue &&
+            endUtcExclusive.Value <= startUtc.Value)
         {
             throw new ArgumentException(
-                "The start date cannot be later than the end date.");
+                "The end date must be later than the start date.");
         }
-
-        // Interpret report dates using Philippine time.
-        TimeZoneInfo clinicTimeZone =
-            TimeZoneInfo.FindSystemTimeZoneById(
-                "Singapore Standard Time");
-
-        DateTime? startUtc = startDate.HasValue
-            ? TimeZoneInfo.ConvertTimeToUtc(
-                startDate.Value.ToDateTime(TimeOnly.MinValue),
-                clinicTimeZone)
-            : null;
-
-        // Use an exclusive upper boundary to include the entire end date.
-        DateTime? endUtcExclusive = endDate.HasValue
-            ? TimeZoneInfo.ConvertTimeToUtc(
-                endDate.Value.AddDays(1).ToDateTime(TimeOnly.MinValue),
-                clinicTimeZone)
-            : null;
 
         await using var dbContext =
             await CreateDbContextAsync(cancellationToken);
@@ -639,37 +621,18 @@ public class PatientRepository
         return await query.CountAsync(cancellationToken);
     }
 
-
     public async Task<List<DateTime>> GetRegistrationDatesForClinicActivityReportAsync(
-    DateOnly? startDate,
-    DateOnly? endDate,
-    CancellationToken cancellationToken = default)
+        DateTime? startUtc,
+        DateTime? endUtcExclusive,
+        CancellationToken cancellationToken = default)
     {
-        if (startDate.HasValue &&
-            endDate.HasValue &&
-            startDate.Value > endDate.Value)
+        if (startUtc.HasValue &&
+            endUtcExclusive.HasValue &&
+            endUtcExclusive.Value <= startUtc.Value)
         {
             throw new ArgumentException(
-                "The start date cannot be later than the end date.");
+                "The end date must be later than the start date.");
         }
-
-        // Interpret report dates using Philippine time.
-        TimeZoneInfo clinicTimeZone =
-            TimeZoneInfo.FindSystemTimeZoneById(
-                "Singapore Standard Time");
-
-        DateTime? startUtc = startDate.HasValue
-            ? TimeZoneInfo.ConvertTimeToUtc(
-                startDate.Value.ToDateTime(TimeOnly.MinValue),
-                clinicTimeZone)
-            : null;
-
-        // Exclusive upper boundary includes the entire end date.
-        DateTime? endUtcExclusive = endDate.HasValue
-            ? TimeZoneInfo.ConvertTimeToUtc(
-                endDate.Value.AddDays(1).ToDateTime(TimeOnly.MinValue),
-                clinicTimeZone)
-            : null;
 
         await using var dbContext =
             await CreateDbContextAsync(cancellationToken);

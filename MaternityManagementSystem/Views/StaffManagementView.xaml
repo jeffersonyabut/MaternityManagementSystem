@@ -399,9 +399,9 @@
 
 
                                 <DataGridTextColumn Header="DATE CREATED"
-                                                    Binding="{Binding CreatedAtPhilippineTime, StringFormat={}{0:MMM dd, yyyy}}"
+                                                    Binding="{Binding CreatedAtRegionalDisplay}"
                                                     Width="1.5*"/>
-
+                                
                             </DataGrid.Columns>
 
                         </DataGrid>

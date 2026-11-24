@@ -46,7 +46,8 @@ public partial class AppointmentRegistrationView : UserControl
             patientRepository,
             pregnancyRepository,
             authorizationService,
-            app.SessionService);
+            app.SessionService,
+            app.RegionalSettings);
 
         _viewModel = new AppointmentViewModel(
             appointmentService,
@@ -62,6 +63,7 @@ public partial class AppointmentRegistrationView : UserControl
         object sender,
         RoutedEventArgs e)
     {
+        await _viewModel.LoadDefaultAppointmentDurationAsync();
         await _viewModel.LoadPatientsAsync();
     }
 

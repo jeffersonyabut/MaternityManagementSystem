@@ -28,9 +28,6 @@ public partial class ClinicActivityReportView : UserControl
     private const int FirstPageRows = 5;
     private const int SubsequentPageRows = 19;
 
-    private static readonly TimeZoneInfo PhilippineTimeZone =
-        TimeZoneInfo.FindSystemTimeZoneById("Singapore Standard Time");
-
     private readonly Brush PrimaryPurple =
         new SolidColorBrush(Color.FromRgb(121, 82, 179));
 
@@ -92,7 +89,8 @@ public partial class ClinicActivityReportView : UserControl
 
             FixedDocument document = CreateReportDocument(
                 report,
-                clinicName);
+                clinicName,
+                app.RegionalSettings);
 
             ShowPrintPreview(document, clinicName);
         }
@@ -108,7 +106,8 @@ public partial class ClinicActivityReportView : UserControl
 
     private FixedDocument CreateReportDocument(
         ClinicActivityReport report,
-        string clinicName)
+        string clinicName,
+        RegionalSettingsService regionalSettingsService)
     {
         var document = new FixedDocument();
 
@@ -139,13 +138,17 @@ public partial class ClinicActivityReportView : UserControl
                 report,
                 pageIndex + 1,
                 totalPages,
-                clinicName);
+                clinicName,
+                regionalSettingsService);
 
             bool isFirstPage = pageIndex == 0;
 
             if (isFirstPage)
             {
-                AddSummarySection(page, report);
+                AddSummarySection(
+                    page,
+                    report,
+                    regionalSettingsService);
             }
 
             int skip;
@@ -194,7 +197,8 @@ public partial class ClinicActivityReportView : UserControl
         ClinicActivityReport report,
         int pageNumber,
         int totalPages,
-        string clinicName)
+        string clinicName,
+        RegionalSettingsService regionalSettingsService)
     {
         AddText(
             page,
@@ -230,7 +234,7 @@ public partial class ClinicActivityReportView : UserControl
 
         AddText(
             page,
-            $"Generated: {ToPhilippineTime(report.GeneratedAtUtc):MMM dd, yyyy hh:mm tt}",
+            $"Generated: {regionalSettingsService.FormatDateTime(report.GeneratedAtUtc)}",
             PageWidth - RightMargin - 280,
             TopMargin + 5,
             280,
@@ -260,14 +264,22 @@ public partial class ClinicActivityReportView : UserControl
 
     private void AddSummarySection(
         FixedPage page,
-        ClinicActivityReport report)
+        ClinicActivityReport report,
+        RegionalSettingsService regionalSettingsService)
     {
         double y = 155;
 
         AddSectionTitle(page, "REPORT PERIOD", y);
 
-        string dateRange =
-            $"{FormatDate(report.StartDate)} — {FormatDate(report.EndDate)}";
+        string startDate = report.StartDate.HasValue
+            ? regionalSettingsService.FormatDate(report.StartDate.Value)
+            : "All dates";
+
+        string endDate = report.EndDate.HasValue
+            ? regionalSettingsService.FormatDate(report.EndDate.Value)
+            : "All dates";
+
+        string dateRange = $"{startDate} — {endDate}";
 
         AddText(
             page,
@@ -773,23 +785,5 @@ public partial class ClinicActivityReportView : UserControl
         previewWindow.Content = root;
 
         previewWindow.ShowDialog();
-    }
-
-    private static DateTime ToPhilippineTime(DateTime utcDateTime)
-    {
-        DateTime utc = DateTime.SpecifyKind(
-            utcDateTime,
-            DateTimeKind.Utc);
-
-        return TimeZoneInfo.ConvertTimeFromUtc(
-            utc,
-            PhilippineTimeZone);
-    }
-
-    private static string FormatDate(DateOnly? date)
-    {
-        return date.HasValue
-            ? date.Value.ToString("MMM dd, yyyy")
-            : "All dates";
     }
 }

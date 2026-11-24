@@ -13,6 +13,8 @@ namespace MaternityManagementSystem;
 public partial class App : Application
 {
     public SessionService SessionService { get; } = new();
+    public RegionalSettingsService RegionalSettings { get; } =
+        new(new SystemSettingRepository());
 
     protected override async void OnStartup(StartupEventArgs e)
     {
@@ -29,6 +31,7 @@ public partial class App : Application
             // 2. Initialize missing system settings.
             var settingsInitializer = new SystemSettingInitializer();
             await settingsInitializer.InitializeAsync();
+            await RegionalSettings.RefreshAsync();
 
             // 3. Check whether an administrator/staff account exists.
             var repository = new StaffRepository();

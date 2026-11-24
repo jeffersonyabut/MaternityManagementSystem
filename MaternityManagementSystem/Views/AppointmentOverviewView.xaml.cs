@@ -29,6 +29,7 @@ public partial class AppointmentOverviewView : UserControl
 
         var app = (App)Application.Current;
 
+
         var appointmentRepository = new AppointmentRepository();
         var patientRepository = new PatientRepository();
         var pregnancyRepository = new PregnancyRepository();
@@ -41,10 +42,12 @@ public partial class AppointmentOverviewView : UserControl
             patientRepository,
             pregnancyRepository,
             authorizationService,
-            app.SessionService);
+            app.SessionService,
+            app.RegionalSettings);
 
         _viewModel = new AppointmentOverviewViewModel(
-            _appointmentService);
+            _appointmentService,
+            app.RegionalSettings);
 
         DataContext = _viewModel;
 

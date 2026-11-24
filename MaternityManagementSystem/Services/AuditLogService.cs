@@ -7,6 +7,8 @@ namespace MaternityManagementSystem.Services;
 
 public class AuditLogService
 {
+
+    private readonly RegionalSettingsService _regionalSettingsService;
     private readonly AuditLogRepository _auditLogRepository;
     private readonly SessionService _sessionService;
     private readonly AuthorizationService _authorizationService;
@@ -14,15 +16,18 @@ public class AuditLogService
     public AuditLogService(
         AuditLogRepository auditLogRepository,
         SessionService sessionService,
-        AuthorizationService authorizationService)
+        AuthorizationService authorizationService,
+        RegionalSettingsService regionalSettingsService)
     {
         ArgumentNullException.ThrowIfNull(auditLogRepository);
         ArgumentNullException.ThrowIfNull(sessionService);
         ArgumentNullException.ThrowIfNull(authorizationService);
+        ArgumentNullException.ThrowIfNull(regionalSettingsService);
 
         _auditLogRepository = auditLogRepository;
         _sessionService = sessionService;
         _authorizationService = authorizationService;
+        _regionalSettingsService = regionalSettingsService;
     }
 
     public async Task LogAsync(
@@ -124,30 +129,17 @@ public class AuditLogService
     {
         await _authorizationService.EnsureAdminAsync();
 
-        TimeZoneInfo philippineTimeZone =
-            TimeZoneInfo.FindSystemTimeZoneById("Singapore Standard Time");
+        DateTime localNow =
+            _regionalSettingsService.ConvertUtcToLocal(DateTime.UtcNow);
 
-        DateTime todayInPhilippineTime =
-            TimeZoneInfo.ConvertTimeFromUtc(
-                DateTime.UtcNow,
-                philippineTimeZone).Date;
-
-        DateTime tomorrowInPhilippineTime =
-            todayInPhilippineTime.AddDays(1);
+        DateTime startOfTodayLocal = localNow.Date;
+        DateTime startOfTomorrowLocal = startOfTodayLocal.AddDays(1);
 
         DateTime startOfTodayUtc =
-            TimeZoneInfo.ConvertTimeToUtc(
-                DateTime.SpecifyKind(
-                    todayInPhilippineTime,
-                    DateTimeKind.Unspecified),
-                philippineTimeZone);
+            _regionalSettingsService.ConvertLocalToUtc(startOfTodayLocal);
 
         DateTime startOfTomorrowUtc =
-            TimeZoneInfo.ConvertTimeToUtc(
-                DateTime.SpecifyKind(
-                    tomorrowInPhilippineTime,
-                    DateTimeKind.Unspecified),
-                philippineTimeZone);
+            _regionalSettingsService.ConvertLocalToUtc(startOfTomorrowLocal);
 
         return await _auditLogRepository.GetSummaryAsync(
             startOfTodayUtc,

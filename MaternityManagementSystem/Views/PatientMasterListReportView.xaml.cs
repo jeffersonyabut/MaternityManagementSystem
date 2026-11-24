@@ -39,8 +39,7 @@ namespace MaternityManagementSystem.Views
             "Address"
         ];
 
-        private static readonly TimeZoneInfo ClinicTimeZone =
-            TimeZoneInfo.FindSystemTimeZoneById("Singapore Standard Time");
+
 
         public PatientMasterListReportView(
             PatientMasterListViewModel viewModel)
@@ -112,8 +111,11 @@ namespace MaternityManagementSystem.Views
                         SystemSettingDefaults.Values[SystemSettingKeys.Clinic.Name];
                 }
 
-                var document = CreatePrintDocument(report, clinicName);
 
+                var document = CreatePrintDocument(
+                    report,
+                    clinicName,
+                    app.RegionalSettings);
 
                 var viewer = new DocumentViewer
                 {
@@ -245,7 +247,8 @@ namespace MaternityManagementSystem.Views
 
         private static FixedDocument CreatePrintDocument(
             PatientMasterListReport report,
-            string clinicName)
+            string clinicName,
+            RegionalSettingsService regionalSettingsService)
         {
             var document = new FixedDocument();
 
@@ -280,7 +283,8 @@ namespace MaternityManagementSystem.Views
                     page,
                     pageNumber,
                     report,
-                    clinicName);
+                    clinicName,
+                    regionalSettingsService);
 
                 var tableTop = pageNumber == 1 ? 220 : 105;
 
@@ -303,12 +307,14 @@ namespace MaternityManagementSystem.Views
                 {
                     var patient = patients[patientIndex++];
 
+
                     AddPatientRow(
                         page,
                         patient,
                         currentRowTop,
                         rowHeight,
-                        row % 2 == 1);
+                        row % 2 == 1,
+                        regionalSettingsService);
 
                     currentRowTop += rowHeight;
                     remaining--;
@@ -361,7 +367,8 @@ namespace MaternityManagementSystem.Views
             FixedPage page,
             int pageNumber,
             PatientMasterListReport report,
-            string clinicName)
+            string clinicName,
+            RegionalSettingsService regionalSettingsService)
         {
             if (pageNumber == 1)
             {
@@ -401,16 +408,14 @@ namespace MaternityManagementSystem.Views
                     FontWeights.Normal,
                     TextAlignment.Center);
 
-                var generatedAt = TimeZoneInfo.ConvertTimeFromUtc(
-                    DateTime.SpecifyKind(
-                        report.GeneratedAtUtc,
-                        DateTimeKind.Utc),
-                    ClinicTimeZone);
+                string generatedAt =
+                    regionalSettingsService.FormatDateTime(
+                        report.GeneratedAtUtc);
 
                 // Generated — left side
                 AddText(
                     page,
-                    $"Generated: {generatedAt:MMM dd, yyyy hh:mm tt} (UTC+8)",
+                    $"Generated: {generatedAt}",
                     MarginSize,
                     120,
                     450,
@@ -422,7 +427,9 @@ namespace MaternityManagementSystem.Views
                 // Registration From — right side
                 AddText(
                     page,
-                    $"Registration From: {report.StartDate?.ToString("MMM dd, yyyy") ?? "Any"}",
+                    $"Registration From: {(report.StartDate.HasValue
+                        ? regionalSettingsService.FormatDate(report.StartDate.Value)
+                        : "Any")}",
                     MarginSize + 480,
                     120,
                     230,
@@ -434,7 +441,9 @@ namespace MaternityManagementSystem.Views
                 // Registration To — beside Registration From
                 AddText(
                     page,
-                    $"Registration To: {report.EndDate?.ToString("MMM dd, yyyy") ?? "Any"}",
+                    $"Registration To: {(report.EndDate.HasValue
+                        ? regionalSettingsService.FormatDate(report.EndDate.Value)
+                        : "Any")}",
                     MarginSize + 710,
                     120,
                     270,
@@ -532,7 +541,8 @@ namespace MaternityManagementSystem.Views
             Patient patient,
             double top,
             double height,
-            bool alternate)
+            bool alternate,
+            RegionalSettingsService regionalSettingsService)
         {
             var fullName = string.Join(
                 " ",
@@ -548,7 +558,9 @@ namespace MaternityManagementSystem.Views
             {
                 patient.PatientNumber,
                 fullName,
-                patient.DateOfBirth?.ToString("MMM dd, yyyy") ?? "—",
+                patient.DateOfBirth.HasValue
+                    ? regionalSettingsService.FormatDate(patient.DateOfBirth.Value)
+                    : "—",
                 patient.Sex ?? "",
                 patient.CivilStatus ?? "",
                 patient.ContactNumber ?? "",

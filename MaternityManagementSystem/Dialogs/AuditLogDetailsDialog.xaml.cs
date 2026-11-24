@@ -1,4 +1,3 @@
-
 using System.Windows;
 using MaternityManagementSystem.Models;
 
@@ -13,8 +12,7 @@ public partial class AuditLogDetailsDialog : Window
         InitializeComponent();
 
         ActionText.Text = auditLog.Action;
-        TimestampText.Text = auditLog.OccurredAtPhilippineTime
-            .ToString("MMM dd, yyyy hh:mm:ss tt") + " PHT";
+        TimestampText.Text = auditLog.OccurredAtRegionalDisplay;
 
         UsernameText.Text = auditLog.Username;
         EntityTypeText.Text = auditLog.EntityType;

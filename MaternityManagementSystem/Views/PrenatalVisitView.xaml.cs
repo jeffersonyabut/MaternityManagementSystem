@@ -146,8 +146,11 @@ public partial class PrenatalVisitView : UserControl
             return;
         }
 
+        var app = (App)Application.Current;
+
         var historyViewModel = new PrenatalVisitHistoryViewModel(
             _recordVersionService,
+            app.RegionalSettings,
             visit.Id);
 
         await historyViewModel.LoadHistoryAsync();

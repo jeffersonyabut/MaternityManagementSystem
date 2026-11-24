@@ -29,9 +29,6 @@ public partial class IndividualPatientRecordReportView : UserControl
     private const double FooterTop = PageHeight - 42;
     private const double ContentBottom = FooterTop - 18;
 
-    private static readonly TimeZoneInfo ClinicTimeZone =
-        TimeZoneInfo.FindSystemTimeZoneById("Singapore Standard Time");
-
     private static readonly Brush PrimaryBrush =
         new SolidColorBrush(Color.FromRgb(121, 82, 179));
 
@@ -75,6 +72,7 @@ public partial class IndividualPatientRecordReportView : UserControl
         {
             var app = (App)Application.Current;
             var sessionService = app.SessionService;
+
             var authorizationService =
                 new AuthorizationService(sessionService);
 
@@ -100,7 +98,10 @@ public partial class IndividualPatientRecordReportView : UserControl
                     SystemSettingDefaults.Values[SystemSettingKeys.Clinic.Name];
             }
 
-            var document = CreatePrintDocument(_report, clinicName);
+            var document = CreatePrintDocument(
+                _report,
+                clinicName,
+                app.RegionalSettings);
 
             var viewer = new DocumentViewer
             {
@@ -232,8 +233,11 @@ public partial class IndividualPatientRecordReportView : UserControl
 
     private static FixedDocument CreatePrintDocument(
         IndividualPatientRecordReport report,
-        string clinicName)
+        string clinicName,
+        RegionalSettingsService regionalSettingsService)
     {
+        ArgumentNullException.ThrowIfNull(regionalSettingsService);
+
         var document = new FixedDocument();
 
         document.DocumentPaginator.PageSize =
@@ -250,7 +254,8 @@ public partial class IndividualPatientRecordReportView : UserControl
 
         var composer = new ReportPageComposer(
             clinicName,
-            patientFullName);
+            patientFullName,
+            regionalSettingsService);
 
         composer.AddPatientInformation(report.Patient);
         composer.AddObstetricHistory(report);
@@ -366,23 +371,27 @@ public partial class IndividualPatientRecordReportView : UserControl
         return string.IsNullOrWhiteSpace(value) ? "—" : value;
     }
 
-    private static string FormatDate(DateOnly? date)
+    private static string FormatDate(
+        DateOnly? date,
+        RegionalSettingsService regionalSettingsService)
     {
-        return date?.ToString("MMM dd, yyyy") ?? "—";
+        return date.HasValue
+            ? regionalSettingsService.FormatDate(date.Value)
+            : "—";
     }
 
-    private static string FormatDate(DateOnly date)
+    private static string FormatDate(
+        DateOnly date,
+        RegionalSettingsService regionalSettingsService)
     {
-        return date.ToString("MMM dd, yyyy");
+        return regionalSettingsService.FormatDate(date);
     }
 
-    private static string FormatDateTime(DateTime utc)
+    private static string FormatDateTime(
+        DateTime utc,
+        RegionalSettingsService regionalSettingsService)
     {
-        var local = TimeZoneInfo.ConvertTimeFromUtc(
-            DateTime.SpecifyKind(utc, DateTimeKind.Utc),
-            ClinicTimeZone);
-
-        return local.ToString("MMM dd, yyyy hh:mm tt");
+        return regionalSettingsService.FormatDateTime(utc);
     }
 
     private static string FormatNumber<T>(T? value)
@@ -397,6 +406,7 @@ public partial class IndividualPatientRecordReportView : UserControl
     {
         private readonly string _clinicName;
         private readonly string _reportPatientName;
+        private readonly RegionalSettingsService _regionalSettingsService;
 
         public List<FixedPage> Pages { get; } = [];
 
@@ -405,12 +415,18 @@ public partial class IndividualPatientRecordReportView : UserControl
 
         public ReportPageComposer(
             string clinicName,
-            string patientName)
+            string patientName,
+            RegionalSettingsService regionalSettingsService)
         {
             _clinicName = clinicName;
             _reportPatientName = string.IsNullOrWhiteSpace(patientName)
                 ? "Patient"
                 : patientName;
+
+            _regionalSettingsService =
+                regionalSettingsService
+                ?? throw new ArgumentNullException(
+                    nameof(regionalSettingsService));
 
             CreateNewPage();
         }
@@ -569,7 +585,9 @@ public partial class IndividualPatientRecordReportView : UserControl
                 ("First Name", Display(patient.FirstName)),
                 ("Middle Name", Display(patient.MiddleName)),
                 ("Last Name", Display(patient.LastName)),
-                ("Date of Birth", patient.DateOfBirth?.ToString("MMM dd, yyyy") ?? "—"),
+                ("Date of Birth", FormatDate(
+                    patient.DateOfBirth,
+                    _regionalSettingsService)),
                 ("Sex", Display(patient.Sex)),
                 ("Civil Status", Display(patient.CivilStatus)),
                 ("Contact Number", Display(patient.ContactNumber)),
@@ -600,7 +618,9 @@ public partial class IndividualPatientRecordReportView : UserControl
 
             AddFieldPair(
                 "Registration Date",
-                FormatDateTime(patient.CreatedAtUtc),
+                FormatDateTime(
+                    patient.CreatedAtUtc,
+                    _regionalSettingsService),
                 MarginSize + ContentWidth / 2,
                 _currentTop,
                 ContentWidth / 2 - 16);
@@ -655,8 +675,8 @@ public partial class IndividualPatientRecordReportView : UserControl
             var rows = pregnancies.Select(p => new string[]
             {
                 Display(p.Status),
-                FormatDate(p.LastMenstrualPeriod),
-                FormatDate(p.EstimatedDueDate),
+                FormatDate(p.LastMenstrualPeriod, _regionalSettingsService),
+                FormatDate(p.EstimatedDueDate, _regionalSettingsService),
                 Display(p.PregnancyOutcome),
                 Display(p.DeliveryMethod),
                 FormatNumber(p.GestationalAgeAtEndWeeks),
@@ -675,7 +695,7 @@ public partial class IndividualPatientRecordReportView : UserControl
 
             var rows = visits.Select(v => new string[]
             {
-                FormatDate(v.VisitDate),
+                FormatDate(v.VisitDate, _regionalSettingsService),
                 Display(v.Notes)
             }).ToList();
 
@@ -691,7 +711,7 @@ public partial class IndividualPatientRecordReportView : UserControl
 
             var rows = vitalSigns.Select(v => new string[]
             {
-                FormatDateTime(v.RecordedAtUtc),
+                FormatDateTime(v.RecordedAtUtc, _regionalSettingsService),
                 $"{FormatNumber(v.SystolicBloodPressure)}/{FormatNumber(v.DiastolicBloodPressure)}",
                 FormatNumber(v.HeartRate),
                 FormatNumber(v.RespiratoryRate),
@@ -713,7 +733,7 @@ public partial class IndividualPatientRecordReportView : UserControl
 
             var rows = results.Select(r => new string[]
             {
-                FormatDate(r.TestDate),
+                FormatDate(r.TestDate, _regionalSettingsService),
                 Display(r.TestName),
                 Display(r.Result),
                 Display(r.Unit),

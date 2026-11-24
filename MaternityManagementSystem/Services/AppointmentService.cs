@@ -1,22 +1,22 @@
 
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using MaternityManagementSystem.Models;
 using MaternityManagementSystem.Repositories;
+using MaternityManagementSystem.Services;
 using MaternityManagementSystem.Sessions;
 
 namespace MaternityManagementSystem.Services;
 
 public class AppointmentService
 {
-    private const int DefaultAppointmentDurationMinutes = 30;
+    private const int FallbackAppointmentDurationMinutes = 30;
 
-    private static readonly TimeZoneInfo ClinicTimeZone =
-        TimeZoneInfo.FindSystemTimeZoneById("Singapore Standard Time");
-
+    private readonly RegionalSettingsService _regionalSettingsService;
     private readonly AppointmentRepository _appointmentRepository;
     private readonly PatientRepository _patientRepository;
     private readonly PregnancyRepository _pregnancyRepository;
@@ -28,20 +28,24 @@ public class AppointmentService
         PatientRepository patientRepository,
         PregnancyRepository pregnancyRepository,
         AuthorizationService authorizationService,
-        SessionService sessionService)
+        SessionService sessionService,
+        RegionalSettingsService regionalSettingsService)
     {
         ArgumentNullException.ThrowIfNull(appointmentRepository);
         ArgumentNullException.ThrowIfNull(patientRepository);
         ArgumentNullException.ThrowIfNull(pregnancyRepository);
         ArgumentNullException.ThrowIfNull(authorizationService);
         ArgumentNullException.ThrowIfNull(sessionService);
+        ArgumentNullException.ThrowIfNull(regionalSettingsService);
 
         _appointmentRepository = appointmentRepository;
         _patientRepository = patientRepository;
         _pregnancyRepository = pregnancyRepository;
         _authorizationService = authorizationService;
         _sessionService = sessionService;
+        _regionalSettingsService = regionalSettingsService;
     }
+
 
     // CREATE
 
@@ -69,12 +73,16 @@ public class AppointmentService
                 "Please select a future date and time.");
         }
 
-        ApplyDefaultDuration(appointment);
+        int defaultDuration =
+            await GetDefaultAppointmentDurationMinutesAsync();
+
+        ApplyDefaultDuration(appointment, defaultDuration);
 
         AppointmentValidator.Validate(appointment);
 
         await EnsureNoScheduleConflictAsync(
             appointment,
+            defaultDuration,
             cancellationToken);
 
         appointment.CreatedAtUtc = DateTime.UtcNow;
@@ -388,12 +396,16 @@ public class AppointmentService
                 "Please select a future date and time.");
         }
 
-        ApplyDefaultDuration(updatedAppointment);
+        int defaultDuration =
+            await GetDefaultAppointmentDurationMinutesAsync();
+
+        ApplyDefaultDuration(updatedAppointment, defaultDuration);
 
         AppointmentValidator.Validate(updatedAppointment);
 
         await EnsureNoScheduleConflictAsync(
             updatedAppointment,
+            defaultDuration,
             cancellationToken);
 
         existingAppointment.AppointmentDate =
@@ -702,6 +714,7 @@ public class AppointmentService
 
     private async Task EnsureNoScheduleConflictAsync(
         Appointment appointment,
+        int defaultDurationMinutes,
         CancellationToken cancellationToken)
     {
         var sameDayAppointments =
@@ -725,8 +738,7 @@ public class AppointmentService
             }
 
             TimeOnly existingEnd = existing.EndTime ??
-                existing.StartTime.AddMinutes(
-                    DefaultAppointmentDurationMinutes);
+                existing.StartTime.AddMinutes(defaultDurationMinutes);
 
             bool overlaps =
                 appointment.StartTime < existingEnd &&
@@ -741,16 +753,16 @@ public class AppointmentService
         }
     }
 
+
     // CLINIC TIME VALIDATION
 
-    private static DateTime GetClinicLocalNow()
+    private DateTime GetClinicLocalNow()
     {
-        return TimeZoneInfo.ConvertTimeFromUtc(
-            DateTime.UtcNow,
-            ClinicTimeZone);
+        return _regionalSettingsService.ConvertUtcToLocal(
+            DateTime.UtcNow);
     }
 
-    private static bool IsAppointmentInPast(
+    private bool IsAppointmentInPast(
         DateOnly appointmentDate,
         TimeOnly startTime)
     {
@@ -760,12 +772,40 @@ public class AppointmentService
         return appointmentDateTime < GetClinicLocalNow();
     }
 
-    private static void ApplyDefaultDuration(Appointment appointment)
+    // SYSTEM SETTINGS
+
+    public async Task<int> GetDefaultAppointmentDurationMinutesAsync()
+    {
+        var systemSettingService = new SystemSettingService(
+            new SystemSettingRepository(),
+            _authorizationService,
+            _sessionService);
+
+        var setting = await systemSettingService.GetByKeyAsync(
+            SystemSettingKeys.Appointments.DefaultDuration);
+
+        if (int.TryParse(
+                setting?.Value,
+                NumberStyles.Integer,
+                CultureInfo.InvariantCulture,
+                out int duration) &&
+            duration > 0 &&
+            duration <= 1440)
+        {
+            return duration;
+        }
+
+        return FallbackAppointmentDurationMinutes;
+    }
+
+    private static void ApplyDefaultDuration(
+        Appointment appointment,
+        int defaultDurationMinutes)
     {
         if (appointment.EndTime is null)
         {
             appointment.EndTime = appointment.StartTime.AddMinutes(
-                DefaultAppointmentDurationMinutes);
+                defaultDurationMinutes);
         }
     }
 

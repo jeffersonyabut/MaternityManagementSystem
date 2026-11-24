@@ -27,7 +27,8 @@ namespace MaternityManagementSystem.Views
                 app.SessionService);
 
             var analyticsService = new DashboardAnalyticsService(
-                authorizationService);
+                authorizationService,
+                app.RegionalSettings);
 
             _viewModel = new DashboardViewModel(analyticsService);
             DataContext = _viewModel;
@@ -37,7 +38,8 @@ namespace MaternityManagementSystem.Views
                 new PatientRepository(),
                 new PregnancyRepository(),
                 authorizationService,
-                app.SessionService);
+                app.SessionService,
+                app.RegionalSettings);
 
             Loaded += DashboardView_Loaded;
         }

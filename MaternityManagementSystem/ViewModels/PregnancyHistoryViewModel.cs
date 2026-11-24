@@ -11,13 +11,16 @@ namespace MaternityManagementSystem.ViewModels;
 public partial class PregnancyHistoryViewModel : ObservableObject
 {
     private readonly RecordVersionService _recordVersionService;
+    private readonly RegionalSettingsService _regionalSettingsService;
     private readonly int _pregnancyId;
 
     public PregnancyHistoryViewModel(
         RecordVersionService recordVersionService,
+        RegionalSettingsService regionalSettingsService,
         int pregnancyId)
     {
         ArgumentNullException.ThrowIfNull(recordVersionService);
+        ArgumentNullException.ThrowIfNull(regionalSettingsService);
 
         if (pregnancyId <= 0)
         {
@@ -25,6 +28,7 @@ public partial class PregnancyHistoryViewModel : ObservableObject
         }
 
         _recordVersionService = recordVersionService;
+        _regionalSettingsService = regionalSettingsService;
         _pregnancyId = pregnancyId;
     }
 
@@ -59,12 +63,8 @@ public partial class PregnancyHistoryViewModel : ObservableObject
                 var displayVersion = new RecordVersionDisplayViewModel
                 {
                     Username = version.Username,
-                    ChangedAtUtc = TimeZoneInfo.ConvertTimeFromUtc(
-                        DateTime.SpecifyKind(
-                            version.ChangedAtUtc,
-                            DateTimeKind.Utc),
-                        TimeZoneInfo.FindSystemTimeZoneById(
-                            "Singapore Standard Time"))
+                    ChangedAtUtc = _regionalSettingsService.ConvertUtcToLocal(
+                        version.ChangedAtUtc)
                 };
 
                 using var previousDocument =

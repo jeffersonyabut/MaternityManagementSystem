@@ -11,9 +11,6 @@ namespace MaternityManagementSystem.Services;
 
 public class DashboardAnalyticsService
 {
-    private const string PhilippinesTimeZoneId =
-        "Singapore Standard Time";
-
     private static readonly string[] AppointmentStatuses =
     {
         "Scheduled",
@@ -24,13 +21,17 @@ public class DashboardAnalyticsService
     };
 
     private readonly AuthorizationService _authorizationService;
+    private readonly RegionalSettingsService _regionalSettingsService;
 
     public DashboardAnalyticsService(
-        AuthorizationService authorizationService)
+        AuthorizationService authorizationService,
+        RegionalSettingsService regionalSettingsService)
     {
         ArgumentNullException.ThrowIfNull(authorizationService);
+        ArgumentNullException.ThrowIfNull(regionalSettingsService);
 
         _authorizationService = authorizationService;
+        _regionalSettingsService = regionalSettingsService;
     }
 
     public async Task<DashboardData> GetDashboardDataAsync(
@@ -40,13 +41,9 @@ public class DashboardAnalyticsService
 
         await using var dbContext = new ClinicDbContext();
 
-        TimeZoneInfo philippinesTimeZone =
-            TimeZoneInfo.FindSystemTimeZoneById(
-                PhilippinesTimeZoneId);
-
-        DateTime localNow = TimeZoneInfo.ConvertTimeFromUtc(
-            DateTime.UtcNow,
-            philippinesTimeZone);
+        DateTime localNow =
+            _regionalSettingsService.ConvertUtcToLocal(
+                DateTime.UtcNow);
 
         DateOnly today = DateOnly.FromDateTime(localNow);
         TimeOnly currentTime = TimeOnly.FromDateTime(localNow);
@@ -58,23 +55,19 @@ public class DashboardAnalyticsService
             firstDayOfCurrentMonth.AddMonths(-5);
 
         DateTime firstMonthLocal = firstMonth.ToDateTime(
-            TimeOnly.MinValue,
-            DateTimeKind.Unspecified);
+            TimeOnly.MinValue);
 
         DateTime nextMonthLocal =
             firstDayOfCurrentMonth.AddMonths(1).ToDateTime(
-                TimeOnly.MinValue,
-                DateTimeKind.Unspecified);
+                TimeOnly.MinValue);
 
         DateTime firstMonthUtc =
-            TimeZoneInfo.ConvertTimeToUtc(
-                firstMonthLocal,
-                philippinesTimeZone);
+            _regionalSettingsService.ConvertLocalToUtc(
+                firstMonthLocal);
 
         DateTime nextMonthUtc =
-            TimeZoneInfo.ConvertTimeToUtc(
-                nextMonthLocal,
-                philippinesTimeZone);
+            _regionalSettingsService.ConvertLocalToUtc(
+                nextMonthLocal);
 
         // Summary statistics
         int totalPatients = await dbContext.Patients

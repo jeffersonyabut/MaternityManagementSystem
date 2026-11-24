@@ -12,15 +12,20 @@ namespace MaternityManagementSystem.ViewModels;
 public partial class AppointmentOverviewViewModel : ObservableObject
 {
     private readonly AppointmentService _appointmentService;
+    private readonly RegionalSettingsService _regionalSettingsService;
 
     private readonly ObservableCollection<Appointment> _allAppointments = new();
 
+
     public AppointmentOverviewViewModel(
-        AppointmentService appointmentService)
+        AppointmentService appointmentService,
+        RegionalSettingsService regionalSettingsService)
     {
         ArgumentNullException.ThrowIfNull(appointmentService);
+        ArgumentNullException.ThrowIfNull(regionalSettingsService);
 
         _appointmentService = appointmentService;
+        _regionalSettingsService = regionalSettingsService;
     }
 
     // APPOINTMENT COLLECTIONS
@@ -30,6 +35,8 @@ public partial class AppointmentOverviewViewModel : ObservableObject
 
     [ObservableProperty]
     private Appointment? selectedAppointment;
+
+
 
     // SEARCH AND FILTERS
 
@@ -136,7 +143,9 @@ public partial class AppointmentOverviewViewModel : ObservableObject
 
     private void UpdateSummaryCounts()
     {
-        DateOnly today = DateOnly.FromDateTime(DateTime.Today);
+        DateOnly today = DateOnly.FromDateTime(
+            _regionalSettingsService.ConvertUtcToLocal(
+                DateTime.UtcNow));
 
         TodayCount = _allAppointments.Count(appointment =>
             appointment.AppointmentDate == today);

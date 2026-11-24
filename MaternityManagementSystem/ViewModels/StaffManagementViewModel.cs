@@ -1,4 +1,3 @@
-
 using System.Collections.ObjectModel;
 using System.Linq;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -10,15 +9,19 @@ namespace MaternityManagementSystem.ViewModels;
 public partial class StaffManagementViewModel : ObservableObject
 {
     private readonly StaffManagementService _staffManagementService;
+    private readonly RegionalSettingsService _regionalSettingsService;
 
     private readonly ObservableCollection<StaffDisplayModel> _allStaff = new();
 
     public StaffManagementViewModel(
-        StaffManagementService staffManagementService)
+        StaffManagementService staffManagementService,
+        RegionalSettingsService regionalSettingsService)
     {
         ArgumentNullException.ThrowIfNull(staffManagementService);
+        ArgumentNullException.ThrowIfNull(regionalSettingsService);
 
         _staffManagementService = staffManagementService;
+        _regionalSettingsService = regionalSettingsService;
     }
 
     // STAFF COLLECTIONS
@@ -114,6 +117,10 @@ public partial class StaffManagementViewModel : ObservableObject
 
             foreach (var staff in records)
             {
+                staff.CreatedAtRegionalDisplay =
+                    _regionalSettingsService.FormatDateTime(
+                        staff.CreatedAtUtc);
+
                 _allStaff.Add(staff);
             }
 
@@ -194,8 +201,6 @@ public partial class StaffManagementViewModel : ObservableObject
         SelectedStaff = null;
     }
 
-
-
     // CREATE STAFF ACCOUNT
 
     public async Task CreateStaffAsync(
@@ -212,8 +217,6 @@ public partial class StaffManagementViewModel : ObservableObject
 
         StatusMessage = "Staff account created successfully.";
     }
-
-
 
     // UPDATE STAFF ACCOUNT
 
@@ -233,6 +236,7 @@ public partial class StaffManagementViewModel : ObservableObject
     }
 
     // CHANGE STAFF ACCOUNT STATUS
+
     public async Task SetStaffStatusAsync(
         int staffId,
         bool isActive)
@@ -248,7 +252,6 @@ public partial class StaffManagementViewModel : ObservableObject
             : "Staff account deactivated successfully.";
     }
 
-
     // RESET STAFF PASSWORD
 
     public async Task ResetStaffPasswordAsync(
@@ -263,9 +266,6 @@ public partial class StaffManagementViewModel : ObservableObject
 
         StatusMessage = "Staff password reset successfully.";
     }
-
-
-
 
     // CLEAR FILTERS
 

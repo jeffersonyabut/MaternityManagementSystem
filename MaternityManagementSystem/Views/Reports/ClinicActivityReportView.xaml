@@ -233,9 +233,9 @@
                                         <TextBlock FontSize="13"
                                                    FontWeight="SemiBold"
                                                    Foreground="#29243B">
-                                            <Run Text="{Binding Report.StartDate, TargetNullValue=All dates, StringFormat={}{0:MMM dd, yyyy}}"/>
-                                            <Run Text=" — "/>
-                                            <Run Text="{Binding Report.EndDate, TargetNullValue=All dates, StringFormat={}{0:MMM dd, yyyy}}"/>
+                                            <Run Text="{Binding StartDateDisplay, Mode=OneWay}"/>
+                                            <Run Text=" — "/>           
+                                            <Run Text="{Binding EndDateDisplay, Mode=OneWay}"/>
                                         </TextBlock>
                                     </StackPanel>
 
@@ -244,7 +244,7 @@
                                                    FontSize="11"
                                                    Foreground="#777184"/>
 
-                                        <TextBlock Text="{Binding Report.GeneratedAtUtc, StringFormat={}{0:MMM dd, yyyy hh:mm tt}}"
+                                        <TextBlock Text="{Binding GeneratedAtDisplay}"
                                                    FontSize="13"
                                                    FontWeight="SemiBold"
                                                    Foreground="#29243B"/>

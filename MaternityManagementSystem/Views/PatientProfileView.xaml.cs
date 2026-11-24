@@ -49,6 +49,7 @@ public partial class PatientProfileView : UserControl
             patientService,
             pregnancyService,
             _recordVersionService,
+            app.RegionalSettings,
             patientId);
 
         DataContext = _viewModel;
@@ -181,8 +182,11 @@ public partial class PatientProfileView : UserControl
             return;
         }
 
+        var app = (App)Application.Current;
+
         var historyViewModel = new PregnancyHistoryViewModel(
             _recordVersionService,
+            app.RegionalSettings,
             pregnancyCard.Pregnancy.Id);
 
         await historyViewModel.LoadHistoryAsync();
@@ -252,8 +256,11 @@ public partial class PatientProfileView : UserControl
             return;
         }
 
+        var app = (App)Application.Current;
+
         var historyViewModel = new LaboratoryResultHistoryViewModel(
             _recordVersionService,
+            app.RegionalSettings,
             laboratoryResult.Id);
 
         await historyViewModel.LoadHistoryAsync();

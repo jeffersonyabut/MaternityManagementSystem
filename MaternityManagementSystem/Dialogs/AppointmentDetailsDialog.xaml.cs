@@ -1,4 +1,3 @@
-
 using System;
 using System.Globalization;
 using System.Windows;
@@ -23,9 +22,6 @@ public partial class AppointmentDetailsDialog : Window
 
 public sealed class UtcToPhilippineTimeConverter : IValueConverter
 {
-    private static readonly TimeZoneInfo PhilippineTimeZone =
-        TimeZoneInfo.FindSystemTimeZoneById("Singapore Standard Time");
-
     public object Convert(
         object value,
         Type targetType,
@@ -37,18 +33,12 @@ public sealed class UtcToPhilippineTimeConverter : IValueConverter
             return "Not available";
         }
 
-        DateTime utc = DateTime.SpecifyKind(
-            utcDateTime,
-            DateTimeKind.Utc);
+        if (Application.Current is not App app)
+        {
+            return "Not available";
+        }
 
-        DateTime philippineTime =
-            TimeZoneInfo.ConvertTimeFromUtc(
-                utc,
-                PhilippineTimeZone);
-
-        return philippineTime.ToString(
-            "MMMM dd, yyyy · hh:mm tt",
-            CultureInfo.InvariantCulture);
+        return app.RegionalSettings.FormatDateTime(utcDateTime);
     }
 
     public object ConvertBack(
