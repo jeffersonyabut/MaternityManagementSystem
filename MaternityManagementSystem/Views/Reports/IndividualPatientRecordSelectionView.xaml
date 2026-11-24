@@ -1,7 +1,12 @@
 <UserControl x:Class="MaternityManagementSystem.Views.Reports.IndividualPatientRecordSelectionView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             Background="Transparent">
+             Background="Transparent"
+             xmlns:converters="clr-namespace:MaternityManagementSystem.Converters">
+    <UserControl.Resources>
+        <converters:RegionalDateOnlyConverter
+        x:Key="RegionalDateOnlyConverter"/>
+    </UserControl.Resources>
 
     <Grid Background="#F5F5FA">
         <ScrollViewer VerticalScrollBarVisibility="Auto">
@@ -132,7 +137,8 @@
                                                     Width="*"/>
 
                                 <DataGridTextColumn Header="Date of Birth"
-                                                    Binding="{Binding DateOfBirth, StringFormat={}{0:MMM dd, yyyy}}"
+                                                    Binding="{Binding DateOfBirth,
+                                                        Converter={StaticResource RegionalDateOnlyConverter}}"
                                                     Width="140"/>
 
                                 <DataGridTextColumn Header="Contact Number"

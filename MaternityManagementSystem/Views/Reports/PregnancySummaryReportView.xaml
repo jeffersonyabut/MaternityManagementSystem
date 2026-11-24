@@ -1,13 +1,19 @@
 <UserControl x:Class="MaternityManagementSystem.Views.Reports.PregnancySummaryReportView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
-
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:converters="clr-namespace:MaternityManagementSystem.Converters">
 
     <UserControl.Resources>
         <BooleanToVisibilityConverter
-        x:Key="BooleanToVisibilityConverter"/>
+            x:Key="BooleanToVisibilityConverter"/>
+
+        <converters:RegionalDateOnlyConverter
+            x:Key="RegionalDateOnlyConverter"/>
+
+        <converters:RegionalDateTimeConverter
+            x:Key="RegionalDateTimeConverter"/>
     </UserControl.Resources>
-    
+
     <Grid Background="#F5F5FA">
         <ScrollViewer VerticalScrollBarVisibility="Auto">
             <StackPanel Margin="28">
@@ -297,11 +303,13 @@
                                                     Width="100"/>
 
                                 <DataGridTextColumn Header="LMP"
-                                                    Binding="{Binding LastMenstrualPeriod}"
+                                                    Binding="{Binding LastMenstrualPeriod,
+                                                        Converter={StaticResource RegionalDateOnlyConverter}}"
                                                     Width="110"/>
 
                                 <DataGridTextColumn Header="EDD"
-                                                    Binding="{Binding EstimatedDueDate}"
+                                                    Binding="{Binding EstimatedDueDate,
+                                                        Converter={StaticResource RegionalDateOnlyConverter}}"
                                                     Width="110"/>
 
                                 <DataGridTextColumn Header="Outcome"
@@ -324,14 +332,16 @@
                         </DataGrid>
 
                         <!-- Generated Date -->
-                        <TextBlock Text="{Binding Report.GeneratedAtUtc,
-                                                  StringFormat='Generated: {0:MMM dd, yyyy hh:mm tt} UTC'}"
-                                   FontSize="11"
+                        <TextBlock FontSize="11"
                                    Foreground="#9993A3"
                                    HorizontalAlignment="Right"
                                    Margin="0,14,0,0"
                                    Visibility="{Binding HasGeneratedReport,
-                                                        Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                                                        Converter={StaticResource BooleanToVisibilityConverter}}">
+                            <Run Text="Generated: "/>
+                            <Run Text="{Binding Report.GeneratedAtUtc,
+                                                Converter={StaticResource RegionalDateTimeConverter}}"/>
+                        </TextBlock>
 
                     </StackPanel>
                 </Border>

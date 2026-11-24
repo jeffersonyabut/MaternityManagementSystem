@@ -6,7 +6,12 @@
 
     <UserControl.Resources>
         <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
-        <converters:UtcToLocalDateTimeConverter x:Key="UtcToLocalDateTimeConverter"/>
+
+        <converters:RegionalDateOnlyConverter
+            x:Key="RegionalDateOnlyConverter"/>
+
+        <converters:RegionalDateTimeConverter
+            x:Key="RegionalDateTimeConverter"/>
 
         <Style x:Key="ReportLabelStyle" TargetType="TextBlock">
             <Setter Property="FontSize" Value="12"/>
@@ -275,9 +280,13 @@
                                     <TextBlock FontSize="13"
                                                FontWeight="SemiBold"
                                                Foreground="#29243B">
-                                        <Run Text="{Binding Report.StartDate, TargetNullValue=Any, StringFormat={}{0:MMM dd, yyyy}}"/>
+                                        <Run Text="{Binding Report.StartDate,
+                                            TargetNullValue=Any,
+                                            Converter={StaticResource RegionalDateOnlyConverter}}"/>
                                         <Run Text=" — "/>
-                                        <Run Text="{Binding Report.EndDate, TargetNullValue=Any, StringFormat={}{0:MMM dd, yyyy}}"/>
+                                        <Run Text="{Binding Report.EndDate,
+                                            TargetNullValue=Any,
+                                            Converter={StaticResource RegionalDateOnlyConverter}}"/>
                                     </TextBlock>
                                 </StackPanel>
 
@@ -305,8 +314,7 @@
                                        Foreground="#777184">
                                 <Run Text="Generated: "/>
                                 <Run Text="{Binding Report.GeneratedAtUtc,
-                                                    Converter={StaticResource UtcToLocalDateTimeConverter},
-                                                    StringFormat={}{0:MMM dd, yyyy hh:mm tt}}"/>
+                                    Converter={StaticResource RegionalDateTimeConverter}}"/>
                             </TextBlock>
 
                         </StackPanel>
@@ -367,7 +375,8 @@
                         <DataGrid.Columns>
 
                             <DataGridTextColumn Header="Date"
-                                                Binding="{Binding AppointmentDate, StringFormat={}{0:MMM dd, yyyy}}"
+                                                Binding="{Binding AppointmentDate,
+                                                    Converter={StaticResource RegionalDateOnlyConverter}}"
                                                 Width="110"/>
 
                             <DataGridTextColumn Header="Start Time"

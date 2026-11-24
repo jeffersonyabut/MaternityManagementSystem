@@ -6,7 +6,12 @@
 
     <UserControl.Resources>
         <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
-        <converters:UtcToLocalDateTimeConverter x:Key="UtcToLocalDateTimeConverter"/>
+
+        <converters:RegionalDateOnlyConverter
+            x:Key="RegionalDateOnlyConverter"/>
+
+        <converters:RegionalDateTimeConverter
+            x:Key="RegionalDateTimeConverter"/>
 
         <Style x:Key="ReportLabelStyle" TargetType="TextBlock">
             <Setter Property="FontSize" Value="12"/>
@@ -257,8 +262,7 @@
                                                Foreground="#777184"/>
 
                                     <TextBlock Text="{Binding Report.GeneratedAtUtc,
-                                                              Converter={StaticResource UtcToLocalDateTimeConverter},
-                                                              StringFormat={}{0:MMM dd, yyyy hh:mm tt}}"
+                                                              Converter={StaticResource RegionalDateTimeConverter}}"
                                                FontSize="13"
                                                FontWeight="SemiBold"
                                                Foreground="#29243B"/>
@@ -288,8 +292,8 @@
                                                        Foreground="#777184"/>
 
                                             <TextBlock Text="{Binding Report.StartDate,
-                                                                      TargetNullValue=Any,
-                                                                      StringFormat={}{0:MMM dd, yyyy}}"
+                                                                      Converter={StaticResource RegionalDateOnlyConverter},
+                                                                      TargetNullValue=Any}"
                                                        FontSize="13"
                                                        FontWeight="SemiBold"
                                                        Foreground="#29243B"/>
@@ -302,8 +306,8 @@
                                                        Foreground="#777184"/>
 
                                             <TextBlock Text="{Binding Report.EndDate,
-                                                                      TargetNullValue=Any,
-                                                                      StringFormat={}{0:MMM dd, yyyy}}"
+                                                                      Converter={StaticResource RegionalDateOnlyConverter},
+                                                                      TargetNullValue=Any}"
                                                        FontSize="13"
                                                        FontWeight="SemiBold"
                                                        Foreground="#29243B"/>
@@ -437,7 +441,8 @@
                             </DataGridTemplateColumn>
 
                             <DataGridTextColumn Header="Date of Birth"
-                                                Binding="{Binding DateOfBirth, StringFormat={}{0:MMM dd, yyyy}}"
+                                                Binding="{Binding DateOfBirth,
+                                                                  Converter={StaticResource RegionalDateOnlyConverter}}"
                                                 Width="120"/>
 
                             <DataGridTextColumn Header="Sex"
@@ -458,8 +463,7 @@
 
                             <DataGridTextColumn Header="Registration Date"
                                                 Binding="{Binding CreatedAtUtc,
-                                                                  Converter={StaticResource UtcToLocalDateTimeConverter},
-                                                                  StringFormat={}{0:MMM dd, yyyy hh:mm tt}}"
+                                                                  Converter={StaticResource RegionalDateTimeConverter}}"
                                                 Width="165"/>
 
                         </DataGrid.Columns>

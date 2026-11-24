@@ -6,7 +6,12 @@
 
     <UserControl.Resources>
         <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
-        <converters:UtcToLocalDateTimeConverter x:Key="UtcToLocalDateTimeConverter"/>
+
+        <converters:RegionalDateOnlyConverter
+            x:Key="RegionalDateOnlyConverter"/>
+
+        <converters:RegionalDateTimeConverter
+            x:Key="RegionalDateTimeConverter"/>
 
         <Style x:Key="ReportLabelStyle" TargetType="TextBlock">
             <Setter Property="FontSize" Value="12"/>
@@ -197,20 +202,19 @@
                             CornerRadius="10"
                             Padding="16"
                             Margin="0,12,0,18">
-                        
+
                         <Border.Style>
                             <Style TargetType="Border">
                                 <Setter Property="Visibility" Value="Collapsed"/>
 
                                 <Style.Triggers>
                                     <DataTrigger Binding="{Binding HasGeneratedReport}"
-                         Value="True">
+                                                 Value="True">
                                         <Setter Property="Visibility" Value="Visible"/>
                                     </DataTrigger>
                                 </Style.Triggers>
                             </Style>
                         </Border.Style>
-
 
                         <StackPanel>
 
@@ -275,9 +279,13 @@
                                     <TextBlock FontSize="13"
                                                FontWeight="SemiBold"
                                                Foreground="#29243B">
-                                        <Run Text="{Binding Report.StartDate, TargetNullValue=Any, StringFormat={}{0:MMM dd, yyyy}}"/>
+                                        <Run Text="{Binding Report.StartDate,
+                                                            Converter={StaticResource RegionalDateOnlyConverter},
+                                                            TargetNullValue=Any}"/>
                                         <Run Text=" — "/>
-                                        <Run Text="{Binding Report.EndDate, TargetNullValue=Any, StringFormat={}{0:MMM dd, yyyy}}"/>
+                                        <Run Text="{Binding Report.EndDate,
+                                                            Converter={StaticResource RegionalDateOnlyConverter},
+                                                            TargetNullValue=Any}"/>
                                     </TextBlock>
                                 </StackPanel>
 
@@ -299,8 +307,7 @@
                                        Foreground="#777184">
                                 <Run Text="Generated: "/>
                                 <Run Text="{Binding Report.GeneratedAtUtc,
-                                                    Converter={StaticResource UtcToLocalDateTimeConverter},
-                                                    StringFormat={}{0:MMM dd, yyyy hh:mm tt}}"/>
+                                                    Converter={StaticResource RegionalDateTimeConverter}}"/>
                             </TextBlock>
 
                         </StackPanel>
@@ -329,8 +336,11 @@
                         </TextBlock.Style>
                     </TextBlock>
 
+
                     <!-- Prenatal Visit Records -->
                     <DataGrid ItemsSource="{Binding Report.PrenatalVisits}"
+                              Background="White"
+                              Foreground="#29243B"
                               AutoGenerateColumns="False"
                               IsReadOnly="True"
                               CanUserAddRows="False"
@@ -340,39 +350,51 @@
                               HeadersVisibility="Column"
                               GridLinesVisibility="Horizontal"
                               RowHeaderWidth="0"
+                              RowHeight="38"
+                              MinRowHeight="38"
                               MinHeight="180"
                               MaxHeight="600"
                               ScrollViewer.HorizontalScrollBarVisibility="Auto"
                               ScrollViewer.VerticalScrollBarVisibility="Auto">
 
-                        <DataGrid.Style>
-                            <Style TargetType="DataGrid">
-                                <Setter Property="Visibility" Value="Collapsed"/>
-
-                                <Style.Triggers>
-                                    <DataTrigger Binding="{Binding HasPrenatalVisits}"
-                                                 Value="True">
-                                        <Setter Property="Visibility" Value="Visible"/>
-                                    </DataTrigger>
-                                </Style.Triggers>
+                        <DataGrid.ColumnHeaderStyle>
+                            <Style TargetType="DataGridColumnHeader">
+                                <Setter Property="Background" Value="#F3F0F8"/>
+                                <Setter Property="Foreground" Value="#29243B"/>
+                                <Setter Property="FontWeight" Value="SemiBold"/>
+                                <Setter Property="FontSize" Value="12"/>
+                                <Setter Property="Padding" Value="10,12"/>
+                                <Setter Property="BorderBrush" Value="#EAE7F0"/>
+                                <Setter Property="BorderThickness" Value="0,0,0,1"/>
                             </Style>
-                        </DataGrid.Style>
+                        </DataGrid.ColumnHeaderStyle>
+
+                        <DataGrid.CellStyle>
+                            <Style TargetType="DataGridCell">
+                                <Setter Property="Foreground" Value="#29243B"/>
+                                <Setter Property="Background" Value="White"/>
+                                <Setter Property="Padding" Value="10,8"/>
+                                <Setter Property="BorderThickness" Value="0"/>
+                                <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+                            </Style>
+                        </DataGrid.CellStyle>
 
                         <DataGrid.Columns>
 
                             <DataGridTextColumn Header="Visit Date"
-                                                Binding="{Binding VisitDate, StringFormat={}{0:MMM dd, yyyy}}"
-                                                Width="115"/>
+                            Binding="{Binding VisitDate, Converter={StaticResource RegionalDateOnlyConverter}}"
+                            Width="115"/>
 
                             <DataGridTextColumn Header="Patient No."
-                                                Binding="{Binding Pregnancy.Patient.PatientNumber}"
-                                                Width="115"/>
+                            Binding="{Binding Pregnancy.Patient.PatientNumber}"
+                            Width="115"/>
 
                             <DataGridTemplateColumn Header="Patient Name"
-                                                    Width="190">
+                                Width="190">
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
-                                        <TextBlock TextTrimming="CharacterEllipsis">
+                                        <TextBlock Foreground="#29243B"
+                               TextTrimming="CharacterEllipsis">
                                             <TextBlock.Text>
                                                 <MultiBinding StringFormat="{}{0} {1} {2}">
                                                     <Binding Path="Pregnancy.Patient.FirstName"/>
@@ -386,27 +408,29 @@
                             </DataGridTemplateColumn>
 
                             <DataGridTextColumn Header="Pregnancy Status"
-                                                Binding="{Binding Pregnancy.Status}"
-                                                Width="115"/>
+                            Binding="{Binding Pregnancy.Status}"
+                            Width="115"/>
 
                             <DataGridTextColumn Header="Vital Records"
-                                                Binding="{Binding VitalSigns.Count}"
-                                                Width="100"/>
+                            Binding="{Binding VitalSigns.Count}"
+                            Width="100"/>
 
                             <DataGridTemplateColumn Header="Clinical Notes"
-                                                    Width="*">
+                                Width="*">
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
-                                        <TextBlock Text="{Binding Notes}"
-                                                   TextTrimming="CharacterEllipsis"
-                                                   ToolTip="{Binding Notes}"
-                                                   TextWrapping="NoWrap"/>
+                                        <TextBlock Foreground="#29243B"
+                               Text="{Binding Notes}"
+                               TextTrimming="CharacterEllipsis"
+                               ToolTip="{Binding Notes}"
+                               TextWrapping="NoWrap"/>
                                     </DataTemplate>
                                 </DataGridTemplateColumn.CellTemplate>
                             </DataGridTemplateColumn>
 
                         </DataGrid.Columns>
                     </DataGrid>
+
 
                     <!-- Vital Signs Detail -->
                     <TextBlock Text="Vital Signs Details"
@@ -447,7 +471,8 @@
                                                    FontWeight="SemiBold"
                                                    Foreground="#7952B3"
                                                    Margin="0,0,0,10">
-                                            <Run Text="{Binding VisitDate, StringFormat={}{0:MMM dd, yyyy}}"/>
+                                            <Run Text="{Binding VisitDate,
+                                                                Converter={StaticResource RegionalDateOnlyConverter}}"/>
                                             <Run Text=" · "/>
                                             <Run Text="{Binding Pregnancy.Patient.FirstName}"/>
                                             <Run Text=" "/>

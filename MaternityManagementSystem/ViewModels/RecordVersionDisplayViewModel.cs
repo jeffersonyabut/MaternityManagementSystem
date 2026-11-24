@@ -10,6 +10,8 @@ public class RecordVersionDisplayViewModel
 
     public DateTime ChangedAtUtc { get; set; }
 
+    public string ChangedAtDisplay { get; set; } = string.Empty;
+
     public ObservableCollection<RecordVersionFieldChange> Changes { get; set; } = new();
 }
 

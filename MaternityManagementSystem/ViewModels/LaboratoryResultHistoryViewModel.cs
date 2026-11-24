@@ -66,7 +66,8 @@ public partial class LaboratoryResultHistoryViewModel : ObservableObject
                 var displayVersion = new RecordVersionDisplayViewModel
                 {
                     Username = version.Username,
-                    ChangedAtUtc = _regionalSettingsService.ConvertUtcToLocal(
+                    ChangedAtUtc = version.ChangedAtUtc,
+                    ChangedAtDisplay = _regionalSettingsService.FormatDateTime(
                         version.ChangedAtUtc)
                 };
 

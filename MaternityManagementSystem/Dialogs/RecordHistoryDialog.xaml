@@ -80,8 +80,7 @@
                                                        Foreground="#FF171717"/>
 
                                             <TextBlock DockPanel.Dock="Right"
-                                                       Text="{Binding ChangedAtUtc,
-                                                       StringFormat={}{0:MMM dd, yyyy hh:mm tt}}"
+                                                       Text="{Binding ChangedAtDisplay}"
                                                        FontSize="12"
                                                        Foreground="#FF737373"/>
                                         </DockPanel>
