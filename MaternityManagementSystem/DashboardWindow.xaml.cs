@@ -51,12 +51,46 @@ public partial class DashboardWindow : Window
             ? Visibility.Visible
             : Visibility.Collapsed;
 
+        SystemSettingsButton.Visibility = user.IsAdmin
+            ? Visibility.Visible
+            : Visibility.Collapsed;
+
         AuditLogManagementButton.Click += AuditLogManagementButton_Click;
 
         StaffManagementButton.Click += StaffManagementButton_Click;
 
         DataContext = _navigationService;
+        Loaded += DashboardWindow_Loaded;
     }
+
+    private async void DashboardWindow_Loaded(
+    object sender,
+    RoutedEventArgs e)
+    {
+        var authorizationService = new AuthorizationService(
+            _sessionService);
+
+        var systemSettingService = new SystemSettingService(
+            new SystemSettingRepository(),
+            authorizationService,
+            _sessionService);
+
+        try
+        {
+            var setting = await systemSettingService.GetByKeyAsync(
+                SystemSettingKeys.Clinic.Name);
+
+            ClinicNameText.Text = string.IsNullOrWhiteSpace(setting?.Value)
+                ? SystemSettingDefaults.Values[SystemSettingKeys.Clinic.Name]
+                : setting.Value;
+        }
+        catch
+        {
+            ClinicNameText.Text =
+                SystemSettingDefaults.Values[SystemSettingKeys.Clinic.Name];
+        }
+    }
+
 
     private void DashboardButton_Click(
         object sender,
@@ -472,6 +506,48 @@ public partial class DashboardWindow : Window
     }
 
 
+
+    // SYSTEM SETTINGS NAVIGATION
+
+    public void ShowSystemSettings()
+    {
+        var app = (App)Application.Current;
+
+        var sessionService = app.SessionService;
+
+        var authorizationService = new AuthorizationService(
+            sessionService);
+
+        var systemSettingRepository = new SystemSettingRepository();
+
+        var systemSettingService = new SystemSettingService(
+            systemSettingRepository,
+            authorizationService,
+            sessionService);
+
+        var viewModel = new SystemSettingsViewModel(
+            systemSettingService);
+
+        var view = new SystemSettingsView
+        {
+            DataContext = viewModel
+        };
+
+        view.Loaded += async (_, _) =>
+        {
+            await viewModel.LoadSettingsAsync();
+        };
+
+        _navigationService.NavigateToView(view);
+    }
+
+
+    private void SystemSettingsButton_Click(
+    object sender,
+    RoutedEventArgs e)
+    {
+        ShowSystemSettings();
+    }
 
 
 }

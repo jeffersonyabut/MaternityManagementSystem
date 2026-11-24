@@ -26,11 +26,15 @@ public partial class App : Application
                 await db.Database.MigrateAsync();
             }
 
-            // 2. Check whether an administrator/staff account exists.
+            // 2. Initialize missing system settings.
+            var settingsInitializer = new SystemSettingInitializer();
+            await settingsInitializer.InitializeAsync();
+
+            // 3. Check whether an administrator/staff account exists.
             var repository = new StaffRepository();
             bool hasStaff = await repository.HasAnyStaffAsync();
 
-            // 3. Show initial admin setup if no staff exists.
+            // 4. Show initial admin setup if no staff exists.
             if (!hasStaff)
             {
                 var setupWindow = new AdminSetupWindow();
@@ -43,7 +47,7 @@ public partial class App : Application
                 }
             }
 
-            // 4. Launch the main application.
+            // 5. Launch the main application.
             var mainWindow = new MainWindow();
 
             MainWindow = mainWindow;

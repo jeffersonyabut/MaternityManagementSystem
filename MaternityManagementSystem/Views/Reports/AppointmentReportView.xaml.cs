@@ -10,6 +10,8 @@ using System.Windows.Input;
 using System.Windows.Media;
 using MaternityManagementSystem.Models;
 using MaternityManagementSystem.Models.Reports;
+using MaternityManagementSystem.Repositories;
+using MaternityManagementSystem.Services;
 using MaternityManagementSystem.ViewModels.Reports;
 
 namespace MaternityManagementSystem.Views.Reports;
@@ -57,7 +59,7 @@ public partial class AppointmentReportView : UserControl
         BackRequested?.Invoke();
     }
 
-    private void PrintPreviewButton_Click(
+    private async void PrintPreviewButton_Click(
         object sender,
         RoutedEventArgs e)
     {
@@ -69,7 +71,24 @@ public partial class AppointmentReportView : UserControl
 
         try
         {
-            var document = CreatePrintDocument(_viewModel.Report);
+            var app = (App)Application.Current;
+
+            var systemSettingService = new SystemSettingService(
+                new SystemSettingRepository(),
+                new AuthorizationService(app.SessionService),
+                app.SessionService);
+
+            var clinicSetting =
+                await systemSettingService.GetByKeyAsync(
+                    SystemSettingKeys.Clinic.Name);
+
+            var clinicName = string.IsNullOrWhiteSpace(clinicSetting?.Value)
+                ? SystemSettingDefaults.Values[SystemSettingKeys.Clinic.Name]
+                : clinicSetting.Value;
+
+            var document = CreatePrintDocument(
+                _viewModel.Report,
+                clinicName);
 
             var viewer = new DocumentViewer
             {
@@ -96,7 +115,7 @@ public partial class AppointmentReportView : UserControl
                 {
                     printDialog.PrintDocument(
                         document.DocumentPaginator,
-                        "Golddie - Appointment Report");
+                        $"{clinicName} - Appointment Report");
                 }
             };
 
@@ -143,7 +162,7 @@ public partial class AppointmentReportView : UserControl
 
                     printDialog.PrintDocument(
                         document.DocumentPaginator,
-                        "Golddie - Appointment Report");
+                        $"{clinicName} - Appointment Report");
                 }
                 catch (Exception ex)
                 {
@@ -200,14 +219,17 @@ public partial class AppointmentReportView : UserControl
     }
 
     private static FixedDocument CreatePrintDocument(
-        AppointmentReport report)
+        AppointmentReport report,
+        string clinicName)
     {
         var document = new FixedDocument();
 
         document.DocumentPaginator.PageSize =
             new Size(PageWidth, PageHeight);
 
-        var composer = new ReportPageComposer(report);
+        var composer = new ReportPageComposer(
+            report,
+            clinicName);
 
         composer.AddReportSummary();
         composer.AddAppointments();
@@ -224,7 +246,11 @@ public partial class AppointmentReportView : UserControl
 
         for (var i = 0; i < pages.Count; i++)
         {
-            AddPageFooter(pages[i], i + 1, pages.Count);
+            AddPageFooter(
+                pages[i],
+                i + 1,
+                pages.Count,
+                clinicName);
 
             document.Pages.Add(
                 new PageContent
@@ -239,7 +265,8 @@ public partial class AppointmentReportView : UserControl
     private static void AddPageFooter(
         FixedPage page,
         int pageNumber,
-        int totalPages)
+        int totalPages,
+        string clinicName)
     {
         var separator = new Border
         {
@@ -255,7 +282,7 @@ public partial class AppointmentReportView : UserControl
 
         AddTextToPage(
             page,
-            "GOLDDIE · CLINIC MANAGEMENT",
+            clinicName,
             MarginSize,
             FooterTop + 5,
             ContentWidth / 2,
@@ -376,13 +403,18 @@ public partial class AppointmentReportView : UserControl
         public List<FixedPage> Pages { get; } = [];
 
         private readonly AppointmentReport _report;
+        private readonly string _clinicName;
 
         private FixedPage _currentPage = null!;
         private double _currentTop;
 
-        public ReportPageComposer(AppointmentReport report)
+        public ReportPageComposer(
+            AppointmentReport report,
+            string clinicName)
         {
             _report = report;
+            _clinicName = clinicName;
+
             CreateNewPage();
         }
 
@@ -399,7 +431,7 @@ public partial class AppointmentReportView : UserControl
 
             AddTextToPage(
                 _currentPage,
-                "GOLDDIE · CLINIC MANAGEMENT",
+                _clinicName,
                 MarginSize,
                 24,
                 ContentWidth,

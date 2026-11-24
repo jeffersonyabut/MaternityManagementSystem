@@ -10,6 +10,8 @@ using System.Windows.Media;
 using System.Windows.Input;
 using MaternityManagementSystem.Models;
 using MaternityManagementSystem.Models.Reports;
+using MaternityManagementSystem.Repositories;
+using MaternityManagementSystem.Services;
 
 namespace MaternityManagementSystem.Views.Reports;
 
@@ -59,19 +61,46 @@ public partial class IndividualPatientRecordReportView : UserControl
     }
 
     private void AllReportsButton_Click(
-    object sender,
-    RoutedEventArgs e)
+        object sender,
+        RoutedEventArgs e)
     {
         AllReportsRequested?.Invoke();
     }
 
-    private void PrintPreviewButton_Click(
+    private async void PrintPreviewButton_Click(
         object sender,
         RoutedEventArgs e)
     {
         try
         {
-            var document = CreatePrintDocument(_report);
+            var app = (App)Application.Current;
+            var sessionService = app.SessionService;
+            var authorizationService =
+                new AuthorizationService(sessionService);
+
+            var systemSettingService = new SystemSettingService(
+                new SystemSettingRepository(),
+                authorizationService,
+                sessionService);
+
+            string clinicName;
+
+            try
+            {
+                var setting = await systemSettingService.GetByKeyAsync(
+                    SystemSettingKeys.Clinic.Name);
+
+                clinicName = string.IsNullOrWhiteSpace(setting?.Value)
+                    ? SystemSettingDefaults.Values[SystemSettingKeys.Clinic.Name]
+                    : setting.Value;
+            }
+            catch
+            {
+                clinicName =
+                    SystemSettingDefaults.Values[SystemSettingKeys.Clinic.Name];
+            }
+
+            var document = CreatePrintDocument(_report, clinicName);
 
             var viewer = new DocumentViewer
             {
@@ -202,14 +231,26 @@ public partial class IndividualPatientRecordReportView : UserControl
     }
 
     private static FixedDocument CreatePrintDocument(
-        IndividualPatientRecordReport report)
+        IndividualPatientRecordReport report,
+        string clinicName)
     {
         var document = new FixedDocument();
 
         document.DocumentPaginator.PageSize =
             new Size(PageWidth, PageHeight);
 
-        var composer = new ReportPageComposer();
+        var patientFullName = string.Join(
+            " ",
+            new[]
+            {
+                report.Patient.FirstName,
+                report.Patient.MiddleName,
+                report.Patient.LastName
+            }.Where(value => !string.IsNullOrWhiteSpace(value)));
+
+        var composer = new ReportPageComposer(
+            clinicName,
+            patientFullName);
 
         composer.AddPatientInformation(report.Patient);
         composer.AddObstetricHistory(report);
@@ -230,7 +271,11 @@ public partial class IndividualPatientRecordReportView : UserControl
 
         for (var i = 0; i < pages.Count; i++)
         {
-            AddPageFooter(pages[i], i + 1, pages.Count);
+            AddPageFooter(
+                pages[i],
+                i + 1,
+                pages.Count,
+                clinicName);
 
             document.Pages.Add(
                 new PageContent
@@ -245,7 +290,8 @@ public partial class IndividualPatientRecordReportView : UserControl
     private static void AddPageFooter(
         FixedPage page,
         int pageNumber,
-        int totalPages)
+        int totalPages,
+        string clinicName)
     {
         var separator = new Border
         {
@@ -261,7 +307,7 @@ public partial class IndividualPatientRecordReportView : UserControl
 
         AddTextToPage(
             page,
-            "GOLDDIE · CLINIC MANAGEMENT",
+            clinicName,
             MarginSize,
             FooterTop + 5,
             ContentWidth / 2,
@@ -349,13 +395,23 @@ public partial class IndividualPatientRecordReportView : UserControl
 
     private sealed class ReportPageComposer
     {
+        private readonly string _clinicName;
+        private readonly string _reportPatientName;
+
         public List<FixedPage> Pages { get; } = [];
 
         private FixedPage _currentPage = null!;
         private double _currentTop;
 
-        public ReportPageComposer()
+        public ReportPageComposer(
+            string clinicName,
+            string patientName)
         {
+            _clinicName = clinicName;
+            _reportPatientName = string.IsNullOrWhiteSpace(patientName)
+                ? "Patient"
+                : patientName;
+
             CreateNewPage();
         }
 
@@ -372,7 +428,7 @@ public partial class IndividualPatientRecordReportView : UserControl
 
             AddTextToPage(
                 _currentPage,
-                "GOLDDIE · CLINIC MANAGEMENT",
+                _clinicName,
                 MarginSize,
                 24,
                 ContentWidth,
@@ -404,13 +460,6 @@ public partial class IndividualPatientRecordReportView : UserControl
                 FontWeights.Normal);
 
             _currentTop = 110;
-        }
-
-        private string _reportPatientName = "Patient";
-
-        public void SetPatientName(string name)
-        {
-            _reportPatientName = name;
         }
 
         private void EnsureSpace(double requiredHeight)
@@ -509,21 +558,7 @@ public partial class IndividualPatientRecordReportView : UserControl
 
         public void AddPatientInformation(Patient patient)
         {
-            var fullName = string.Join(
-                " ",
-                new[]
-                {
-                    patient.FirstName,
-                    patient.MiddleName,
-                    patient.LastName
-                }.Where(value =>
-                    !string.IsNullOrWhiteSpace(value)));
-
-            SetPatientName(fullName);
-
             AddSectionTitle("1. PATIENT INFORMATION");
-
-            EnsureSpace(150);
 
             double columnWidth = ContentWidth / 3;
             double rowHeight = 43;
@@ -808,7 +843,7 @@ public partial class IndividualPatientRecordReportView : UserControl
             {
                 Text = text,
                 FontFamily = new FontFamily("Arial"),
-                FontSize = isHeader ? 8 : 8,
+                FontSize = 8,
                 FontWeight = isHeader
                     ? FontWeights.Bold
                     : FontWeights.Normal,

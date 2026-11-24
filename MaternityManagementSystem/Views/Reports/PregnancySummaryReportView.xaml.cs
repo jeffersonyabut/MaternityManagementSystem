@@ -1,3 +1,4 @@
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -7,7 +8,10 @@ using System.Windows.Controls;
 using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
+using MaternityManagementSystem.Models;
 using MaternityManagementSystem.Models.Reports;
+using MaternityManagementSystem.Repositories;
+using MaternityManagementSystem.Services;
 using MaternityManagementSystem.ViewModels.Reports;
 
 namespace MaternityManagementSystem.Views.Reports;
@@ -55,7 +59,7 @@ public partial class PregnancySummaryReportView : UserControl
         BackRequested?.Invoke();
     }
 
-    private void PrintPreviewButton_Click(
+    private async void PrintPreviewButton_Click(
         object sender,
         RoutedEventArgs e)
     {
@@ -67,7 +71,24 @@ public partial class PregnancySummaryReportView : UserControl
 
         try
         {
-            var document = CreatePrintDocument(_viewModel.Report);
+            var app = (App)Application.Current;
+
+            var systemSettingService = new SystemSettingService(
+                new SystemSettingRepository(),
+                new AuthorizationService(app.SessionService),
+                app.SessionService);
+
+            var clinicSetting =
+                await systemSettingService.GetByKeyAsync(
+                    SystemSettingKeys.Clinic.Name);
+
+            var clinicName = string.IsNullOrWhiteSpace(clinicSetting?.Value)
+                ? SystemSettingDefaults.Values[SystemSettingKeys.Clinic.Name]
+                : clinicSetting.Value;
+
+            var document = CreatePrintDocument(
+                _viewModel.Report,
+                clinicName);
 
             var viewer = new DocumentViewer
             {
@@ -94,7 +115,7 @@ public partial class PregnancySummaryReportView : UserControl
                 {
                     printDialog.PrintDocument(
                         document.DocumentPaginator,
-                        "Golddie - Pregnancy Summary Report");
+                        $"{clinicName} - Pregnancy Summary Report");
                 }
             };
 
@@ -141,7 +162,7 @@ public partial class PregnancySummaryReportView : UserControl
 
                     printDialog.PrintDocument(
                         document.DocumentPaginator,
-                        "Golddie - Pregnancy Summary Report");
+                        $"{clinicName} - Pregnancy Summary Report");
                 }
                 catch (Exception ex)
                 {
@@ -198,14 +219,17 @@ public partial class PregnancySummaryReportView : UserControl
     }
 
     private static FixedDocument CreatePrintDocument(
-        PregnancySummaryReport report)
+        PregnancySummaryReport report,
+        string clinicName)
     {
         var document = new FixedDocument();
 
         document.DocumentPaginator.PageSize =
             new Size(PageWidth, PageHeight);
 
-        var composer = new ReportPageComposer(report);
+        var composer = new ReportPageComposer(
+            report,
+            clinicName);
 
         composer.AddReportSummary();
         composer.AddPregnancies();
@@ -222,7 +246,11 @@ public partial class PregnancySummaryReportView : UserControl
 
         for (var i = 0; i < pages.Count; i++)
         {
-            AddPageFooter(pages[i], i + 1, pages.Count);
+            AddPageFooter(
+                pages[i],
+                i + 1,
+                pages.Count,
+                clinicName);
 
             document.Pages.Add(
                 new PageContent
@@ -237,7 +265,8 @@ public partial class PregnancySummaryReportView : UserControl
     private static void AddPageFooter(
         FixedPage page,
         int pageNumber,
-        int totalPages)
+        int totalPages,
+        string clinicName)
     {
         var separator = new Border
         {
@@ -253,7 +282,7 @@ public partial class PregnancySummaryReportView : UserControl
 
         AddTextToPage(
             page,
-            "GOLDDIE · CLINIC MANAGEMENT",
+            clinicName,
             MarginSize,
             FooterTop + 5,
             ContentWidth / 2,
@@ -373,16 +402,19 @@ public partial class PregnancySummaryReportView : UserControl
         public List<FixedPage> Pages { get; } = [];
 
         private readonly PregnancySummaryReport _report;
+        private readonly string _clinicName;
 
         private FixedPage _currentPage = null!;
         private double _currentTop;
 
         public ReportPageComposer(
-            PregnancySummaryReport report)
+            PregnancySummaryReport report,
+            string clinicName)
         {
             ArgumentNullException.ThrowIfNull(report);
 
             _report = report;
+            _clinicName = clinicName;
 
             CreateNewPage();
         }
@@ -400,7 +432,7 @@ public partial class PregnancySummaryReportView : UserControl
 
             AddTextToPage(
                 _currentPage,
-                "GOLDDIE · CLINIC MANAGEMENT",
+                _clinicName,
                 MarginSize,
                 24,
                 ContentWidth,
@@ -756,7 +788,7 @@ public partial class PregnancySummaryReportView : UserControl
                 FontSize = isHeader ? 8 : 7.5,
                 FontWeight = isHeader
                     ? FontWeights.Bold
-                    : FontWeights.Normal,   
+                    : FontWeights.Normal,
                 Foreground = foreground,
                 TextWrapping = TextWrapping.Wrap,
                 TextTrimming = TextTrimming.CharacterEllipsis,

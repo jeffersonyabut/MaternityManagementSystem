@@ -1,14 +1,16 @@
 
 using System;
 using System.Linq;
+using System.Printing;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Documents;
 using System.Windows.Media;
 using MaternityManagementSystem.Models;
 using MaternityManagementSystem.Models.Reports;
+using MaternityManagementSystem.Repositories;
+using MaternityManagementSystem.Services;
 using MaternityManagementSystem.ViewModels.Reports;
-using System.Printing;
 
 namespace MaternityManagementSystem.Views
 {
@@ -62,7 +64,7 @@ namespace MaternityManagementSystem.Views
         }
 
 
-        private void PrintPreviewButton_Click(
+        private async void PrintPreviewButton_Click(
             object sender,
             RoutedEventArgs e)
         {
@@ -81,7 +83,37 @@ namespace MaternityManagementSystem.Views
                     return;
                 }
 
-                var document = CreatePrintDocument(report);
+                var app = (App)Application.Current;
+
+                var sessionService = app.SessionService;
+
+                var authorizationService = new AuthorizationService(
+                    sessionService);
+
+                var systemSettingService = new SystemSettingService(
+                    new SystemSettingRepository(),
+                    authorizationService,
+                    sessionService);
+
+                string clinicName;
+
+                try
+                {
+                    var setting = await systemSettingService.GetByKeyAsync(
+                        SystemSettingKeys.Clinic.Name);
+
+                    clinicName = string.IsNullOrWhiteSpace(setting?.Value)
+                        ? SystemSettingDefaults.Values[SystemSettingKeys.Clinic.Name]
+                        : setting.Value;
+                }
+                catch
+                {
+                    clinicName =
+                        SystemSettingDefaults.Values[SystemSettingKeys.Clinic.Name];
+                }
+
+                var document = CreatePrintDocument(report, clinicName);
+
 
                 var viewer = new DocumentViewer
                 {
@@ -212,7 +244,8 @@ namespace MaternityManagementSystem.Views
 
 
         private static FixedDocument CreatePrintDocument(
-            PatientMasterListReport report)
+            PatientMasterListReport report,
+            string clinicName)
         {
             var document = new FixedDocument();
 
@@ -246,7 +279,8 @@ namespace MaternityManagementSystem.Views
                 AddPageHeading(
                     page,
                     pageNumber,
-                    report);
+                    report,
+                    clinicName);
 
                 var tableTop = pageNumber == 1 ? 220 : 105;
 
@@ -295,7 +329,11 @@ namespace MaternityManagementSystem.Views
                         TextAlignment.Center);
                 }
 
-                AddPageFooter(page, pageNumber, totalPages);
+                AddPageFooter(
+                    page,
+                    pageNumber,
+                    totalPages,
+                    clinicName);
 
                 var pageContent = new PageContent
                 {
@@ -322,13 +360,14 @@ namespace MaternityManagementSystem.Views
         private static void AddPageHeading(
             FixedPage page,
             int pageNumber,
-            PatientMasterListReport report)
+            PatientMasterListReport report,
+            string clinicName)
         {
             if (pageNumber == 1)
             {
                 AddText(
                     page,
-                    "GOLDDIE · CLINIC MANAGEMENT",
+                    clinicName,
                     MarginSize,
                     32,
                     ContentWidth,
@@ -443,7 +482,7 @@ namespace MaternityManagementSystem.Views
             {
                 AddText(
                     page,
-                    "GOLDDIE · CLINIC MANAGEMENT",
+                    clinicName,
                     MarginSize,
                     35,
                     ContentWidth,
@@ -617,7 +656,8 @@ namespace MaternityManagementSystem.Views
         private static void AddPageFooter(
             FixedPage page,
             int pageNumber,
-            int totalPages)
+            int totalPages,
+            string clinicName)
         {
             var footerTop = PageHeight - 35;
 
@@ -635,7 +675,7 @@ namespace MaternityManagementSystem.Views
 
             AddText(
                 page,
-                "GOLDDIE · CLINIC MANAGEMENT",
+                clinicName,
                 MarginSize,
                 footerTop + 5,
                 ContentWidth / 2,

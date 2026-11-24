@@ -16,6 +16,7 @@ public class ClinicDbContext : DbContext
     public DbSet<RecordVersion> RecordVersions => Set<RecordVersion>();
     public DbSet<LaboratoryResult> LaboratoryResults => Set<LaboratoryResult>();
     public DbSet<Appointment> Appointments => Set<Appointment>();
+    public DbSet<SystemSetting> SystemSettings => Set<SystemSetting>();
 
 
     public ClinicDbContext()
@@ -77,6 +78,25 @@ public class ClinicDbContext : DbContext
             entity.Property(staff => staff.Role)
                   .IsRequired()
                   .HasMaxLength(50);
+        });
+
+        modelBuilder.Entity<SystemSetting>(entity =>
+        {
+            entity.HasKey(setting => setting.Id);
+
+            entity.HasIndex(setting => setting.Key)
+                .IsUnique();
+
+            entity.Property(setting => setting.Key)
+                .IsRequired()
+                .HasMaxLength(100);
+
+            entity.Property(setting => setting.Value)
+                .IsRequired()
+                .HasMaxLength(2000);
+
+            entity.Property(setting => setting.UpdatedAtUtc)
+                .IsRequired();
         });
 
 

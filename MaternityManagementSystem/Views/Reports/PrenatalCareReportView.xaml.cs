@@ -10,6 +10,8 @@ using System.Windows.Input;
 using System.Windows.Media;
 using MaternityManagementSystem.Models;
 using MaternityManagementSystem.Models.Reports;
+using MaternityManagementSystem.Repositories;
+using MaternityManagementSystem.Services;
 using MaternityManagementSystem.ViewModels.Reports;
 
 namespace MaternityManagementSystem.Views
@@ -57,7 +59,7 @@ namespace MaternityManagementSystem.Views
             BackRequested?.Invoke();
         }
 
-        private void PrintPreviewButton_Click(
+        private async void PrintPreviewButton_Click(
             object sender,
             RoutedEventArgs e)
         {
@@ -68,7 +70,26 @@ namespace MaternityManagementSystem.Views
 
             try
             {
-                var document = CreatePrintDocument(_viewModel.Report);
+                var app = (App)Application.Current;
+
+                var systemSettingService = new SystemSettingService(
+                    new SystemSettingRepository(),
+                    new AuthorizationService(app.SessionService),
+                    app.SessionService);
+
+                var clinicSetting =
+                    await systemSettingService.GetByKeyAsync(
+                        SystemSettingKeys.Clinic.Name);
+
+                var clinicName = string.IsNullOrWhiteSpace(
+                    clinicSetting?.Value)
+                    ? SystemSettingDefaults.Values[
+                        SystemSettingKeys.Clinic.Name]
+                    : clinicSetting.Value;
+
+                var document = CreatePrintDocument(
+                    _viewModel.Report,
+                    clinicName);
 
                 var viewer = new DocumentViewer
                 {
@@ -199,14 +220,17 @@ namespace MaternityManagementSystem.Views
         }
 
         private static FixedDocument CreatePrintDocument(
-            PrenatalCareReport report)
+            PrenatalCareReport report,
+            string clinicName)
         {
             var document = new FixedDocument();
 
             document.DocumentPaginator.PageSize =
                 new Size(PageWidth, PageHeight);
 
-            var composer = new ReportPageComposer(report);
+            var composer = new ReportPageComposer(
+                report,
+                clinicName);
 
             composer.AddReportSummary();
 
@@ -227,7 +251,11 @@ namespace MaternityManagementSystem.Views
 
             for (var i = 0; i < pages.Count; i++)
             {
-                AddPageFooter(pages[i], i + 1, pages.Count);
+                AddPageFooter(
+                    pages[i],
+                    i + 1,
+                    pages.Count,
+                    clinicName);
 
                 document.Pages.Add(
                     new PageContent
@@ -242,7 +270,8 @@ namespace MaternityManagementSystem.Views
         private static void AddPageFooter(
             FixedPage page,
             int pageNumber,
-            int totalPages)
+            int totalPages,
+            string clinicName)
         {
             var separator = new Border
             {
@@ -258,7 +287,7 @@ namespace MaternityManagementSystem.Views
 
             AddTextToPage(
                 page,
-                "GOLDDIE · CLINIC MANAGEMENT",
+                clinicName,
                 MarginSize,
                 FooterTop + 5,
                 ContentWidth / 2,
@@ -344,13 +373,17 @@ namespace MaternityManagementSystem.Views
             public List<FixedPage> Pages { get; } = [];
 
             private readonly PrenatalCareReport _report;
+            private readonly string _clinicName;
 
             private FixedPage _currentPage = null!;
             private double _currentTop;
 
-            public ReportPageComposer(PrenatalCareReport report)
+            public ReportPageComposer(
+                PrenatalCareReport report,
+                string clinicName)
             {
                 _report = report;
+                _clinicName = clinicName;
                 CreateNewPage();
             }
 
@@ -367,7 +400,7 @@ namespace MaternityManagementSystem.Views
 
                 AddTextToPage(
                     _currentPage,
-                    "GOLDDIE · CLINIC MANAGEMENT",
+                    _clinicName,
                     MarginSize,
                     24,
                     ContentWidth,

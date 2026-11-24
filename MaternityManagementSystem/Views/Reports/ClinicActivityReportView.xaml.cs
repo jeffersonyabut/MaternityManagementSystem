@@ -6,7 +6,10 @@ using System.Windows.Controls;
 using System.Windows.Documents;
 using System.Windows.Media;
 using System.Printing;
+using MaternityManagementSystem.Models;
 using MaternityManagementSystem.Models.Reports;
+using MaternityManagementSystem.Repositories;
+using MaternityManagementSystem.Services;
 using MaternityManagementSystem.ViewModels.Reports;
 
 namespace MaternityManagementSystem.Views.Reports;
@@ -54,7 +57,7 @@ public partial class ClinicActivityReportView : UserControl
         BackRequested?.Invoke(this, EventArgs.Empty);
     }
 
-    private void PrintPreviewButton_Click(
+    private async void PrintPreviewButton_Click(
         object sender,
         RoutedEventArgs e)
     {
@@ -70,13 +73,42 @@ public partial class ClinicActivityReportView : UserControl
             return;
         }
 
-        FixedDocument document = CreateReportDocument(report);
+        try
+        {
+            var app = (App)Application.Current;
 
-        ShowPrintPreview(document);
+            var systemSettingService = new SystemSettingService(
+                new SystemSettingRepository(),
+                new AuthorizationService(app.SessionService),
+                app.SessionService);
+
+            var clinicSetting =
+                await systemSettingService.GetByKeyAsync(
+                    SystemSettingKeys.Clinic.Name);
+
+            var clinicName = string.IsNullOrWhiteSpace(clinicSetting?.Value)
+                ? SystemSettingDefaults.Values[SystemSettingKeys.Clinic.Name]
+                : clinicSetting.Value;
+
+            FixedDocument document = CreateReportDocument(
+                report,
+                clinicName);
+
+            ShowPrintPreview(document, clinicName);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(
+                ex.ToString(),
+                "Print Preview Error",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
+        }
     }
 
     private FixedDocument CreateReportDocument(
-        ClinicActivityReport report)
+        ClinicActivityReport report,
+        string clinicName)
     {
         var document = new FixedDocument();
 
@@ -102,7 +134,12 @@ public partial class ClinicActivityReportView : UserControl
                 Background = Brushes.White
             };
 
-            AddPageHeader(page, report, pageIndex + 1, totalPages);
+            AddPageHeader(
+                page,
+                report,
+                pageIndex + 1,
+                totalPages,
+                clinicName);
 
             bool isFirstPage = pageIndex == 0;
 
@@ -135,7 +172,11 @@ public partial class ClinicActivityReportView : UserControl
                     .ToList(),
                 isFirstPage);
 
-            AddPageFooter(page, pageIndex + 1, totalPages);
+            AddPageFooter(
+                page,
+                pageIndex + 1,
+                totalPages,
+                clinicName);
 
             var pageContent = new PageContent();
 
@@ -152,11 +193,12 @@ public partial class ClinicActivityReportView : UserControl
         FixedPage page,
         ClinicActivityReport report,
         int pageNumber,
-        int totalPages)
+        int totalPages,
+        string clinicName)
     {
         AddText(
             page,
-            "GOLDDIE · CLINIC MANAGEMENT",
+            clinicName,
             LeftMargin,
             TopMargin,
             400,
@@ -414,7 +456,8 @@ public partial class ClinicActivityReportView : UserControl
     private void AddPageFooter(
         FixedPage page,
         int pageNumber,
-        int totalPages)
+        int totalPages,
+        string clinicName)
     {
         double footerY = PageHeight - BottomMargin;
 
@@ -427,7 +470,7 @@ public partial class ClinicActivityReportView : UserControl
 
         AddText(
             page,
-            "GOLDDIE · CLINIC MANAGEMENT",
+            clinicName,
             LeftMargin,
             footerY,
             400,
@@ -614,11 +657,13 @@ public partial class ClinicActivityReportView : UserControl
         page.Children.Add(line);
     }
 
-    private void ShowPrintPreview(FixedDocument document)
+    private void ShowPrintPreview(
+        FixedDocument document,
+        string clinicName)
     {
         var previewWindow = new Window
         {
-            Title = "Clinic Activity Report | Print Preview",
+            Title = $"{clinicName} | Clinic Activity Report - Print Preview",
             Width = 1150,
             Height = 850,
             MinWidth = 850,
@@ -667,7 +712,7 @@ public partial class ClinicActivityReportView : UserControl
             {
                 dialog.PrintDocument(
                     document.DocumentPaginator,
-                    "Golddie Clinic Activity Report");
+                    $"{clinicName} - Clinic Activity Report");
             }
         };
 
@@ -704,7 +749,7 @@ public partial class ClinicActivityReportView : UserControl
                 {
                     dialog.PrintDocument(
                         document.DocumentPaginator,
-                        "Golddie Clinic Activity Report");
+                        $"{clinicName} - Clinic Activity Report");
                 }
             }
             catch (Exception ex)
