@@ -5,10 +5,13 @@
              Background="Transparent">
 
     <UserControl.Resources>
-    <converters:UtcToLocalDateTimeConverter
-        x:Key="UtcToLocalDateTimeConverter"/>
-</UserControl.Resources>
-    
+        <converters:RegionalDateOnlyConverter
+            x:Key="RegionalDateOnlyConverter"/>
+
+        <converters:RegionalDateTimeConverter
+            x:Key="RegionalDateTimeConverter"/>
+    </UserControl.Resources>
+
     <ScrollViewer VerticalScrollBarVisibility="Auto">
         <Grid Margin="28">
             <Grid.RowDefinitions>
@@ -50,7 +53,7 @@
                                Margin="0,0,0,12"/>
 
                     <TextBlock Text="{Binding PrenatalVisit.VisitDate,
-                        StringFormat={}{0:MMMM dd, yyyy}}"
+                        Converter={StaticResource RegionalDateOnlyConverter}}"
                                FontSize="16"
                                FontWeight="SemiBold"/>
 
@@ -81,7 +84,7 @@
                                        Margin="0,5,0,0"
                                        Opacity="0.7"/>
                         </StackPanel>
-                        
+
                         <Button DockPanel.Dock="Right"
                                 Content="+ Record Vital Signs"
                                 Padding="14,8"
@@ -105,8 +108,7 @@
 
                                     <StackPanel>
                                         <TextBlock Text="{Binding RecordedAtUtc,
-                                                  Converter={StaticResource UtcToLocalDateTimeConverter},
-                                                  StringFormat={}{0:MMM dd, yyyy hh:mm tt}}"
+                                                  Converter={StaticResource RegionalDateTimeConverter}}"
                                                    FontSize="16"
                                                    FontWeight="SemiBold"/>
 
@@ -155,7 +157,7 @@
                                                 TargetNullValue='—'}"/>
                                             <TextBlock Text=" bpm"/>
                                         </WrapPanel>
-                                        
+
                                         <TextBlock Text="{Binding Notes,
                                                 TargetNullValue='No notes recorded'}"
                                                 Margin="0,10,0,12"
@@ -180,7 +182,6 @@
                                                     Click="ArchiveVitalSignButton_Click"/>
 
                                         </StackPanel>
-
 
                                     </StackPanel>
                                 </Border>

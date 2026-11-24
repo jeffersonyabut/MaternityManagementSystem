@@ -3,12 +3,11 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:converters="clr-namespace:MaternityManagementSystem.Converters"
              Background="Transparent">
-    
-    <UserControl.Resources>
-        <converters:UtcToLocalDateTimeConverter
-        x:Key="UtcToLocalDateTimeConverter"/>
-    </UserControl.Resources>
 
+    <UserControl.Resources>
+        <converters:RegionalDateTimeConverter
+            x:Key="RegionalDateTimeConverter"/>
+    </UserControl.Resources>
 
     <ScrollViewer VerticalScrollBarVisibility="Auto">
         <Grid Margin="28">
@@ -169,8 +168,7 @@
                                Margin="0,0,0,8"/>
 
                     <TextBlock Text="{Binding RecordedAtUtc,
-                                              Converter={StaticResource UtcToLocalDateTimeConverter},
-                                              StringFormat={}{0:MMM dd, yyyy hh:mm tt}}"
+                                              Converter={StaticResource RegionalDateTimeConverter}}"
                                FontSize="16"
                                FontWeight="SemiBold"
                                Margin="0,0,0,24"/>
