@@ -93,6 +93,66 @@ public class StaffRepository
              staff.Id != excludedStaffId.Value));
     }
 
+
+    public async Task<bool> TryCreateFirstAdminAsync(Staff admin)
+    {
+        PrepareUsername(admin);
+        ArgumentException.ThrowIfNullOrWhiteSpace(admin.PasswordHash);
+
+        // This operation is specifically for creating the first administrator.
+        admin.Role = StaffRoles.Admin;
+        admin.IsActive = true;
+
+        await using var db = CreateDbContext();
+
+        var connection =
+            (SqliteConnection)db.Database.GetDbConnection();
+
+        await connection.OpenAsync();
+
+        // Acquire the SQLite write reservation before checking for accounts.
+        await using var sqliteTransaction =
+            connection.BeginTransaction(deferred: false);
+
+        await using var transaction =
+            await db.Database.UseTransactionAsync(sqliteTransaction)
+            ?? throw new InvalidOperationException(
+                "Could not initialize the database transaction.");
+
+        try
+        {
+            // Another setup attempt may have already created an account.
+            if (await db.StaffMembers.AnyAsync())
+            {
+                return false;
+            }
+
+            db.StaffMembers.Add(admin);
+
+            await db.SaveChangesAsync();
+
+            await transaction.CommitAsync();
+
+            return true;
+        }
+        catch (DbUpdateException ex)
+            when (IsUsernameUniqueConstraintViolation(ex))
+        {
+            await transaction.RollbackAsync();
+
+            throw new InvalidOperationException(
+                "This username is already taken.",
+                ex);
+        }
+        catch
+        {
+            await transaction.RollbackAsync();
+            throw;
+        }
+    }
+
+
+
     public async Task AddAsync(Staff staff)
     {
         PrepareUsername(staff);

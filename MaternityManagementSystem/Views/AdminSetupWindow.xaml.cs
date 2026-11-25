@@ -57,27 +57,27 @@ public partial class AdminSetupWindow : Window
         {
             var repository = new StaffRepository();
 
-            if (await repository.HasAnyStaffAsync())
+            var admin = new Staff
+            {
+                Username = username,
+                NormalizedUsername =
+                    UsernameNormalizer.Normalize(username),
+                PasswordHash =
+                    PasswordHasher.HashPassword(password),
+                Role = StaffRoles.Admin,
+                IsActive = true
+            };
+
+            bool created =
+                await repository.TryCreateFirstAdminAsync(admin);
+
+            if (!created)
             {
                 MessageText.Text =
                     "A staff account already exists. Setup is unavailable.";
 
                 return;
             }
-
-            string normalizedUsername =
-                UsernameNormalizer.Normalize(username);
-
-            var admin = new Staff
-            {
-                Username = username,
-                NormalizedUsername = normalizedUsername,
-                PasswordHash = PasswordHasher.HashPassword(password),
-                Role = StaffRoles.Admin,
-                IsActive = true
-            };
-
-            await repository.AddAsync(admin);
 
             MessageBox.Show(
                 "Administrator account created successfully.",
