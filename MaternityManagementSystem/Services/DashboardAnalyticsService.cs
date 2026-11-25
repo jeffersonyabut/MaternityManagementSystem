@@ -9,7 +9,7 @@ using MaternityManagementSystem.Data;
 
 namespace MaternityManagementSystem.Services;
 
-public class DashboardAnalyticsService
+public class DashboardAnalyticsService : IDashboardAnalyticsService
 {
     private static readonly string[] AppointmentStatuses =
     {
@@ -22,16 +22,24 @@ public class DashboardAnalyticsService
 
     private readonly AuthorizationService _authorizationService;
     private readonly RegionalSettingsService _regionalSettingsService;
+    private readonly IDbContextFactory<ClinicDbContext> _contextFactory;
+    private readonly IClock _clock;
 
     public DashboardAnalyticsService(
         AuthorizationService authorizationService,
-        RegionalSettingsService regionalSettingsService)
+        RegionalSettingsService regionalSettingsService,
+        IDbContextFactory<ClinicDbContext> contextFactory,
+        IClock clock)
     {
         ArgumentNullException.ThrowIfNull(authorizationService);
         ArgumentNullException.ThrowIfNull(regionalSettingsService);
+        ArgumentNullException.ThrowIfNull(contextFactory);
+        ArgumentNullException.ThrowIfNull(clock);
 
         _authorizationService = authorizationService;
         _regionalSettingsService = regionalSettingsService;
+        _contextFactory = contextFactory;
+        _clock = clock;
     }
 
     public async Task<DashboardData> GetDashboardDataAsync(
@@ -39,11 +47,13 @@ public class DashboardAnalyticsService
     {
         await _authorizationService.EnsureAuthenticatedAsync();
 
-        await using var dbContext = new ClinicDbContext();
+        await using var dbContext =
+            await _contextFactory.CreateDbContextAsync(
+                cancellationToken);
 
         DateTime localNow =
             _regionalSettingsService.ConvertUtcToLocal(
-                DateTime.UtcNow);
+                _clock.UtcNow);
 
         DateOnly today = DateOnly.FromDateTime(localNow);
         TimeOnly currentTime = TimeOnly.FromDateTime(localNow);
@@ -95,24 +105,28 @@ public class DashboardAnalyticsService
             .CountAsync(cancellationToken);
 
         // Monthly patient registrations
-        var patientRegistrationCounts =
+        // Retrieve timestamps within the six-month UTC range.
+        var patientRegistrationTimestamps =
             await dbContext.Patients
                 .AsNoTracking()
                 .Where(patient =>
                     patient.CreatedAtUtc >= firstMonthUtc &&
                     patient.CreatedAtUtc < nextMonthUtc)
-                .GroupBy(patient => new
-                {
-                    patient.CreatedAtUtc.Year,
-                    patient.CreatedAtUtc.Month
-                })
-                .Select(group => new
-                {
-                    group.Key.Year,
-                    group.Key.Month,
-                    Count = group.Count()
-                })
+                .Select(patient => patient.CreatedAtUtc)
                 .ToListAsync(cancellationToken);
+
+        // Convert timestamps to clinic-local time before grouping.
+        var patientRegistrationCounts =
+            patientRegistrationTimestamps
+                .Select(createdAtUtc =>
+                    _regionalSettingsService.ConvertUtcToLocal(
+                        createdAtUtc))
+                .GroupBy(localDateTime => (
+                    localDateTime.Year,
+                    localDateTime.Month))
+                .ToDictionary(
+                    group => group.Key,
+                    group => group.Count());
 
         var monthlyRegistrations = Enumerable
             .Range(0, 6)
@@ -120,10 +134,9 @@ public class DashboardAnalyticsService
             {
                 DateOnly month = firstMonth.AddMonths(offset);
 
-                int count = patientRegistrationCounts
-                    .FirstOrDefault(item =>
-                        item.Year == month.Year &&
-                        item.Month == month.Month)?.Count ?? 0;
+                patientRegistrationCounts.TryGetValue(
+                    (month.Year, month.Month),
+                    out int count);
 
                 return new MonthlyStatistic
                 {
@@ -139,7 +152,8 @@ public class DashboardAnalyticsService
                 .AsNoTracking()
                 .Where(visit =>
                     visit.VisitDate >= firstMonth &&
-                    visit.VisitDate < firstDayOfCurrentMonth.AddMonths(1))
+                    visit.VisitDate <
+                        firstDayOfCurrentMonth.AddMonths(1))
                 .GroupBy(visit => new
                 {
                     visit.VisitDate.Year,
@@ -173,6 +187,7 @@ public class DashboardAnalyticsService
             .ToList();
 
         // Appointment status distribution
+        // Archived appointments are excluded.
         var appointmentStatusCounts =
             await dbContext.Appointments
                 .AsNoTracking()
@@ -196,6 +211,7 @@ public class DashboardAnalyticsService
             .ToList();
 
         // Upcoming appointments
+        // Only future, non-archived Scheduled and Confirmed appointments.
         var upcomingAppointments =
             await dbContext.Appointments
                 .AsNoTracking()

@@ -15,12 +15,11 @@ namespace MaternityManagementSystem.ViewModels;
 
 public partial class DashboardViewModel : ObservableObject
 {
-    private readonly DashboardAnalyticsService _analyticsService;
+    private readonly IDashboardAnalyticsService _analyticsService;
 
     private static readonly SKColor PrimaryPurple = new(121, 82, 179);
     private static readonly SKColor LightPurple = new(167, 139, 202);
     private static readonly SKColor SoftPurple = new(216, 201, 234);
-    private static readonly SKColor PalePurple = new(238, 231, 246);
 
     [ObservableProperty]
     private int totalPatients;
@@ -38,7 +37,26 @@ public partial class DashboardViewModel : ObservableObject
     private bool isLoading;
 
     [ObservableProperty]
+    private bool hasLoadedData;
+
+    [ObservableProperty]
+    private bool hasRegistrationData;
+
+    [ObservableProperty]
+    private bool hasPrenatalVisitData;
+
+    [ObservableProperty]
+    private bool hasAppointmentData;
+
+    [ObservableProperty]
+    private bool hasUpcomingAppointments;
+
+    [ObservableProperty]
     private string? errorMessage;
+
+    public bool IsInitialLoading => IsLoading && !HasLoadedData;
+
+    public bool IsRefreshing => IsLoading && HasLoadedData;
 
     [ObservableProperty]
     private Axis[] registrationXAxis = { new Axis() };
@@ -66,11 +84,22 @@ public partial class DashboardViewModel : ObservableObject
 
     public ObservableCollection<ISeries> AppointmentStatusSeries { get; } = new();
 
-
-    public DashboardViewModel(DashboardAnalyticsService analyticsService)
+    public DashboardViewModel(IDashboardAnalyticsService analyticsService)
     {
         ArgumentNullException.ThrowIfNull(analyticsService);
         _analyticsService = analyticsService;
+    }
+
+    partial void OnIsLoadingChanged(bool value)
+    {
+        OnPropertyChanged(nameof(IsInitialLoading));
+        OnPropertyChanged(nameof(IsRefreshing));
+    }
+
+    partial void OnHasLoadedDataChanged(bool value)
+    {
+        OnPropertyChanged(nameof(IsInitialLoading));
+        OnPropertyChanged(nameof(IsRefreshing));
     }
 
     public async Task LoadDashboardAsync()
@@ -97,9 +126,21 @@ public partial class DashboardViewModel : ObservableObject
             ReplaceItems(AppointmentDistribution, data.AppointmentDistribution);
             ReplaceItems(UpcomingAppointments, data.UpcomingAppointments);
 
+            HasRegistrationData = MonthlyRegistrations.Any(item => item.Count > 0);
+            HasPrenatalVisitData = MonthlyPrenatalVisits.Any(item => item.Count > 0);
+            HasAppointmentData = AppointmentDistribution.Any(item => item.Count > 0);
+            HasUpcomingAppointments = UpcomingAppointments.Count > 0;
+
             UpdateRegistrationChart();
             UpdatePrenatalVisitChart();
             UpdateAppointmentStatusChart();
+
+            HasLoadedData = true;
+        }
+        catch (UnauthorizedAccessException)
+        {
+            // Allow DashboardWindow to handle session expiration.
+            throw;
         }
         catch (Exception)
         {
@@ -225,7 +266,8 @@ public partial class DashboardViewModel : ObservableObject
             new { Name = "Scheduled", Color = PrimaryPurple },
             new { Name = "Confirmed", Color = LightPurple },
             new { Name = "Completed", Color = SoftPurple },
-            new { Name = "Cancelled", Color = new SKColor(180, 160, 195) }
+            new { Name = "Cancelled", Color = new SKColor(180, 160, 195) },
+            new { Name = "No-show", Color = new SKColor(205, 145, 145) }
         };
 
         foreach (var status in statuses)

@@ -24,9 +24,6 @@
             <Setter Property="VerticalAlignment" Value="Center"/>
         </Style>
 
-
-
-        <!-- Base Card Style -->
         <Style x:Key="CardStyle" TargetType="Border">
             <Setter Property="Background" Value="{StaticResource CardBackground}"/>
             <Setter Property="BorderBrush" Value="{StaticResource CardBorder}"/>
@@ -35,10 +32,9 @@
             <Setter Property="Padding" Value="20"/>
         </Style>
 
-        <!-- Interactive Card Style -->
         <Style x:Key="InteractiveCardStyle"
-           TargetType="Border"
-           BasedOn="{StaticResource CardStyle}">
+               TargetType="Border"
+               BasedOn="{StaticResource CardStyle}">
 
             <Setter Property="Cursor" Value="Hand"/>
             <Setter Property="RenderTransformOrigin" Value="0.5,0.5"/>
@@ -49,7 +45,6 @@
                     <Setter Property="BorderBrush" Value="#B99AD9"/>
                 </Trigger>
             </Style.Triggers>
-
         </Style>
 
         <Style x:Key="SectionTitleStyle" TargetType="TextBlock">
@@ -69,18 +64,27 @@
             <Setter Property="Foreground" Value="{StaticResource MainText}"/>
         </Style>
 
+        <Style x:Key="EmptyStateStyle" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{StaticResource SecondaryText}"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="TextAlignment" Value="Center"/>
+            <Setter Property="HorizontalAlignment" Value="Center"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="TextWrapping" Value="Wrap"/>
+            <Setter Property="Margin" Value="20"/>
+        </Style>
+
     </UserControl.Resources>
 
     <Grid Background="{StaticResource PageBackground}">
 
+        <!-- Main Dashboard Content -->
         <ScrollViewer VerticalScrollBarVisibility="Auto"
                       HorizontalScrollBarVisibility="Disabled">
 
             <StackPanel Margin="28">
 
                 <!-- Header -->
-
-
                 <Grid Margin="0,0,0,28">
 
                     <Grid.ColumnDefinitions>
@@ -88,53 +92,97 @@
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
 
-                    <!-- Header Text -->
                     <StackPanel Grid.Column="0"
-                VerticalAlignment="Center">
+                                VerticalAlignment="Center">
 
                         <TextBlock Text="GOLDDIE  ·  CLINIC MANAGEMENT"
-                   FontSize="10"
-                   FontWeight="SemiBold"
-                   Foreground="{StaticResource PrimaryPurple}"/>
+                                   FontSize="10"
+                                   FontWeight="SemiBold"
+                                   Foreground="{StaticResource PrimaryPurple}"/>
 
                         <TextBlock Text="Dashboard"
-                   FontSize="28"
-                   FontWeight="Bold"
-                   Foreground="{StaticResource MainText}"
-                   Margin="0,5,0,0"/>
+                                   FontSize="28"
+                                   FontWeight="Bold"
+                                   Foreground="{StaticResource MainText}"
+                                   Margin="0,5,0,0"/>
 
                         <TextBlock Text="Overview of your maternity clinic's activity."
-                   FontSize="13"
-                   Foreground="{StaticResource SecondaryText}"
-                   Margin="0,5,0,0"/>
+                                   FontSize="13"
+                                   Foreground="{StaticResource SecondaryText}"
+                                   Margin="0,5,0,0"/>
 
                     </StackPanel>
 
-                    <!-- Overview Badge -->
-                    <Border Grid.Column="1"
-            Background="#F1EAF8"
-            CornerRadius="8"
-            Padding="14,8"
-            VerticalAlignment="Center">
+                    <!-- Header Status -->
+                    <StackPanel Grid.Column="1"
+                                VerticalAlignment="Center"
+                                HorizontalAlignment="Right">
 
-                        <TextBlock Text="OVERVIEW"
-                   FontSize="10"
-                   FontWeight="SemiBold"
-                   Foreground="{StaticResource PrimaryPurple}"/>
+                        <Border Background="#F1EAF8"
+                                CornerRadius="8"
+                                Padding="14,8"
+                                HorizontalAlignment="Right">
 
-                    </Border>
+                            <TextBlock Text="OVERVIEW"
+                                       FontSize="10"
+                                       FontWeight="SemiBold"
+                                       Foreground="{StaticResource PrimaryPurple}"/>
+
+                        </Border>
+
+                        <!-- Refresh Indicator -->
+                        <StackPanel Orientation="Horizontal"
+                                    HorizontalAlignment="Right"
+                                    VerticalAlignment="Center"
+                                    Margin="0,10,0,0"
+                                    Visibility="{Binding IsRefreshing,
+                                        Converter={StaticResource BooleanToVisibilityConverter}}">
+
+                            <ProgressBar IsIndeterminate="True"
+                                         Width="55"
+                                         Height="4"
+                                         Foreground="{StaticResource PrimaryPurple}"
+                                         VerticalAlignment="Center"/>
+
+                            <TextBlock Text="Refreshing..."
+                                       FontSize="11"
+                                       Foreground="{StaticResource SecondaryText}"
+                                       Margin="8,0,0,0"
+                                       VerticalAlignment="Center"/>
+
+                        </StackPanel>
+
+                    </StackPanel>
 
                 </Grid>
 
                 <!-- Error Message -->
-
                 <TextBlock Text="{Binding ErrorMessage}"
                            Foreground="#B42318"
                            TextWrapping="Wrap"
-                           Margin="0,0,0,16"/>
+                           Margin="0,0,0,16">
+
+                    <TextBlock.Style>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="Visibility" Value="Visible"/>
+
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding ErrorMessage}"
+                                             Value="{x:Null}">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                </DataTrigger>
+
+                                <DataTrigger Binding="{Binding ErrorMessage}"
+                                             Value="">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBlock.Style>
+
+                </TextBlock>
 
                 <!-- Summary Cards -->
-
                 <UniformGrid Columns="4"
                              Margin="0,0,0,20">
 
@@ -146,7 +194,6 @@
                             MouseLeftButtonUp="NavigateToPatients">
 
                         <StackPanel>
-
                             <Grid>
                                 <TextBlock Text="Total Patients"
                                            Style="{StaticResource SecondaryTextStyle}"
@@ -169,7 +216,6 @@
                             <TextBlock Text="Registered patients"
                                        Style="{StaticResource SecondaryTextStyle}"
                                        Margin="0,4,0,0"/>
-
                         </StackPanel>
                     </Border>
 
@@ -181,7 +227,6 @@
                             MouseLeftButtonUp="NavigateToPatients">
 
                         <StackPanel>
-
                             <Grid>
                                 <TextBlock Text="Active Pregnancies"
                                            Style="{StaticResource SecondaryTextStyle}"
@@ -204,7 +249,6 @@
                             <TextBlock Text="Current pregnancy records"
                                        Style="{StaticResource SecondaryTextStyle}"
                                        Margin="0,4,0,0"/>
-
                         </StackPanel>
                     </Border>
 
@@ -216,7 +260,6 @@
                             MouseLeftButtonUp="NavigateToAppointments">
 
                         <StackPanel>
-
                             <Grid>
                                 <TextBlock Text="Today's Appointments"
                                            Style="{StaticResource SecondaryTextStyle}"
@@ -239,7 +282,6 @@
                             <TextBlock Text="Scheduled and confirmed"
                                        Style="{StaticResource SecondaryTextStyle}"
                                        Margin="0,4,0,0"/>
-
                         </StackPanel>
                     </Border>
 
@@ -251,7 +293,6 @@
                             MouseLeftButtonUp="NavigateToPrenatalCare">
 
                         <StackPanel>
-
                             <Grid>
                                 <TextBlock Text="Prenatal Visits"
                                            Style="{StaticResource SecondaryTextStyle}"
@@ -274,14 +315,12 @@
                             <TextBlock Text="Recorded clinic visits"
                                        Style="{StaticResource SecondaryTextStyle}"
                                        Margin="0,4,0,0"/>
-
                         </StackPanel>
                     </Border>
 
                 </UniformGrid>
 
                 <!-- Charts Row -->
-
                 <Grid Margin="0,0,0,20">
 
                     <Grid.ColumnDefinitions>
@@ -290,7 +329,6 @@
                     </Grid.ColumnDefinitions>
 
                     <!-- Patient Registration Chart -->
-
                     <Border Grid.Column="0"
                             Style="{StaticResource CardStyle}"
                             Margin="0,0,10,0">
@@ -303,17 +341,51 @@
                                        Style="{StaticResource SecondaryTextStyle}"
                                        Margin="0,5,0,16"/>
 
-                            <lvc:CartesianChart
-                                Series="{Binding RegistrationSeries}"
-                                XAxes="{Binding RegistrationXAxis}"
-                                YAxes="{Binding RegistrationYAxis}"
-                                Height="250"/>
-                        </StackPanel>
+                            <Grid Height="250">
 
+                                <lvc:CartesianChart
+                                    Series="{Binding RegistrationSeries}"
+                                    XAxes="{Binding RegistrationXAxis}"
+                                    YAxes="{Binding RegistrationYAxis}">
+
+                                    <lvc:CartesianChart.Style>
+                                        <Style TargetType="{x:Type lvc:CartesianChart}">
+                                            <Setter Property="Visibility" Value="Visible"/>
+
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding HasRegistrationData}"
+                                                             Value="False">
+                                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </lvc:CartesianChart.Style>
+
+                                </lvc:CartesianChart>
+
+                                <TextBlock Text="No patient registrations recorded during this period.">
+
+                                    <TextBlock.Style>
+                                        <Style TargetType="TextBlock"
+                                               BasedOn="{StaticResource EmptyStateStyle}">
+                                            <Setter Property="Visibility" Value="Collapsed"/>
+
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding HasRegistrationData}"
+                                                             Value="False">
+                                                    <Setter Property="Visibility" Value="Visible"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+
+                                </TextBlock>
+
+                            </Grid>
+                        </StackPanel>
                     </Border>
 
                     <!-- Prenatal Activity Chart -->
-
                     <Border Grid.Column="1"
                             Style="{StaticResource CardStyle}"
                             Margin="10,0,0,0">
@@ -326,19 +398,54 @@
                                        Style="{StaticResource SecondaryTextStyle}"
                                        Margin="0,5,0,16"/>
 
-                            <lvc:CartesianChart
-                                Series="{Binding PrenatalVisitSeries}"
-                                XAxes="{Binding PrenatalXAxis}"
-                                YAxes="{Binding PrenatalYAxis}"
-                                Height="250"/>
-                        </StackPanel>
+                            <Grid Height="250">
 
+                                <lvc:CartesianChart
+                                    Series="{Binding PrenatalVisitSeries}"
+                                    XAxes="{Binding PrenatalXAxis}"
+                                    YAxes="{Binding PrenatalYAxis}">
+
+                                    <lvc:CartesianChart.Style>
+                                        <Style TargetType="{x:Type lvc:CartesianChart}">
+                                            <Setter Property="Visibility" Value="Visible"/>
+
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding HasPrenatalVisitData}"
+                                                             Value="False">
+                                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </lvc:CartesianChart.Style>
+
+                                </lvc:CartesianChart>
+
+
+                                <TextBlock Text="No prenatal visits recorded during this period.">
+                                
+                                    <TextBlock.Style>
+                                        <Style TargetType="TextBlock"
+                                               BasedOn="{StaticResource EmptyStateStyle}">
+                                            <Setter Property="Visibility" Value="Collapsed"/>
+
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding HasPrenatalVisitData}"
+                                                             Value="False">
+                                                    <Setter Property="Visibility" Value="Visible"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+
+                                </TextBlock>
+
+                            </Grid>
+                        </StackPanel>
                     </Border>
 
                 </Grid>
 
-                <!-- Appointment Charts and Upcoming Appointments -->
-
+                <!-- Appointment Distribution and Upcoming Appointments -->
                 <Grid>
 
                     <Grid.ColumnDefinitions>
@@ -347,7 +454,6 @@
                     </Grid.ColumnDefinitions>
 
                     <!-- Appointment Distribution -->
-
                     <Border Grid.Column="0"
                             Style="{StaticResource CardStyle}"
                             Margin="0,0,10,0">
@@ -360,17 +466,51 @@
                                        Style="{StaticResource SecondaryTextStyle}"
                                        Margin="0,5,0,12"/>
 
-                            <lvc:PieChart
-                                Series="{Binding AppointmentStatusSeries}"
-                                Height="250"
-                                LegendPosition="Bottom"/>
+                            <Grid Height="250">
 
+                                <lvc:PieChart
+                                    Series="{Binding AppointmentStatusSeries}"
+                                    LegendPosition="Bottom">
+
+                                    <lvc:PieChart.Style>
+                                        <Style TargetType="{x:Type lvc:PieChart}">
+                                            <Setter Property="Visibility" Value="Visible"/>
+
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding HasAppointmentData}"
+                                                             Value="False">
+                                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </lvc:PieChart.Style>
+
+                                </lvc:PieChart>
+
+
+                                <TextBlock Text="No appointment records available.">
+
+                                    <TextBlock.Style>
+                                        <Style TargetType="TextBlock"
+                                               BasedOn="{StaticResource EmptyStateStyle}">
+                                            <Setter Property="Visibility" Value="Collapsed"/>
+
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding HasAppointmentData}"
+                                                             Value="False">
+                                                    <Setter Property="Visibility" Value="Visible"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+
+                                </TextBlock>
+
+                            </Grid>
                         </StackPanel>
-
                     </Border>
 
                     <!-- Upcoming Appointments -->
-
                     <Border Grid.Column="1"
                             Style="{StaticResource CardStyle}"
                             Margin="10,0,0,0">
@@ -383,165 +523,195 @@
                                        Style="{StaticResource SecondaryTextStyle}"
                                        Margin="0,5,0,16"/>
 
-                            <DataGrid ItemsSource="{Binding UpcomingAppointments}"
-                                      AutoGenerateColumns="False"
-                                      IsReadOnly="True"
-                                      SelectionMode="Single"
-                                      SelectionUnit="FullRow"
-                                      CanUserAddRows="False"
-                                      CanUserDeleteRows="False"
-                                      HeadersVisibility="Column"
-                                      GridLinesVisibility="None"
-                                      RowHeaderWidth="0"
-                                      Background="Transparent"
-                                      BorderThickness="0"
-                                      MinHeight="180"
-                                      MaxHeight="280"
-                                      MouseDoubleClick="UpcomingAppointments_MouseDoubleClick">
+                            <Grid MinHeight="180">
 
-                                <DataGrid.Resources>
+                                <DataGrid ItemsSource="{Binding UpcomingAppointments}"
+                                          AutoGenerateColumns="False"
+                                          IsReadOnly="True"
+                                          SelectionMode="Single"
+                                          SelectionUnit="FullRow"
+                                          CanUserAddRows="False"
+                                          CanUserDeleteRows="False"
+                                          HeadersVisibility="Column"
+                                          GridLinesVisibility="None"
+                                          RowHeaderWidth="0"
+                                          Background="Transparent"
+                                          BorderThickness="0"
+                                          MinHeight="180"
+                                          MaxHeight="280"
+                                          MouseDoubleClick="UpcomingAppointments_MouseDoubleClick">
 
-                                    <!-- Hover and selected row colors -->
-                                    <SolidColorBrush x:Key="{x:Static SystemColors.HighlightBrushKey}"
-                                                    Color="#EEE6F7"/>
+                                    <DataGrid.Style>
+                                        <Style TargetType="{x:Type DataGrid}">
+                                            <Setter Property="Visibility" Value="Visible"/>
 
-                                    <SolidColorBrush x:Key="{x:Static SystemColors.HighlightTextBrushKey}"
-                                                     Color="#7952B3"/>
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding HasUpcomingAppointments}"
+                                                             Value="False">
+                                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </DataGrid.Style>
 
-                                    <Style TargetType="{x:Type DataGridRow}"
-                                           BasedOn="{StaticResource {x:Type DataGridRow}}">
+                                    <DataGrid.Resources>
 
-                                        <Style.Triggers>
+                                        <SolidColorBrush x:Key="{x:Static SystemColors.HighlightBrushKey}"
+                                                         Color="#EEE6F7"/>
 
-                                            <!-- Hover -->
-                                            <Trigger Property="IsMouseOver" Value="True">
-                                                <Setter Property="Background" Value="#F7F3FC"/>
-                                            </Trigger>
+                                        <SolidColorBrush x:Key="{x:Static SystemColors.HighlightTextBrushKey}"
+                                                         Color="#7952B3"/>
 
-                                            <!-- Active selection -->
-                                            <Trigger Property="IsSelected" Value="True">
-                                                <Setter Property="Background" Value="#EEE6F7"/>
-                                                <Setter Property="Foreground" Value="#7952B3"/>
-                                            </Trigger>
+                                        <Style TargetType="{x:Type DataGridRow}"
+                                               BasedOn="{StaticResource {x:Type DataGridRow}}">
 
-                                        </Style.Triggers>
-                                    </Style>
+                                            <Style.Triggers>
 
-                                    <!-- Appointment Status Badge -->
-                                    <Style x:Key="AppointmentStatusBadgeStyle"
-                                            TargetType="Border">
+                                                <Trigger Property="IsMouseOver" Value="True">
+                                                    <Setter Property="Background" Value="#F7F3FC"/>
+                                                </Trigger>
 
-                                        <Setter Property="Background" Value="#F0EDF4"/>
-                                        <Setter Property="CornerRadius" Value="6"/>
-                                        <Setter Property="Padding" Value="7,2"/>
-                                        <Setter Property="HorizontalAlignment" Value="Left"/>
-                                        <Setter Property="VerticalAlignment" Value="Center"/>
+                                                <Trigger Property="IsSelected" Value="True">
+                                                    <Setter Property="Background" Value="#EEE6F7"/>
+                                                    <Setter Property="Foreground" Value="#7952B3"/>
+                                                </Trigger>
 
-                                        <Style.Triggers>
+                                            </Style.Triggers>
+                                        </Style>
 
-                                            <DataTrigger Binding="{Binding Status}" Value="Scheduled">
-                                                <Setter Property="Background" Value="#F1EAF8"/>
-                                            </DataTrigger>
+                                        <Style x:Key="AppointmentStatusBadgeStyle"
+                                               TargetType="Border">
 
-                                            <DataTrigger Binding="{Binding Status}" Value="Confirmed">
-                                                <Setter Property="Background" Value="#E8F1FC"/>
-                                            </DataTrigger>
+                                            <Setter Property="Background" Value="#F0EDF4"/>
+                                            <Setter Property="CornerRadius" Value="6"/>
+                                            <Setter Property="Padding" Value="7,2"/>
+                                            <Setter Property="HorizontalAlignment" Value="Left"/>
+                                            <Setter Property="VerticalAlignment" Value="Center"/>
 
-                                            <DataTrigger Binding="{Binding Status}" Value="Completed">
-                                                <Setter Property="Background" Value="#E8F5EC"/>
-                                            </DataTrigger>
+                                            <Style.Triggers>
 
-                                            <DataTrigger Binding="{Binding Status}" Value="Cancelled">
-                                                <Setter Property="Background" Value="#FCEAEA"/>
-                                            </DataTrigger>
+                                                <DataTrigger Binding="{Binding Status}" Value="Scheduled">
+                                                    <Setter Property="Background" Value="#F1EAF8"/>
+                                                </DataTrigger>
 
-                                            <DataTrigger Binding="{Binding Status}" Value="No-show">
-                                                <Setter Property="Background" Value="#EEEEF0"/>
-                                            </DataTrigger>
+                                                <DataTrigger Binding="{Binding Status}" Value="Confirmed">
+                                                    <Setter Property="Background" Value="#E8F1FC"/>
+                                                </DataTrigger>
 
-                                        </Style.Triggers>
-                                    </Style>
+                                                <DataTrigger Binding="{Binding Status}" Value="Completed">
+                                                    <Setter Property="Background" Value="#E8F5EC"/>
+                                                </DataTrigger>
 
-                                    <!-- Appointment Status Text -->
-                                    <Style x:Key="AppointmentStatusTextStyle"
-                                           TargetType="TextBlock">
+                                                <DataTrigger Binding="{Binding Status}" Value="Cancelled">
+                                                    <Setter Property="Background" Value="#FCEAEA"/>
+                                                </DataTrigger>
 
-                                        <Setter Property="FontSize" Value="11"/>
-                                        <Setter Property="FontWeight" Value="SemiBold"/>
-                                        <Setter Property="Foreground" Value="#7952B3"/>
+                                                <DataTrigger Binding="{Binding Status}" Value="No-show">
+                                                    <Setter Property="Background" Value="#EEEEF0"/>
+                                                </DataTrigger>
 
-                                        <Style.Triggers>
+                                            </Style.Triggers>
+                                        </Style>
 
-                                            <DataTrigger Binding="{Binding Status}" Value="Confirmed">
-                                                <Setter Property="Foreground" Value="#2864A5"/>
-                                            </DataTrigger>
+                                        <Style x:Key="AppointmentStatusTextStyle"
+                                               TargetType="TextBlock">
 
-                                            <DataTrigger Binding="{Binding Status}" Value="Completed">
-                                                <Setter Property="Foreground" Value="#287A45"/>
-                                            </DataTrigger>
+                                            <Setter Property="FontSize" Value="11"/>
+                                            <Setter Property="FontWeight" Value="SemiBold"/>
+                                            <Setter Property="Foreground" Value="#7952B3"/>
 
-                                            <DataTrigger Binding="{Binding Status}" Value="Cancelled">
-                                                <Setter Property="Foreground" Value="#B42318"/>
-                                            </DataTrigger>
+                                            <Style.Triggers>
 
-                                            <DataTrigger Binding="{Binding Status}" Value="No-show">
-                                                <Setter Property="Foreground" Value="#686873"/>
-                                            </DataTrigger>
+                                                <DataTrigger Binding="{Binding Status}" Value="Confirmed">
+                                                    <Setter Property="Foreground" Value="#2864A5"/>
+                                                </DataTrigger>
 
-                                        </Style.Triggers>
-                                    </Style>
+                                                <DataTrigger Binding="{Binding Status}" Value="Completed">
+                                                    <Setter Property="Foreground" Value="#287A45"/>
+                                                </DataTrigger>
 
-                                    <Style TargetType="{x:Type DataGridCell}"
-                                           BasedOn="{StaticResource {x:Type DataGridCell}}">
+                                                <DataTrigger Binding="{Binding Status}" Value="Cancelled">
+                                                    <Setter Property="Foreground" Value="#B42318"/>
+                                                </DataTrigger>
 
-                                        <Style.Triggers>
+                                                <DataTrigger Binding="{Binding Status}" Value="No-show">
+                                                    <Setter Property="Foreground" Value="#686873"/>
+                                                </DataTrigger>
 
-                                            <!-- Active selection background across every cell -->
-                                            <DataTrigger Binding="{Binding IsSelected,
-                                                        RelativeSource={RelativeSource AncestorType=DataGridRow}}"
-                                                                 Value="True">
-                                                <Setter Property="Background" Value="#EEE6F7"/>
-                                                <Setter Property="Foreground" Value="#7952B3"/>
-                                            </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
 
-                                        </Style.Triggers>
-                                    </Style>
+                                        <Style TargetType="{x:Type DataGridCell}"
+                                               BasedOn="{StaticResource {x:Type DataGridCell}}">
 
-                                </DataGrid.Resources>
+                                            <Style.Triggers>
 
-                                <DataGrid.Columns>
+                                                <DataTrigger Binding="{Binding IsSelected,
+                                                    RelativeSource={RelativeSource AncestorType=DataGridRow}}"
+                                                             Value="True">
+                                                    <Setter Property="Background" Value="#EEE6F7"/>
+                                                    <Setter Property="Foreground" Value="#7952B3"/>
+                                                </DataTrigger>
 
-                                    <DataGridTextColumn Header="Patient"
-                                                        Binding="{Binding PatientName}"
-                                                        Width="*"/>
+                                            </Style.Triggers>
+                                        </Style>
 
-                                    <DataGridTextColumn Header="Date"
-                                                        Binding="{Binding AppointmentDate}"
-                                                        Width="100"/>
+                                    </DataGrid.Resources>
 
-                                    <DataGridTextColumn Header="Time"
-                                                        Binding="{Binding StartTime}"
-                                                        Width="85"/>
+                                    <DataGrid.Columns>
 
-                                    <DataGridTemplateColumn Header="Status"
-                                                            Width="100">
+                                        <DataGridTextColumn Header="Patient"
+                                                            Binding="{Binding PatientName}"
+                                                            Width="*"/>
 
-                                        <DataGridTemplateColumn.CellTemplate>
-                                            <DataTemplate>
+                                        <DataGridTextColumn Header="Date"
+                                                            Binding="{Binding AppointmentDate}"
+                                                            Width="100"/>
 
-                                                <Border Style="{StaticResource AppointmentStatusBadgeStyle}">
-                                                    <TextBlock Text="{Binding Status}"
-                                                               Style="{StaticResource AppointmentStatusTextStyle}"/>
-                                                </Border>
+                                        <DataGridTextColumn Header="Time"
+                                                            Binding="{Binding StartTime}"
+                                                            Width="85"/>
 
-                                            </DataTemplate>
-                                        </DataGridTemplateColumn.CellTemplate>
+                                        <DataGridTemplateColumn Header="Status"
+                                                                Width="100">
 
-                                    </DataGridTemplateColumn>
+                                            <DataGridTemplateColumn.CellTemplate>
+                                                <DataTemplate>
 
-                                </DataGrid.Columns>
+                                                    <Border Style="{StaticResource AppointmentStatusBadgeStyle}">
+                                                        <TextBlock Text="{Binding Status}"
+                                                                   Style="{StaticResource AppointmentStatusTextStyle}"/>
+                                                    </Border>
 
-                            </DataGrid>
+                                                </DataTemplate>
+                                            </DataGridTemplateColumn.CellTemplate>
+
+                                        </DataGridTemplateColumn>
+
+                                    </DataGrid.Columns>
+
+                                </DataGrid>
+
+                                <TextBlock Text="No upcoming appointments scheduled.">
+                                
+
+                                    <TextBlock.Style>
+                                        <Style TargetType="TextBlock"
+                                               BasedOn="{StaticResource EmptyStateStyle}">
+                                            <Setter Property="Visibility" Value="Collapsed"/>
+
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding HasUpcomingAppointments}"
+                                                             Value="False">
+                                                    <Setter Property="Visibility" Value="Visible"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+
+                                </TextBlock>
+
+                            </Grid>
 
                         </StackPanel>
 
@@ -549,34 +719,34 @@
 
                 </Grid>
 
-                <!-- Loading Overlay -->
-
-                <Border Background="#CCFFFFFF"
-                        CornerRadius="12"
-                        Visibility="{Binding IsLoading,
-                            Converter={StaticResource BooleanToVisibilityConverter}}">
-
-                    <StackPanel HorizontalAlignment="Center"
-                                VerticalAlignment="Center"
-                                Margin="20">
-
-                        <ProgressBar IsIndeterminate="True"
-                                     Width="180"
-                                     Height="5"
-                                     Foreground="{StaticResource PrimaryPurple}"/>
-
-                        <TextBlock Text="Loading dashboard..."
-                                   Foreground="{StaticResource SecondaryText}"
-                                   Margin="0,12,0,0"
-                                   HorizontalAlignment="Center"/>
-
-                    </StackPanel>
-
-                </Border>
-
             </StackPanel>
 
         </ScrollViewer>
+
+        <!-- Initial Loading Overlay -->
+        <Border Panel.ZIndex="10"
+                Background="#FFFFFF"
+                Visibility="{Binding IsInitialLoading,
+                    Converter={StaticResource BooleanToVisibilityConverter}}">
+
+            <StackPanel HorizontalAlignment="Center"
+                        VerticalAlignment="Center"
+                        Width="220">
+
+                <ProgressBar IsIndeterminate="True"
+                             Width="180"
+                             Height="5"
+                             Foreground="{StaticResource PrimaryPurple}"/>
+
+                <TextBlock Text="Loading dashboard..."
+                           Foreground="{StaticResource SecondaryText}"
+                           FontSize="13"
+                           HorizontalAlignment="Center"
+                           Margin="0,14,0,0"/>
+
+            </StackPanel>
+
+        </Border>
 
     </Grid>
 

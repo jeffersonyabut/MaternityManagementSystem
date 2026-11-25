@@ -8,6 +8,7 @@ using MaternityManagementSystem.Dialogs;
 using MaternityManagementSystem.Repositories;
 using MaternityManagementSystem.Services;
 using MaternityManagementSystem.ViewModels;
+using MaternityManagementSystem.Data;
 using MaternityManagementSystem.Views.Reports;
 
 namespace MaternityManagementSystem.Views
@@ -26,9 +27,14 @@ namespace MaternityManagementSystem.Views
             var authorizationService = new AuthorizationService(
                 app.SessionService);
 
+            var contextFactory = new ClinicDbContextFactory();
+            var clock = new SystemClock();
+
             var analyticsService = new DashboardAnalyticsService(
                 authorizationService,
-                app.RegionalSettings);
+                app.RegionalSettings,
+                contextFactory,
+                clock);
 
             _viewModel = new DashboardViewModel(analyticsService);
             DataContext = _viewModel;
