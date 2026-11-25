@@ -1,12 +1,30 @@
 
+using System.Globalization;
 using MaternityManagementSystem.Models;
 using MaternityManagementSystem.Repositories;
-using System.Globalization;
 
 namespace MaternityManagementSystem.Services;
 
 public sealed class SystemSettingService
 {
+    public const int MinimumAppointmentDurationMinutes = 5;
+    public const int MaximumAppointmentDurationMinutes = 240;
+    public const int DefaultAppointmentDurationMinutes = 30;
+
+    private static readonly HashSet<string> KnownSettingKeys =
+    [
+        SystemSettingKeys.Clinic.Name,
+        SystemSettingKeys.Clinic.LogoPath,
+        SystemSettingKeys.Clinic.Address,
+        SystemSettingKeys.Clinic.ContactNumber,
+        SystemSettingKeys.Clinic.Email,
+        SystemSettingKeys.Appointments.DefaultDuration,
+        SystemSettingKeys.Notifications.SmsEnabled,
+        SystemSettingKeys.Notifications.AppointmentReminders,
+        SystemSettingKeys.Regional.TimeZone,
+        SystemSettingKeys.Regional.DateFormat
+    ];
+
     private readonly SystemSettingRepository _systemSettingRepository;
     private readonly AuthorizationService _authorizationService;
     private readonly SessionService _sessionService;
@@ -41,55 +59,123 @@ public sealed class SystemSettingService
         return await _systemSettingRepository.GetAllAsync();
     }
 
-
     public async Task SaveAsync(string key, string value)
     {
+        ArgumentNullException.ThrowIfNull(value);
+
+        await SaveBatchAsync(
+            new Dictionary<string, string>
+            {
+                [key] = value
+            });
+    }
+
+    public async Task SaveBatchAsync(
+        IReadOnlyDictionary<string, string> values)
+    {
+        ArgumentNullException.ThrowIfNull(values);
+
         await _authorizationService.EnsureAdminAsync();
 
-        ValidateKey(key);
-        ValidateValue(value);
-        ValidateRegionalSetting(key, value);
+        if (values.Count == 0)
+        {
+            return;
+        }
+
+        var validatedValues = new Dictionary<string, string>(
+            StringComparer.Ordinal);
+
+        foreach (var (key, originalValue) in values)
+        {
+            ValidateKey(key);
+            ValidateValue(originalValue);
+
+            string value = originalValue.Trim();
+
+            ValidateSettingValue(key, value);
+
+            if (!validatedValues.TryAdd(key, value))
+            {
+                throw new ArgumentException(
+                    $"Duplicate system setting key '{key}'.",
+                    nameof(values));
+            }
+        }
 
         var currentUser = _sessionService.CurrentUser
             ?? throw new UnauthorizedAccessException(
                 "You must be logged in to perform this action.");
 
-        var existingSetting =
-            await _systemSettingRepository.GetByKeyAsync(key);
+        DateTime now = DateTime.UtcNow;
 
-        var setting = new SystemSetting
+        var items =
+            new List<(SystemSetting Setting, AuditLog AuditLog)>();
+
+        foreach (var (key, value) in validatedValues)
         {
-            Key = key,
-            Value = value,
-            UpdatedAtUtc = DateTime.UtcNow,
-            UpdatedByStaffId = currentUser.StaffId
-        };
+            var existingSetting =
+                await _systemSettingRepository.GetByKeyAsync(key);
 
-        var auditLog = new AuditLog
-        {
-            StaffId = currentUser.StaffId,
-            Username = currentUser.Username,
-            Action = existingSetting is null
-                ? "Create"
-                : "Update",
-            EntityType = "SystemSetting",
-            EntityId = existingSetting?.Id,
-            Details = existingSetting is null
-                ? $"Created system setting '{key}'."
-                : $"Updated system setting '{key}'.",
-            OccurredAtUtc = DateTime.UtcNow
-        };
+            var setting = new SystemSetting
+            {
+                Key = key,
+                Value = value,
+                UpdatedAtUtc = now,
+                UpdatedByStaffId = currentUser.StaffId
+            };
 
-        await _systemSettingRepository.UpsertWithAuditAsync(
-            setting,
-            auditLog);
+            var auditLog = new AuditLog
+            {
+                StaffId = currentUser.StaffId,
+                Username = currentUser.Username,
+                Action = existingSetting is null
+                    ? "Create"
+                    : "Update",
+                EntityType = "SystemSetting",
+                EntityId = existingSetting?.Id,
+                Details = existingSetting is null
+                    ? $"Created system setting '{key}'."
+                    : $"Updated system setting '{key}'.",
+                OccurredAtUtc = now
+            };
+
+            items.Add((setting, auditLog));
+        }
+
+        await _systemSettingRepository.UpsertManyWithAuditAsync(items);
     }
 
-
-    private static void ValidateRegionalSetting(
-    string key,
-    string value)
+    private static void ValidateSettingValue(
+        string key,
+        string value)
     {
+        if (key == SystemSettingKeys.Appointments.DefaultDuration)
+        {
+            if (!int.TryParse(
+                    value,
+                    NumberStyles.Integer,
+                    CultureInfo.InvariantCulture,
+                    out int duration) ||
+                duration < MinimumAppointmentDurationMinutes ||
+                duration > MaximumAppointmentDurationMinutes)
+            {
+                throw new ArgumentException(
+                    $"Default appointment duration must be between " +
+                    $"{MinimumAppointmentDurationMinutes} and " +
+                    $"{MaximumAppointmentDurationMinutes} minutes.");
+            }
+        }
+
+        if (key == SystemSettingKeys.Notifications.SmsEnabled ||
+            key == SystemSettingKeys.Notifications.AppointmentReminders)
+        {
+            if (!bool.TryParse(value, out _))
+            {
+                throw new ArgumentException(
+                    $"Setting '{key}' must be either true or false.");
+            }
+        }
+
         if (key == SystemSettingKeys.Regional.TimeZone)
         {
             if (string.IsNullOrWhiteSpace(value))
@@ -152,6 +238,13 @@ public sealed class SystemSettingService
                 "Setting key cannot exceed 100 characters.",
                 nameof(key));
         }
+
+        if (!KnownSettingKeys.Contains(key))
+        {
+            throw new ArgumentException(
+                $"Unknown system setting key: '{key}'.",
+                nameof(key));
+        }
     }
 
     private static void ValidateValue(string value)
@@ -164,8 +257,7 @@ public sealed class SystemSettingService
         if (value.Length > 2000)
         {
             throw new ArgumentException(
-                "Setting value cannot exceed 2000 characters.",
-                nameof(value));
+                "Setting value cannot exceed 2000 characters.");
         }
     }
 }

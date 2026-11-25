@@ -33,13 +33,21 @@ namespace MaternityManagementSystem.Views
             _viewModel = new DashboardViewModel(analyticsService);
             DataContext = _viewModel;
 
+            var systemSettingRepository = new SystemSettingRepository();
+
+            var systemSettingService = new SystemSettingService(
+                systemSettingRepository,
+                authorizationService,
+                app.SessionService);
+
             _appointmentService = new AppointmentService(
                 new AppointmentRepository(),
                 new PatientRepository(),
                 new PregnancyRepository(),
                 authorizationService,
                 app.SessionService,
-                app.RegionalSettings);
+                app.RegionalSettings,
+                systemSettingService);
 
             Loaded += DashboardView_Loaded;
         }

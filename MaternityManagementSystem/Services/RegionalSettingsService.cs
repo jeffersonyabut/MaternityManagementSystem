@@ -7,6 +7,8 @@ namespace MaternityManagementSystem.Services;
 
 public sealed class RegionalSettingsService
 {
+    private const string DefaultDateFormat = "dd/MM/yyyy";
+
     private readonly SystemSettingRepository _repository;
 
     private TimeZoneInfo _timeZone = GetDefaultTimeZone();
@@ -22,15 +24,17 @@ public sealed class RegionalSettingsService
     public string TimeZoneId => _timeZone.Id;
 
     public string DateFormat { get; private set; } =
-        "dd/MM/yyyy";
+        DefaultDateFormat;
 
     public async Task RefreshAsync()
     {
-        // Reset to defaults before loading saved settings.
-        _timeZone = GetDefaultTimeZone();
-        DateFormat = "dd/MM/yyyy";
-
+        // Keep the currently active settings unchanged until
+        // the database read has completed successfully.
         var settings = await _repository.GetAllAsync();
+
+        // Prepare new settings locally.
+        TimeZoneInfo newTimeZone = GetDefaultTimeZone();
+        string newDateFormat = DefaultDateFormat;
 
         var timeZoneId = settings.FirstOrDefault(
             setting => setting.Key ==
@@ -44,16 +48,17 @@ public sealed class RegionalSettingsService
         {
             try
             {
-                _timeZone =
-                    TimeZoneInfo.FindSystemTimeZoneById(timeZoneId);
+                newTimeZone =
+                    TimeZoneInfo.FindSystemTimeZoneById(
+                        timeZoneId.Trim());
             }
             catch (TimeZoneNotFoundException)
             {
-                _timeZone = GetDefaultTimeZone();
+                newTimeZone = GetDefaultTimeZone();
             }
             catch (InvalidTimeZoneException)
             {
-                _timeZone = GetDefaultTimeZone();
+                newTimeZone = GetDefaultTimeZone();
             }
         }
 
@@ -65,13 +70,17 @@ public sealed class RegionalSettingsService
                     dateFormat,
                     CultureInfo.InvariantCulture);
 
-                DateFormat = dateFormat;
+                newDateFormat = dateFormat;
             }
             catch (FormatException)
             {
-                DateFormat = "dd/MM/yyyy";
+                newDateFormat = DefaultDateFormat;
             }
         }
+
+        // Apply both settings only after loading and validation.
+        _timeZone = newTimeZone;
+        DateFormat = newDateFormat;
     }
 
     // UTC TO CONFIGURED LOCAL TIME

@@ -7,16 +7,14 @@ using System.Threading;
 using System.Threading.Tasks;
 using MaternityManagementSystem.Models;
 using MaternityManagementSystem.Repositories;
-using MaternityManagementSystem.Services;
 using MaternityManagementSystem.Sessions;
 
 namespace MaternityManagementSystem.Services;
 
 public class AppointmentService
 {
-    private const int FallbackAppointmentDurationMinutes = 30;
-
     private readonly RegionalSettingsService _regionalSettingsService;
+    private readonly SystemSettingService _systemSettingService;
     private readonly AppointmentRepository _appointmentRepository;
     private readonly PatientRepository _patientRepository;
     private readonly PregnancyRepository _pregnancyRepository;
@@ -29,7 +27,8 @@ public class AppointmentService
         PregnancyRepository pregnancyRepository,
         AuthorizationService authorizationService,
         SessionService sessionService,
-        RegionalSettingsService regionalSettingsService)
+        RegionalSettingsService regionalSettingsService,
+        SystemSettingService systemSettingService)
     {
         ArgumentNullException.ThrowIfNull(appointmentRepository);
         ArgumentNullException.ThrowIfNull(patientRepository);
@@ -37,6 +36,7 @@ public class AppointmentService
         ArgumentNullException.ThrowIfNull(authorizationService);
         ArgumentNullException.ThrowIfNull(sessionService);
         ArgumentNullException.ThrowIfNull(regionalSettingsService);
+        ArgumentNullException.ThrowIfNull(systemSettingService);
 
         _appointmentRepository = appointmentRepository;
         _patientRepository = patientRepository;
@@ -44,8 +44,8 @@ public class AppointmentService
         _authorizationService = authorizationService;
         _sessionService = sessionService;
         _regionalSettingsService = regionalSettingsService;
+        _systemSettingService = systemSettingService;
     }
-
 
     // CREATE
 
@@ -109,6 +109,7 @@ public class AppointmentService
         return await _appointmentRepository.AddAsync(
             appointment,
             auditLog,
+            defaultDuration,
             cancellationToken);
     }
 
@@ -446,6 +447,7 @@ public class AppointmentService
         await _appointmentRepository.UpdateAsync(
             existingAppointment,
             auditLog,
+            defaultDuration,
             cancellationToken);
 
         return existingAppointment;
@@ -507,6 +509,9 @@ public class AppointmentService
         appointment.CancellationReason = normalizedReason;
         appointment.UpdatedAtUtc = DateTime.UtcNow;
 
+        int defaultDuration =
+            await GetDefaultAppointmentDurationMinutesAsync();
+
         var currentUser = _sessionService.CurrentUser!;
 
         var auditLog = new AuditLog
@@ -523,6 +528,7 @@ public class AppointmentService
         await _appointmentRepository.UpdateAsync(
             appointment,
             auditLog,
+            defaultDuration,
             cancellationToken);
     }
 
@@ -593,6 +599,9 @@ public class AppointmentService
         appointment.Status = normalizedStatus;
         appointment.UpdatedAtUtc = DateTime.UtcNow;
 
+        int defaultDuration =
+            await GetDefaultAppointmentDurationMinutesAsync();
+
         var currentUser = _sessionService.CurrentUser!;
 
         var auditLog = new AuditLog
@@ -608,6 +617,7 @@ public class AppointmentService
         await _appointmentRepository.UpdateAsync(
             appointment,
             auditLog,
+            defaultDuration,
             cancellationToken);
     }
 
@@ -712,6 +722,8 @@ public class AppointmentService
         }
     }
 
+    // SCHEDULE CONFLICT DETECTION
+
     private async Task EnsureNoScheduleConflictAsync(
         Appointment appointment,
         int defaultDurationMinutes,
@@ -725,6 +737,12 @@ public class AppointmentService
 
         TimeOnly proposedEnd = appointment.EndTime!.Value;
 
+        TimeSpan proposedStart =
+            appointment.StartTime.ToTimeSpan();
+
+        TimeSpan proposedEndTime =
+            proposedEnd.ToTimeSpan();
+
         foreach (var existing in sameDayAppointments)
         {
             if (existing.Id == appointment.Id || existing.IsArchived)
@@ -737,12 +755,20 @@ public class AppointmentService
                 continue;
             }
 
-            TimeOnly existingEnd = existing.EndTime ??
-                existing.StartTime.AddMinutes(defaultDurationMinutes);
+            TimeSpan existingStart =
+                existing.StartTime.ToTimeSpan();
+
+            TimeSpan existingEnd =
+                existing.EndTime?.ToTimeSpan()
+                ?? TimeSpan.FromMinutes(
+                    Math.Min(
+                        existingStart.TotalMinutes +
+                        defaultDurationMinutes,
+                        TimeSpan.FromDays(1).TotalMinutes));
 
             bool overlaps =
-                appointment.StartTime < existingEnd &&
-                existing.StartTime < proposedEnd;
+                proposedStart < existingEnd &&
+                existingStart < proposedEndTime;
 
             if (overlaps)
             {
@@ -752,7 +778,6 @@ public class AppointmentService
             }
         }
     }
-
 
     // CLINIC TIME VALIDATION
 
@@ -776,12 +801,7 @@ public class AppointmentService
 
     public async Task<int> GetDefaultAppointmentDurationMinutesAsync()
     {
-        var systemSettingService = new SystemSettingService(
-            new SystemSettingRepository(),
-            _authorizationService,
-            _sessionService);
-
-        var setting = await systemSettingService.GetByKeyAsync(
+        var setting = await _systemSettingService.GetByKeyAsync(
             SystemSettingKeys.Appointments.DefaultDuration);
 
         if (int.TryParse(
@@ -789,24 +809,37 @@ public class AppointmentService
                 NumberStyles.Integer,
                 CultureInfo.InvariantCulture,
                 out int duration) &&
-            duration > 0 &&
-            duration <= 1440)
+            duration >= SystemSettingService.MinimumAppointmentDurationMinutes &&
+            duration <= SystemSettingService.MaximumAppointmentDurationMinutes)
         {
             return duration;
         }
 
-        return FallbackAppointmentDurationMinutes;
+        return SystemSettingService.DefaultAppointmentDurationMinutes;
     }
 
     private static void ApplyDefaultDuration(
         Appointment appointment,
         int defaultDurationMinutes)
     {
-        if (appointment.EndTime is null)
+        if (appointment.EndTime.HasValue)
         {
-            appointment.EndTime = appointment.StartTime.AddMinutes(
-                defaultDurationMinutes);
+            return;
         }
+
+        double proposedEndMinutes =
+            appointment.StartTime.ToTimeSpan().TotalMinutes +
+            defaultDurationMinutes;
+
+        if (proposedEndMinutes >= TimeSpan.FromDays(1).TotalMinutes)
+        {
+            throw new ArgumentException(
+                "The appointment duration would extend past midnight. " +
+                "Please select an earlier start time.");
+        }
+
+        appointment.EndTime = appointment.StartTime.AddMinutes(
+            defaultDurationMinutes);
     }
 
     private static void NormalizeFields(Appointment appointment)

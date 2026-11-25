@@ -13,8 +13,6 @@ namespace MaternityManagementSystem.Repositories;
 
 public class AppointmentRepository
 {
-    private const int DefaultAppointmentDurationMinutes = 30;
-
     private readonly IDbContextFactory<ClinicDbContext>? _contextFactory;
 
     public AppointmentRepository()
@@ -45,10 +43,13 @@ public class AppointmentRepository
     public async Task<Appointment> AddAsync(
         Appointment appointment,
         AuditLog auditLog,
+        int defaultAppointmentDurationMinutes,
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(appointment);
         ArgumentNullException.ThrowIfNull(auditLog);
+
+        ValidateDefaultDuration(defaultAppointmentDurationMinutes);
 
         await using var dbContext =
             await CreateDbContextAsync(cancellationToken);
@@ -57,10 +58,10 @@ public class AppointmentRepository
             await dbContext.Database.BeginTransactionAsync(
                 cancellationToken);
 
-        // Final conflict check inside the database transaction.
         await EnsureNoScheduleConflictAsync(
             dbContext,
             appointment,
+            defaultAppointmentDurationMinutes,
             cancellationToken);
 
         await dbContext.Appointments.AddAsync(
@@ -201,13 +202,12 @@ public class AppointmentRepository
             .ToListAsync(cancellationToken);
     }
 
-
     public async Task<List<Appointment>> GetForReportAsync(
-    DateOnly? startDate,
-    DateOnly? endDate,
-    string? searchTerm,
-    string? status,
-    CancellationToken cancellationToken = default)
+        DateOnly? startDate,
+        DateOnly? endDate,
+        string? searchTerm,
+        string? status,
+        CancellationToken cancellationToken = default)
     {
         if (startDate.HasValue &&
             endDate.HasValue &&
@@ -226,7 +226,6 @@ public class AppointmentRepository
             .Include(appointment => appointment.Pregnancy)
             .Where(appointment => !appointment.IsArchived);
 
-        // Date range
         if (startDate.HasValue)
         {
             query = query.Where(appointment =>
@@ -239,7 +238,6 @@ public class AppointmentRepository
                 appointment.AppointmentDate <= endDate.Value);
         }
 
-        // Patient name or patient number
         if (!string.IsNullOrWhiteSpace(searchTerm))
         {
             var search = searchTerm.Trim();
@@ -252,7 +250,6 @@ public class AppointmentRepository
                 appointment.Patient.LastName.Contains(search));
         }
 
-        // Appointment status
         if (!string.IsNullOrWhiteSpace(status) &&
             !string.Equals(
                 status,
@@ -270,14 +267,12 @@ public class AppointmentRepository
             .ToListAsync(cancellationToken);
     }
 
-
-
-
     // UPDATE
 
     public async Task UpdateAsync(
         Appointment appointment,
         AuditLog auditLog,
+        int defaultAppointmentDurationMinutes,
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(appointment);
@@ -288,6 +283,8 @@ public class AppointmentRepository
             throw new ArgumentOutOfRangeException(
                 nameof(appointment));
         }
+
+        ValidateDefaultDuration(defaultAppointmentDurationMinutes);
 
         await using var dbContext =
             await CreateDbContextAsync(cancellationToken);
@@ -383,12 +380,12 @@ public class AppointmentRepository
             return;
         }
 
-        // Check conflicts only when the appointment reserves a slot.
         if (appointment.Status is "Scheduled" or "Confirmed")
         {
             await EnsureNoScheduleConflictAsync(
                 dbContext,
                 appointment,
+                defaultAppointmentDurationMinutes,
                 cancellationToken);
         }
 
@@ -501,19 +498,14 @@ public class AppointmentRepository
         await transaction.CommitAsync(cancellationToken);
     }
 
+    // CLINIC ACTIVITY REPORT
 
     public async Task<int> GetAppointmentCountForClinicActivityReportAsync(
-    DateOnly? startDate,
-    DateOnly? endDate,
-    CancellationToken cancellationToken = default)
+        DateOnly? startDate,
+        DateOnly? endDate,
+        CancellationToken cancellationToken = default)
     {
-        if (startDate.HasValue &&
-            endDate.HasValue &&
-            startDate.Value > endDate.Value)
-        {
-            throw new ArgumentException(
-                "The start date cannot be later than the end date.");
-        }
+        ValidateReportDateRange(startDate, endDate);
 
         await using var dbContext =
             await CreateDbContextAsync(cancellationToken);
@@ -537,19 +529,12 @@ public class AppointmentRepository
         return await query.CountAsync(cancellationToken);
     }
 
-
     public async Task<List<DateOnly>> GetAppointmentDatesForClinicActivityReportAsync(
-    DateOnly? startDate,
-    DateOnly? endDate,
-    CancellationToken cancellationToken = default)
+        DateOnly? startDate,
+        DateOnly? endDate,
+        CancellationToken cancellationToken = default)
     {
-        if (startDate.HasValue &&
-            endDate.HasValue &&
-            startDate.Value > endDate.Value)
-        {
-            throw new ArgumentException(
-                "The start date cannot be later than the end date.");
-        }
+        ValidateReportDateRange(startDate, endDate);
 
         await using var dbContext =
             await CreateDbContextAsync(cancellationToken);
@@ -576,19 +561,12 @@ public class AppointmentRepository
             .ToListAsync(cancellationToken);
     }
 
-
     public async Task<List<int>> GetPatientIdsForClinicActivityReportAsync(
-    DateOnly? startDate,
-    DateOnly? endDate,
-    CancellationToken cancellationToken = default)
+        DateOnly? startDate,
+        DateOnly? endDate,
+        CancellationToken cancellationToken = default)
     {
-        if (startDate.HasValue &&
-            endDate.HasValue &&
-            startDate.Value > endDate.Value)
-        {
-            throw new ArgumentException(
-                "The start date cannot be later than the end date.");
-        }
+        ValidateReportDateRange(startDate, endDate);
 
         await using var dbContext =
             await CreateDbContextAsync(cancellationToken);
@@ -615,20 +593,12 @@ public class AppointmentRepository
             .ToListAsync(cancellationToken);
     }
 
-
-
     public async Task<List<string>> GetStatusesForClinicActivityReportAsync(
-    DateOnly? startDate,
-    DateOnly? endDate,
-    CancellationToken cancellationToken = default)
+        DateOnly? startDate,
+        DateOnly? endDate,
+        CancellationToken cancellationToken = default)
     {
-        if (startDate.HasValue &&
-            endDate.HasValue &&
-            startDate.Value > endDate.Value)
-        {
-            throw new ArgumentException(
-                "The start date cannot be later than the end date.");
-        }
+        ValidateReportDateRange(startDate, endDate);
 
         await using var dbContext =
             await CreateDbContextAsync(cancellationToken);
@@ -654,12 +624,12 @@ public class AppointmentRepository
             .ToListAsync(cancellationToken);
     }
 
-
     // TRANSACTION-SAFE CONFLICT VALIDATION
 
     private static async Task EnsureNoScheduleConflictAsync(
         ClinicDbContext dbContext,
         Appointment proposedAppointment,
+        int defaultAppointmentDurationMinutes,
         CancellationToken cancellationToken)
     {
         if (proposedAppointment.Status is not ("Scheduled" or "Confirmed"))
@@ -676,26 +646,34 @@ public class AppointmentRepository
         var existingAppointments = await dbContext.Appointments
             .AsNoTracking()
             .Where(existing =>
-                existing.AppointmentDate ==
-                    proposedAppointment.AppointmentDate &&
+                existing.AppointmentDate == proposedAppointment.AppointmentDate &&
                 !existing.IsArchived &&
                 (existing.Status == "Scheduled" ||
                  existing.Status == "Confirmed") &&
                 existing.Id != proposedAppointment.Id)
             .ToListAsync(cancellationToken);
 
-        TimeOnly proposedStart = proposedAppointment.StartTime;
-        TimeOnly proposedEnd = proposedAppointment.EndTime.Value;
+        TimeSpan proposedStart =
+            proposedAppointment.StartTime.ToTimeSpan();
+
+        TimeSpan proposedEnd =
+            proposedAppointment.EndTime.Value.ToTimeSpan();
 
         foreach (var existing in existingAppointments)
         {
-            TimeOnly existingEnd = existing.EndTime ??
-                existing.StartTime.AddMinutes(
-                    DefaultAppointmentDurationMinutes);
+            TimeSpan existingStart =
+                existing.StartTime.ToTimeSpan();
+
+            TimeSpan existingEnd = existing.EndTime?.ToTimeSpan()
+                ?? TimeSpan.FromMinutes(
+                    Math.Min(
+                        existingStart.TotalMinutes +
+                        defaultAppointmentDurationMinutes,
+                        TimeSpan.FromDays(1).TotalMinutes));
 
             bool overlaps =
                 proposedStart < existingEnd &&
-                existing.StartTime < proposedEnd;
+                existingStart < proposedEnd;
 
             if (overlaps)
             {
@@ -703,6 +681,31 @@ public class AppointmentRepository
                     $"This appointment overlaps with another appointment " +
                     $"scheduled at {existing.StartTime:hh:mm tt}.");
             }
+        }
+    }
+
+    // VALIDATION HELPERS
+
+    private static void ValidateDefaultDuration(int duration)
+    {
+        if (duration is < 5 or > 240)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(duration),
+                "Default appointment duration must be between 5 and 240 minutes.");
+        }
+    }
+
+    private static void ValidateReportDateRange(
+        DateOnly? startDate,
+        DateOnly? endDate)
+    {
+        if (startDate.HasValue &&
+            endDate.HasValue &&
+            startDate.Value > endDate.Value)
+        {
+            throw new ArgumentException(
+                "The start date cannot be later than the end date.");
         }
     }
 }

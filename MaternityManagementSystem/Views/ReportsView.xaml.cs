@@ -69,6 +69,11 @@ namespace MaternityManagementSystem.Views
                     laboratoryResultsReportService);
 
             // Appointment Report
+            var systemSettingService = new SystemSettingService(
+                new SystemSettingRepository(),
+                authorizationService,
+                app.SessionService);
+
             var appointmentService =
                 new AppointmentService(
                     new AppointmentRepository(),
@@ -76,7 +81,8 @@ namespace MaternityManagementSystem.Views
                     new PregnancyRepository(),
                     authorizationService,
                     app.SessionService,
-                    app.RegionalSettings);
+                    app.RegionalSettings,
+                    systemSettingService);
 
             var appointmentReportService =
                 new AppointmentReportService(

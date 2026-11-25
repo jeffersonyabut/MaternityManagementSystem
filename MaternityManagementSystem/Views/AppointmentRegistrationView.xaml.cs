@@ -37,8 +37,14 @@ public partial class AppointmentRegistrationView : UserControl
         var appointmentRepository = new AppointmentRepository();
         var patientRepository = new PatientRepository();
         var pregnancyRepository = new PregnancyRepository();
+        var systemSettingRepository = new SystemSettingRepository();
 
         var authorizationService = new AuthorizationService(
+            app.SessionService);
+
+        var systemSettingService = new SystemSettingService(
+            systemSettingRepository,
+            authorizationService,
             app.SessionService);
 
         var appointmentService = new AppointmentService(
@@ -47,7 +53,8 @@ public partial class AppointmentRegistrationView : UserControl
             pregnancyRepository,
             authorizationService,
             app.SessionService,
-            app.RegionalSettings);
+            app.RegionalSettings,
+            systemSettingService);
 
         _viewModel = new AppointmentViewModel(
             appointmentService,
@@ -233,6 +240,4 @@ public partial class AppointmentRegistrationView : UserControl
     {
         CancelRequested?.Invoke();
     }
-
-
 }

@@ -47,7 +47,8 @@ public static class AppointmentValidator
             appointment.EndTime.Value <= appointment.StartTime)
         {
             throw new ArgumentException(
-                "Appointment end time must be later than start time.");
+                "Appointment end time must be later than its start time. " +
+                "Appointments cannot extend past midnight.");
         }
 
         if (string.IsNullOrWhiteSpace(appointment.Purpose))

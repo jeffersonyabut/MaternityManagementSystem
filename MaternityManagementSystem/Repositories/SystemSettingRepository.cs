@@ -54,7 +54,40 @@ public class SystemSettingRepository
     {
         ArgumentNullException.ThrowIfNull(setting);
         ArgumentNullException.ThrowIfNull(auditLog);
-        ArgumentException.ThrowIfNullOrWhiteSpace(setting.Key);
+
+        await UpsertManyWithAuditAsync(
+        [
+            (setting, auditLog)
+        ]);
+    }
+
+    public async Task UpsertManyWithAuditAsync(
+        IReadOnlyCollection<(SystemSetting Setting, AuditLog AuditLog)> items)
+    {
+        ArgumentNullException.ThrowIfNull(items);
+
+        if (items.Count == 0)
+        {
+            return;
+        }
+
+        var settingKeys = new HashSet<string>(
+            StringComparer.Ordinal);
+
+        foreach (var (setting, auditLog) in items)
+        {
+            ArgumentNullException.ThrowIfNull(setting);
+            ArgumentNullException.ThrowIfNull(auditLog);
+
+            ArgumentException.ThrowIfNullOrWhiteSpace(setting.Key);
+
+            if (!settingKeys.Add(setting.Key))
+            {
+                throw new ArgumentException(
+                    $"Duplicate setting key '{setting.Key}' in the batch.",
+                    nameof(items));
+            }
+        }
 
         await using var db = CreateDbContext();
 
@@ -63,33 +96,50 @@ public class SystemSettingRepository
 
         try
         {
-            SystemSetting? existingSetting =
-                await db.SystemSettings.FirstOrDefaultAsync(
-                    item => item.Key == setting.Key);
+            var auditLogs = new List<AuditLog>();
 
-            if (existingSetting is null)
+            foreach (var (setting, auditLog) in items)
             {
-                setting.Id = 0;
-                setting.UpdatedAtUtc = DateTime.UtcNow;
+                SystemSetting? existingSetting =
+                    await db.SystemSettings.FirstOrDefaultAsync(
+                        item => item.Key == setting.Key);
 
-                db.SystemSettings.Add(setting);
+                if (existingSetting is null)
+                {
+                    setting.Id = 0;
+                    setting.UpdatedAtUtc = DateTime.UtcNow;
 
-                await db.SaveChangesAsync();
+                    db.SystemSettings.Add(setting);
 
-                auditLog.EntityId = setting.Id;
+                    auditLog.EntityId = null;
+                }
+                else
+                {
+                    existingSetting.Value = setting.Value;
+                    existingSetting.UpdatedAtUtc = DateTime.UtcNow;
+                    existingSetting.UpdatedByStaffId =
+                        setting.UpdatedByStaffId;
+
+                    auditLog.EntityId = existingSetting.Id;
+                }
+
+                auditLogs.Add(auditLog);
             }
-            else
+
+            // Save settings first so newly created records receive IDs.
+            await db.SaveChangesAsync();
+
+            foreach (var (setting, auditLog) in items)
             {
-                existingSetting.Value = setting.Value;
-                existingSetting.UpdatedAtUtc = DateTime.UtcNow;
-                existingSetting.UpdatedByStaffId =
-                    setting.UpdatedByStaffId;
-
-                auditLog.EntityId = existingSetting.Id;
+                if (auditLog.EntityId is null)
+                {
+                    auditLog.EntityId = setting.Id;
+                }
             }
 
-            db.AuditLogs.Add(auditLog);
+            db.AuditLogs.AddRange(auditLogs);
 
+            // Save audit logs before committing the transaction.
             await db.SaveChangesAsync();
 
             await transaction.CommitAsync();

@@ -1,7 +1,7 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
+using System.Globalization;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using MaternityManagementSystem.Models;
@@ -91,10 +91,32 @@ public partial class SystemSettingsViewModel : ObservableObject
             var settings =
                 await _systemSettingService.GetAllAsync();
 
-            var values = settings.ToDictionary(
-                setting => setting.Key,
-                setting => setting.Value,
+            var values = new Dictionary<string, string>(
                 StringComparer.OrdinalIgnoreCase);
+
+            foreach (var setting in settings)
+            {
+                string? knownKey = null;
+
+                foreach (var defaultSetting in SystemSettingDefaults.Values)
+                {
+                    if (string.Equals(
+                            defaultSetting.Key,
+                            setting.Key,
+                            StringComparison.OrdinalIgnoreCase))
+                    {
+                        knownKey = defaultSetting.Key;
+                        break;
+                    }
+                }
+
+                if (knownKey is not null)
+                {
+                    values.TryAdd(
+                        knownKey,
+                        setting.Value ?? string.Empty);
+                }
+            }
 
             _originalValues.Clear();
 
@@ -192,18 +214,23 @@ public partial class SystemSettingsViewModel : ObservableObject
         try
         {
             if (!int.TryParse(
-                DefaultAppointmentDuration,
-                out int duration) ||
-                duration <= 0)
+                    DefaultAppointmentDuration,
+                    NumberStyles.Integer,
+                    CultureInfo.InvariantCulture,
+                    out int duration) ||
+                duration < SystemSettingService.MinimumAppointmentDurationMinutes ||
+                duration > SystemSettingService.MaximumAppointmentDurationMinutes)
             {
                 StatusMessage =
-                    "Default appointment duration must be a positive number.";
+                    $"Default appointment duration must be between " +
+                    $"{SystemSettingService.MinimumAppointmentDurationMinutes} and " +
+                    $"{SystemSettingService.MaximumAppointmentDurationMinutes} minutes.";
 
                 return;
             }
 
             var updatedValues = new Dictionary<string, string>(
-                StringComparer.OrdinalIgnoreCase)
+                StringComparer.Ordinal)
             {
                 [SystemSettingKeys.Clinic.Name] = ClinicName.Trim(),
                 [SystemSettingKeys.Clinic.LogoPath] = ClinicLogoPath.Trim(),
@@ -212,7 +239,7 @@ public partial class SystemSettingsViewModel : ObservableObject
                 [SystemSettingKeys.Clinic.Email] = ClinicEmail.Trim(),
 
                 [SystemSettingKeys.Appointments.DefaultDuration] =
-                    duration.ToString(),
+                    duration.ToString(CultureInfo.InvariantCulture),
 
                 [SystemSettingKeys.Notifications.SmsEnabled] =
                     IsSmsEnabled.ToString().ToLowerInvariant(),
@@ -232,32 +259,41 @@ public partial class SystemSettingsViewModel : ObservableObject
                     updatedValues,
                     SystemSettingKeys.Regional.DateFormat);
 
+            var changedValues = new Dictionary<string, string>(
+                StringComparer.Ordinal);
+
             foreach (var setting in updatedValues)
             {
-                if (_originalValues.TryGetValue(
-                        setting.Key,
-                        out var originalValue) &&
-                    string.Equals(
-                        originalValue,
-                        setting.Value,
-                        StringComparison.Ordinal))
+                if (HasSettingChanged(updatedValues, setting.Key))
                 {
-                    continue;
+                    changedValues.Add(setting.Key, setting.Value);
                 }
-
-                await _systemSettingService.SaveAsync(
-                    setting.Key,
-                    setting.Value);
             }
 
-            if (regionalSettingsChanged)
-            {
-                await _regionalSettingsService.RefreshAsync();
-            }
+            // Save every changed setting in one database transaction.
+            await _systemSettingService.SaveBatchAsync(changedValues);
 
+            // Update the local baseline after the database save succeeds.
             foreach (var setting in updatedValues)
             {
                 _originalValues[setting.Key] = setting.Value;
+            }
+
+            // Apply regional settings only after the database transaction succeeds.
+            if (regionalSettingsChanged)
+            {
+                try
+                {
+                    await _regionalSettingsService.RefreshAsync();
+                }
+                catch (Exception)
+                {
+                    StatusMessage =
+                        "Settings were saved successfully, but regional settings " +
+                        "could not be refreshed. Please restart the application.";
+
+                    return;
+                }
             }
 
             StatusMessage = "System settings saved successfully.";
@@ -266,10 +302,14 @@ public partial class SystemSettingsViewModel : ObservableObject
         {
             // Session expiration is handled by DashboardWindow.
         }
+        catch (ArgumentException ex)
+        {
+            StatusMessage = ex.Message;
+        }
         catch (Exception)
         {
             StatusMessage =
-                "Settings may have been saved, but an error occurred while applying them. Please reload and verify your settings.";
+                "Unable to save system settings. No changes were committed.";
         }
         finally
         {
