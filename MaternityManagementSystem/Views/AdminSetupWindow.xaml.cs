@@ -1,4 +1,4 @@
-﻿
+
 using System.Windows;
 using MaternityManagementSystem.Models;
 using MaternityManagementSystem.Repositories;
@@ -39,6 +39,12 @@ public partial class AdminSetupWindow : Window
             return;
         }
 
+        if (password.Length > 1024)
+        {
+            MessageText.Text = "Password cannot exceed 1,024 characters.";
+            return;
+        }
+
         if (password != confirmation)
         {
             MessageText.Text = "Passwords do not match.";
@@ -59,11 +65,15 @@ public partial class AdminSetupWindow : Window
                 return;
             }
 
+            string normalizedUsername =
+                UsernameNormalizer.Normalize(username);
+
             var admin = new Staff
             {
                 Username = username,
+                NormalizedUsername = normalizedUsername,
                 PasswordHash = PasswordHasher.HashPassword(password),
-                Role = "Admin",
+                Role = StaffRoles.Admin,
                 IsActive = true
             };
 

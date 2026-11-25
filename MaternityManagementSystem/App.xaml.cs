@@ -5,6 +5,7 @@ using MaternityManagementSystem.Views;
 using MaternityManagementSystem.Data;
 using Microsoft.EntityFrameworkCore;
 using System;
+using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
 
@@ -12,7 +13,14 @@ namespace MaternityManagementSystem;
 
 public partial class App : Application
 {
+    private const string NormalizedUsernameColumnMigration =
+        "20261125035926_AddNormalizedUsernameColumn";
+
+    private const string EnforceNormalizedUsernameMigration =
+        "20261125041051_EnforceNormalizedUsername";
+
     public SessionService SessionService { get; } = new();
+
     public RegionalSettingsService RegionalSettings { get; } =
         new(new SystemSettingRepository());
 
@@ -22,22 +30,19 @@ public partial class App : Application
 
         try
         {
-            // 1. Initialize the database and apply pending migrations.
-            await using (var db = new ClinicDbContext())
-            {
-                await db.Database.MigrateAsync();
-            }
+            await InitializeDatabaseAsync();
 
-            // 2. Initialize missing system settings.
+            // Initialize missing system settings.
             var settingsInitializer = new SystemSettingInitializer();
             await settingsInitializer.InitializeAsync();
+
             await RegionalSettings.RefreshAsync();
 
-            // 3. Check whether an administrator/staff account exists.
+            // Check whether an administrator/staff account exists.
             var repository = new StaffRepository();
             bool hasStaff = await repository.HasAnyStaffAsync();
 
-            // 4. Show initial admin setup if no staff exists.
+            // Show initial admin setup if no staff exists.
             if (!hasStaff)
             {
                 var setupWindow = new AdminSetupWindow();
@@ -50,7 +55,7 @@ public partial class App : Application
                 }
             }
 
-            // 5. Launch the main application.
+            // Launch the main application.
             var mainWindow = new MainWindow();
 
             MainWindow = mainWindow;
@@ -65,6 +70,42 @@ public partial class App : Application
                 MessageBoxImage.Error);
 
             Shutdown();
+        }
+    }
+
+    private static async Task InitializeDatabaseAsync()
+    {
+        await using var db = new ClinicDbContext();
+
+        var appliedMigrations =
+            (await db.Database.GetAppliedMigrationsAsync()).ToHashSet();
+
+        // If the final migration has already been applied,
+        // the normalization process is complete.
+        if (!appliedMigrations.Contains(EnforceNormalizedUsernameMigration))
+        {
+            // Apply Stage 1 only if it has not already been applied.
+            if (!appliedMigrations.Contains(NormalizedUsernameColumnMigration))
+            {
+                await db.Database.MigrateAsync(
+                    NormalizedUsernameColumnMigration);
+            }
+
+            // Backfill existing usernames before enforcing NOT NULL
+            // and the unique normalized username index.
+            var normalizationService =
+                new UsernameNormalizationMigrationService();
+
+            await normalizationService.BackfillAsync(db);
+
+            // Apply Stage 2 and any remaining pending migrations.
+            await db.Database.MigrateAsync();
+        }
+        else
+        {
+            // Normalization is already complete.
+            // Apply any other migrations that may have been added later.
+            await db.Database.MigrateAsync();
         }
     }
 }

@@ -27,6 +27,12 @@ public static class PasswordHasher
         string password,
         string storedHash)
     {
+        if (string.IsNullOrEmpty(password) ||
+            string.IsNullOrWhiteSpace(storedHash))
+        {
+            return false;
+        }
+
         string[] parts = storedHash.Split('$');
 
         if (parts.Length != 4 ||

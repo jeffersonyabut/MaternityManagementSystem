@@ -10,6 +10,7 @@ public class AuthenticationService
 
     public AuthenticationService(StaffRepository staffRepository)
     {
+        ArgumentNullException.ThrowIfNull(staffRepository);
         _staffRepository = staffRepository;
     }
 
@@ -23,8 +24,11 @@ public class AuthenticationService
             return null;
         }
 
+        string normalizedUsername =
+            UsernameNormalizer.Normalize(username);
+
         Staff? staff = await _staffRepository.GetByUsernameAsync(
-            username.Trim());
+            normalizedUsername);
 
         if (staff is null)
         {

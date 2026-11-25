@@ -418,6 +418,11 @@ namespace MaternityManagementSystem.Migrations
                     b.Property<bool>("IsActive")
                         .HasColumnType("INTEGER");
 
+                    b.Property<string>("NormalizedUsername")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("PasswordHash")
                         .IsRequired()
                         .HasColumnType("TEXT");
@@ -439,7 +444,7 @@ namespace MaternityManagementSystem.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("Username")
+                    b.HasIndex("NormalizedUsername")
                         .IsUnique();
 
                     b.ToTable("StaffMembers");

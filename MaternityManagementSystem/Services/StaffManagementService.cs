@@ -1,3 +1,4 @@
+
 using MaternityManagementSystem.Models;
 using MaternityManagementSystem.Repositories;
 using MaternityManagementSystem.Sessions;
@@ -28,8 +29,6 @@ public sealed class StaffManagementService
         _sessionService = sessionService;
     }
 
-
-
     public async Task<IReadOnlyList<StaffDisplayModel>> GetAllStaffAsync()
     {
         await _authorizationService.EnsureAdminAsync();
@@ -51,7 +50,6 @@ public sealed class StaffManagementService
 
     public async Task<bool> IsUsernameAvailableAsync(string username)
     {
-
         await _authorizationService.EnsureAdminAsync();
 
         if (string.IsNullOrWhiteSpace(username))
@@ -59,15 +57,17 @@ public sealed class StaffManagementService
             return false;
         }
 
+        string normalizedUsername =
+            UsernameNormalizer.Normalize(username);
+
         return !await _staffRepository.UsernameExistsAsync(
-            username.Trim());
+            normalizedUsername);
     }
 
-
     public async Task CreateStaffAsync(
-    string username,
-    string password,
-    string role)
+        string username,
+        string password,
+        string role)
     {
         await _authorizationService.EnsureAdminAsync();
 
@@ -84,6 +84,9 @@ public sealed class StaffManagementService
             throw new ArgumentException(
                 "Username cannot exceed 100 characters.");
         }
+
+        string normalizedUsername =
+            UsernameNormalizer.Normalize(username);
 
         if (string.IsNullOrWhiteSpace(password) ||
             password.Length < 8)
@@ -112,7 +115,8 @@ public sealed class StaffManagementService
                 ? StaffRoles.Admin
                 : StaffRoles.Staff;
 
-        if (await _staffRepository.UsernameExistsAsync(username))
+        if (await _staffRepository.UsernameExistsAsync(
+            normalizedUsername))
         {
             throw new InvalidOperationException(
                 "This username is already taken.");
@@ -121,16 +125,19 @@ public sealed class StaffManagementService
         Staff staff = new()
         {
             Username = username,
+            NormalizedUsername = normalizedUsername,
             PasswordHash = PasswordHasher.HashPassword(password),
             Role = normalizedRole,
             IsActive = true,
             CreatedAtUtc = DateTime.UtcNow
         };
 
+        UserSession currentUser = _sessionService.CurrentUser!;
+
         AuditLog auditLog = new()
         {
-            StaffId = _sessionService.CurrentUser!.StaffId,
-            Username = _sessionService.CurrentUser.Username,
+            StaffId = currentUser.StaffId,
+            Username = currentUser.Username,
             Action = "Created",
             EntityType = "Staff",
             Details = $"Created staff account '{username}' with role '{normalizedRole}'.",
@@ -142,25 +149,25 @@ public sealed class StaffManagementService
             auditLog);
     }
 
-
     public async Task UpdateStaffAsync(
-    int staffId,
-    string username,
-    string role)
+        int staffId,
+        string username,
+        string role)
     {
         await _authorizationService.EnsureAdminAsync();
-
 
         username = username?.Trim() ?? string.Empty;
 
         if (staffId <= 0)
         {
-            throw new ArgumentException("Invalid staff account.");
+            throw new ArgumentException(
+                "Invalid staff account.");
         }
 
         if (string.IsNullOrWhiteSpace(username))
         {
-            throw new ArgumentException("Username is required.");
+            throw new ArgumentException(
+                "Username is required.");
         }
 
         if (username.Length > 100)
@@ -168,6 +175,9 @@ public sealed class StaffManagementService
             throw new ArgumentException(
                 "Username cannot exceed 100 characters.");
         }
+
+        string normalizedUsername =
+            UsernameNormalizer.Normalize(username);
 
         if (!StaffRoles.IsValid(role))
         {
@@ -192,7 +202,9 @@ public sealed class StaffManagementService
                 "Staff account was not found.");
         }
 
-        if (existingStaff.Id == _sessionService.CurrentUser!.StaffId &&
+        UserSession currentUser = _sessionService.CurrentUser!;
+
+        if (existingStaff.Id == currentUser.StaffId &&
             normalizedRole != StaffRoles.Admin)
         {
             throw new InvalidOperationException(
@@ -200,14 +212,17 @@ public sealed class StaffManagementService
         }
 
         if (await _staffRepository.UsernameExistsAsync(
-            username,
+            normalizedUsername,
             staffId))
         {
             throw new InvalidOperationException(
                 "This username is already taken.");
         }
 
-        if (existingStaff.Username == username &&
+        string existingNormalizedUsername =
+            UsernameNormalizer.Normalize(existingStaff.Username);
+
+        if (existingNormalizedUsername == normalizedUsername &&
             existingStaff.Role == normalizedRole)
         {
             throw new InvalidOperationException(
@@ -216,8 +231,8 @@ public sealed class StaffManagementService
 
         AuditLog auditLog = new()
         {
-            StaffId = _sessionService.CurrentUser.StaffId,
-            Username = _sessionService.CurrentUser.Username,
+            StaffId = currentUser.StaffId,
+            Username = currentUser.Username,
             Action = "Updated",
             EntityType = "Staff",
             Details = $"Updated staff account ID {staffId}.",
@@ -237,21 +252,20 @@ public sealed class StaffManagementService
         }
     }
 
-
-
     public async Task SetStaffStatusAsync(
-    int staffId,
-    bool isActive)
+        int staffId,
+        bool isActive)
     {
-
         await _authorizationService.EnsureAdminAsync();
 
         if (staffId <= 0)
         {
-            throw new ArgumentException("Invalid staff account.");
+            throw new ArgumentException(
+                "Invalid staff account.");
         }
 
-        Staff? staff = await _staffRepository.GetByIdAsync(staffId);
+        Staff? staff =
+            await _staffRepository.GetByIdAsync(staffId);
 
         if (staff is null)
         {
@@ -267,9 +281,9 @@ public sealed class StaffManagementService
                     : "This account is already inactive.");
         }
 
-        int currentStaffId = _sessionService.CurrentUser!.StaffId;
+        UserSession currentUser = _sessionService.CurrentUser!;
 
-        if (staff.Id == currentStaffId && !isActive)
+        if (staff.Id == currentUser.StaffId && !isActive)
         {
             throw new InvalidOperationException(
                 "You cannot deactivate your own account.");
@@ -291,8 +305,8 @@ public sealed class StaffManagementService
 
         AuditLog auditLog = new()
         {
-            StaffId = currentStaffId,
-            Username = _sessionService.CurrentUser.Username,
+            StaffId = currentUser.StaffId,
+            Username = currentUser.Username,
             Action = isActive ? "Activated" : "Deactivated",
             EntityType = "Staff",
             Details = $"Staff account ID {staffId} was {(isActive ? "activated" : "deactivated")}.",
@@ -311,19 +325,16 @@ public sealed class StaffManagementService
         }
     }
 
-
-
     public async Task ResetStaffPasswordAsync(
         int staffId,
         string newPassword)
     {
-
         await _authorizationService.EnsureAdminAsync();
-
 
         if (staffId <= 0)
         {
-            throw new ArgumentException("Invalid staff account.");
+            throw new ArgumentException(
+                "Invalid staff account.");
         }
 
         if (string.IsNullOrWhiteSpace(newPassword) ||
@@ -335,10 +346,12 @@ public sealed class StaffManagementService
 
         if (newPassword.Length > 1024)
         {
-            throw new ArgumentException("Password is too long.");
+            throw new ArgumentException(
+                "Password is too long.");
         }
 
-        Staff? staff = await _staffRepository.GetByIdAsync(staffId);
+        Staff? staff =
+            await _staffRepository.GetByIdAsync(staffId);
 
         if (staff is null)
         {
@@ -354,7 +367,8 @@ public sealed class StaffManagementService
                 "You cannot reset your own password through Staff Management.");
         }
 
-        string passwordHash = PasswordHasher.HashPassword(newPassword);
+        string passwordHash =
+            PasswordHasher.HashPassword(newPassword);
 
         AuditLog auditLog = new()
         {
@@ -377,7 +391,4 @@ public sealed class StaffManagementService
                 "Staff password could not be reset.");
         }
     }
-
-
-
 }

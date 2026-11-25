@@ -61,12 +61,16 @@ public class ClinicDbContext : DbContext
         {
             entity.HasKey(staff => staff.Id);
 
-            entity.HasIndex(staff => staff.Username)
-                  .IsUnique();
-
             entity.Property(staff => staff.Username)
                   .IsRequired()
                   .HasMaxLength(100);
+
+            entity.Property(staff => staff.NormalizedUsername)
+                  .IsRequired()
+                  .HasMaxLength(100);
+
+            entity.HasIndex(staff => staff.NormalizedUsername)
+                  .IsUnique();
 
             entity.Property(staff => staff.PasswordHash)
                   .IsRequired();
