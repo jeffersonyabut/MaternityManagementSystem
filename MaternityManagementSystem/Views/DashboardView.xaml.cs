@@ -48,7 +48,22 @@ namespace MaternityManagementSystem.Views
             object sender,
             RoutedEventArgs e)
         {
-            await _viewModel.LoadDashboardAsync();
+            try
+            {
+                await _viewModel.LoadDashboardAsync();
+            }
+            catch (UnauthorizedAccessException)
+            {
+                // Session expiration is handled by DashboardWindow.
+            }
+            catch (Exception)
+            {
+                MessageBox.Show(
+                    "Unable to load dashboard information. Please try again.",
+                    "Dashboard Unavailable",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
+            }
         }
 
         private void NavigateToPatients(
@@ -115,6 +130,10 @@ namespace MaternityManagementSystem.Views
                 };
 
                 detailsDialog.ShowDialog();
+            }
+            catch (UnauthorizedAccessException)
+            {
+                // Session expiration is handled by DashboardWindow.
             }
             catch (Exception)
             {

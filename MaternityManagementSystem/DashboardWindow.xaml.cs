@@ -18,26 +18,28 @@ namespace MaternityManagementSystem.Views;
 public partial class DashboardWindow : Window
 {
     private readonly SessionService _sessionService;
+
     private readonly NavigationService _navigationService =
         new NavigationService();
 
+    private bool _isHandlingSessionExpiration;
+
     public DashboardWindow(SessionService sessionService)
     {
+        ArgumentNullException.ThrowIfNull(sessionService);
+
         InitializeComponent();
 
         _sessionService = sessionService;
+
+        _sessionService.SessionExpired += SessionService_SessionExpired;
+        Closed += DashboardWindow_Closed;
 
         var user = _sessionService.CurrentUser;
 
         if (user is null)
         {
-            MessageBox.Show(
-                "No active session was found. Please sign in again.",
-                "Authentication Required",
-                MessageBoxButton.OK,
-                MessageBoxImage.Warning);
-
-            Loaded += (_, _) => Close();
+            Loaded += DashboardWindow_MissingSession;
             return;
         }
 
@@ -63,9 +65,95 @@ public partial class DashboardWindow : Window
         Loaded += DashboardWindow_Loaded;
     }
 
-    private async void DashboardWindow_Loaded(
+    private void LogoutButton_Click(
     object sender,
     RoutedEventArgs e)
+    {
+        var result = MessageBox.Show(
+            this,
+            "Are you sure you want to sign out?",
+            "Confirm Sign Out",
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Question);
+
+        if (result != MessageBoxResult.Yes)
+        {
+            return;
+        }
+
+        _sessionService.EndSession();
+
+        ReturnToLogin(
+            "You have successfully signed out. Please sign in again.",
+            "Signed Out");
+    }
+
+
+
+    private void DashboardWindow_MissingSession(
+        object sender,
+        RoutedEventArgs e)
+    {
+        ReturnToLogin(
+            "No active session was found. Please sign in again.",
+            "Authentication Required");
+    }
+
+    private void SessionService_SessionExpired()
+    {
+        if (!Dispatcher.CheckAccess())
+        {
+            Dispatcher.BeginInvoke(
+                new Action(HandleSessionExpired));
+
+            return;
+        }
+
+        HandleSessionExpired();
+    }
+
+    private void HandleSessionExpired()
+    {
+        ReturnToLogin(
+            "Your session has expired or your account permissions have changed. Please sign in again.",
+            "Session Expired");
+    }
+
+
+    private void ReturnToLogin(
+        string message,
+        string title)
+    {
+        if (_isHandlingSessionExpiration)
+        {
+            return;
+        }
+
+        _isHandlingSessionExpiration = true;
+
+        _sessionService.SessionExpired -= SessionService_SessionExpired;
+
+        var loginWindow = new MainWindow(message);
+
+        Application.Current.MainWindow = loginWindow;
+
+        loginWindow.Show();
+        loginWindow.Activate();
+
+        Close();
+    }
+
+
+    private void DashboardWindow_Closed(
+        object? sender,
+        EventArgs e)
+    {
+        _sessionService.SessionExpired -= SessionService_SessionExpired;
+    }
+
+    private async void DashboardWindow_Loaded(
+        object sender,
+        RoutedEventArgs e)
     {
         var authorizationService = new AuthorizationService(
             _sessionService);
@@ -84,13 +172,17 @@ public partial class DashboardWindow : Window
                 ? SystemSettingDefaults.Values[SystemSettingKeys.Clinic.Name]
                 : setting.Value;
         }
+        catch (UnauthorizedAccessException)
+        {
+            // Session expiration is handled by SessionService_SessionExpired.
+            // A permission denial does not require closing the dashboard.
+        }
         catch
         {
             ClinicNameText.Text =
                 SystemSettingDefaults.Values[SystemSettingKeys.Clinic.Name];
         }
     }
-
 
     private void DashboardButton_Click(
         object sender,
@@ -324,8 +416,8 @@ public partial class DashboardWindow : Window
     }
 
     public void ShowPrenatalVisitReport(
-    int visitId,
-    Pregnancy pregnancy)
+        int visitId,
+        Pregnancy pregnancy)
     {
         ArgumentNullException.ThrowIfNull(pregnancy);
 
@@ -406,7 +498,6 @@ public partial class DashboardWindow : Window
         _navigationService.NavigateToView(registrationView);
     }
 
-
     // STAFF MANAGEMENT NAVIGATION
 
     private void StaffManagementButton_Click(
@@ -417,8 +508,8 @@ public partial class DashboardWindow : Window
     }
 
     private void AuditLogManagementButton_Click(
-    object sender,
-    RoutedEventArgs e)
+        object sender,
+        RoutedEventArgs e)
     {
         ShowAuditLogManagement();
     }
@@ -465,8 +556,6 @@ public partial class DashboardWindow : Window
         };
     }
 
-
-
     // AUDIT LOG MANAGEMENT NAVIGATION
 
     public void ShowAuditLogManagement()
@@ -509,8 +598,6 @@ public partial class DashboardWindow : Window
         _navigationService.NavigateToView(view);
     }
 
-
-
     // SYSTEM SETTINGS NAVIGATION
 
     public void ShowSystemSettings()
@@ -546,13 +633,10 @@ public partial class DashboardWindow : Window
         _navigationService.NavigateToView(view);
     }
 
-
     private void SystemSettingsButton_Click(
-    object sender,
-    RoutedEventArgs e)
+        object sender,
+        RoutedEventArgs e)
     {
         ShowSystemSettings();
     }
-
-
 }

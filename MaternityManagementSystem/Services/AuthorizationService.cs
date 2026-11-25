@@ -67,7 +67,7 @@ public sealed class AuthorizationService
 
         if (!sessionIsValid)
         {
-            _sessionService.EndSession();
+            _sessionService.ExpireSession();
 
             throw new UnauthorizedAccessException(
                 "Your account is no longer authorized. Please sign in again.");

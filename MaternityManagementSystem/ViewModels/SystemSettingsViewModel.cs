@@ -110,6 +110,10 @@ public partial class SystemSettingsViewModel : ObservableObject
 
             StatusMessage = "System settings loaded successfully.";
         }
+        catch (UnauthorizedAccessException)
+        {
+            // Session expiration is handled by DashboardWindow.
+        }
         catch (Exception)
         {
             StatusMessage = "Unable to load system settings.";
@@ -257,6 +261,10 @@ public partial class SystemSettingsViewModel : ObservableObject
             }
 
             StatusMessage = "System settings saved successfully.";
+        }
+        catch (UnauthorizedAccessException)
+        {
+            // Session expiration is handled by DashboardWindow.
         }
         catch (Exception)
         {

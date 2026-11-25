@@ -1,6 +1,5 @@
 
 using System;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using MaternityManagementSystem.Dialogs;
@@ -26,8 +25,8 @@ public partial class StaffManagementView : UserControl
     }
 
     private async void EditStaffButton_Click(
-    object sender,
-    RoutedEventArgs e)
+        object sender,
+        RoutedEventArgs e)
     {
         if (DataContext is not StaffManagementViewModel viewModel)
         {
@@ -77,6 +76,10 @@ public partial class StaffManagementView : UserControl
                 editDialog.Username,
                 editDialog.SelectedRole);
         }
+        catch (UnauthorizedAccessException)
+        {
+            // Session expiration is handled by DashboardWindow.
+        }
         catch (Exception ex)
         {
             CustomDialog errorDialog = new();
@@ -95,7 +98,6 @@ public partial class StaffManagementView : UserControl
             errorDialog.ShowDialog();
         }
     }
-
 
     private async void AddStaffButton_Click(
         object sender,
@@ -129,6 +131,10 @@ public partial class StaffManagementView : UserControl
                 registrationDialog.Password,
                 registrationDialog.SelectedRole);
         }
+        catch (UnauthorizedAccessException)
+        {
+            // Session expiration is handled by DashboardWindow.
+        }
         catch (Exception ex)
         {
             CustomDialog errorDialog = new();
@@ -149,8 +155,8 @@ public partial class StaffManagementView : UserControl
     }
 
     private async void ChangeStaffStatusButton_Click(
-    object sender,
-    RoutedEventArgs e)
+        object sender,
+        RoutedEventArgs e)
     {
         if (DataContext is not StaffManagementViewModel viewModel)
         {
@@ -207,6 +213,10 @@ public partial class StaffManagementView : UserControl
                 selectedStaff.Id,
                 !selectedStaff.IsActive);
         }
+        catch (UnauthorizedAccessException)
+        {
+            // Session expiration is handled by DashboardWindow.
+        }
         catch (Exception ex)
         {
             CustomDialog errorDialog = new();
@@ -225,9 +235,6 @@ public partial class StaffManagementView : UserControl
             errorDialog.ShowDialog();
         }
     }
-
-
-
 
     private async void ResetStaffPasswordButton_Click(
         object sender,
@@ -295,6 +302,10 @@ public partial class StaffManagementView : UserControl
 
             successDialog.ShowDialog();
         }
+        catch (UnauthorizedAccessException)
+        {
+            // Session expiration is handled by DashboardWindow.
+        }
         catch (Exception ex)
         {
             CustomDialog errorDialog = new();
@@ -313,8 +324,4 @@ public partial class StaffManagementView : UserControl
             errorDialog.ShowDialog();
         }
     }
-
-
-
-
 }

@@ -8,7 +8,6 @@ using CommunityToolkit.Mvvm.Input;
 using MaternityManagementSystem.Models;
 using MaternityManagementSystem.Services;
 
-
 namespace MaternityManagementSystem.ViewModels;
 
 public partial class PatientListViewModel : ObservableObject
@@ -28,10 +27,8 @@ public partial class PatientListViewModel : ObservableObject
 
     public ObservableCollection<Patient> Patients { get; } = new();
 
-
     [ObservableProperty]
     private Patient? selectedPatient;
-
 
     [ObservableProperty]
     private string searchText = string.Empty;
@@ -59,7 +56,6 @@ public partial class PatientListViewModel : ObservableObject
         OnPropertyChanged(nameof(HasSelectedPatient));
     }
 
-
     partial void OnCurrentPageChanged(int value)
     {
         OnPropertyChanged(nameof(CanGoToPreviousPage));
@@ -84,7 +80,6 @@ public partial class PatientListViewModel : ObservableObject
         await SearchPatientsAsync();
     }
 
-
     [RelayCommand]
     private void OpenProfile()
     {
@@ -98,8 +93,6 @@ public partial class PatientListViewModel : ObservableObject
     }
 
     public event Action<int>? OpenProfileRequested;
-
-
 
     [RelayCommand]
     private async Task SearchPatientsAsync()
@@ -122,9 +115,9 @@ public partial class PatientListViewModel : ObservableObject
             string searchTerm = SearchText;
 
             int totalResults =
-             await _patientService.CountPatientSearchResultsAsync(
-                 searchTerm,
-                 cancellationTokenSource.Token);
+                await _patientService.CountPatientSearchResultsAsync(
+                    searchTerm,
+                    cancellationTokenSource.Token);
 
             if (requestId != Volatile.Read(ref _searchRequestId))
             {
@@ -165,6 +158,11 @@ public partial class PatientListViewModel : ObservableObject
         catch (OperationCanceledException)
         {
             // A newer search replaced this request.
+        }
+        catch (UnauthorizedAccessException)
+        {
+            // The dashboard handles the session-expiration transition.
+            // Preserve the existing patient list.
         }
         catch (Exception)
         {

@@ -1,4 +1,5 @@
 
+using System;
 using System.Windows;
 using MaternityManagementSystem.Repositories;
 using MaternityManagementSystem.Services;
@@ -9,7 +10,7 @@ namespace MaternityManagementSystem;
 
 public partial class MainWindow : Window
 {
-    public MainWindow()
+    public MainWindow(string? initialMessage = null)
     {
         InitializeComponent();
 
@@ -18,6 +19,11 @@ public partial class MainWindow : Window
         var loginViewModel = new LoginViewModel(
             new AuthenticationService(new StaffRepository()),
             sessionService);
+
+        if (!string.IsNullOrWhiteSpace(initialMessage))
+        {
+            loginViewModel.Message = initialMessage;
+        }
 
         loginViewModel.LoginSucceeded += OnLoginSucceeded;
 

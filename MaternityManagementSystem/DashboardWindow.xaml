@@ -285,13 +285,38 @@
 
                 </StackPanel>
 
+
                 <!-- Sidebar Footer -->
-                <TextBlock DockPanel.Dock="Bottom"
-                           Text="Golddie · Clinic System"
-                           Foreground="#A7A5BF"
-                           FontSize="11"
-                           Margin="24,20,24,24"
-                           VerticalAlignment="Bottom"/>
+                <StackPanel DockPanel.Dock="Bottom"
+                            Margin="12,12,12,16">
+
+                    <Button Content="Sign out"
+                            HorizontalAlignment="Stretch"
+                            Click="LogoutButton_Click">
+
+                        <Button.Style>
+                            <Style TargetType="{x:Type Button}"
+                                    BasedOn="{StaticResource SidebarButtonStyle}">
+
+                                <Setter Property="Foreground" Value="#F0B8B8"/>
+
+                                <Style.Triggers>
+                                    <Trigger Property="IsMouseOver" Value="True">
+                                        <Setter Property="Foreground" Value="#FFFFFF"/>
+                                    </Trigger>
+                                </Style.Triggers>
+
+                            </Style>
+                        </Button.Style>
+                    </Button>
+
+                    <TextBlock Text="Golddie · Clinic System"
+                               Foreground="#A7A5BF"
+                               FontSize="11"
+                               Margin="12,12,12,4"
+                               HorizontalAlignment="Center"/>
+                </StackPanel>
+
 
             </DockPanel>
         </Border>

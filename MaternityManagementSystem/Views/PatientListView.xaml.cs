@@ -1,4 +1,6 @@
+
 using System;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using MaternityManagementSystem.Repositories;
@@ -10,6 +12,10 @@ namespace MaternityManagementSystem.Views;
 public partial class PatientListView : UserControl
 {
     private readonly PatientListViewModel _viewModel;
+
+    private bool _hasLoaded;
+    private bool _isLoading;
+    private bool _hasObservedInitialVisibilityChange;
 
     public PatientListView()
     {
@@ -39,16 +45,50 @@ public partial class PatientListView : UserControl
         object sender,
         RoutedEventArgs e)
     {
-        await _viewModel.LoadPatientsCommand.ExecuteAsync(null);
+        if (_hasLoaded)
+        {
+            return;
+        }
+
+        _hasLoaded = true;
+
+        await LoadPatientsAsync();
     }
 
     private async void PatientListView_IsVisibleChanged(
         object sender,
         DependencyPropertyChangedEventArgs e)
     {
-        if (IsVisible)
+        if (!_hasObservedInitialVisibilityChange)
+        {
+            _hasObservedInitialVisibilityChange = true;
+            return;
+        }
+
+        if (!IsVisible || !_hasLoaded)
+        {
+            return;
+        }
+
+        await LoadPatientsAsync();
+    }
+
+    private async Task LoadPatientsAsync()
+    {
+        if (_isLoading)
+        {
+            return;
+        }
+
+        _isLoading = true;
+
+        try
         {
             await _viewModel.LoadPatientsCommand.ExecuteAsync(null);
+        }
+        finally
+        {
+            _isLoading = false;
         }
     }
 

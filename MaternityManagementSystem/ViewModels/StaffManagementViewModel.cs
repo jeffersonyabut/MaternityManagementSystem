@@ -1,3 +1,4 @@
+
 using System.Collections.ObjectModel;
 using System.Linq;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -130,6 +131,10 @@ public partial class StaffManagementViewModel : ObservableObject
             StatusMessage = _allStaff.Count == 0
                 ? "No staff accounts have been created yet."
                 : $"{_allStaff.Count} staff account(s) loaded.";
+        }
+        catch (UnauthorizedAccessException)
+        {
+            // Session expiration is handled by DashboardWindow.
         }
         catch (Exception)
         {

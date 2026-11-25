@@ -1,3 +1,4 @@
+
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -181,6 +182,10 @@ public partial class AuditLogManagementViewModel : ObservableObject
                 ? "No audit activities have been recorded yet."
                 : $"{TotalRecords} audit record(s) found.";
         }
+        catch (UnauthorizedAccessException)
+        {
+            // Session expiration is handled by DashboardWindow.
+        }
         catch (Exception)
         {
             AuditLogs.Clear();
@@ -290,6 +295,10 @@ public partial class AuditLogManagementViewModel : ObservableObject
                 ? $"{TotalRecords} matching audit record(s) found."
                 : "No matching audit records found.";
         }
+        catch (UnauthorizedAccessException)
+        {
+            // Session expiration is handled by DashboardWindow.
+        }
         catch (Exception)
         {
             StatusMessage = "Unable to apply audit log filters.";
@@ -315,6 +324,10 @@ public partial class AuditLogManagementViewModel : ObservableObject
             CurrentPage++;
             await LoadPageAsync();
         }
+        catch (UnauthorizedAccessException)
+        {
+            // Session expiration is handled by DashboardWindow.
+        }
         catch (Exception)
         {
             CurrentPage--;
@@ -338,6 +351,10 @@ public partial class AuditLogManagementViewModel : ObservableObject
         {
             CurrentPage--;
             await LoadPageAsync();
+        }
+        catch (UnauthorizedAccessException)
+        {
+            // Session expiration is handled by DashboardWindow.
         }
         catch (Exception)
         {
@@ -414,6 +431,4 @@ public partial class AuditLogManagementViewModel : ObservableObject
 
         return exclusiveEndUtc.AddTicks(-1);
     }
-
-
 }
