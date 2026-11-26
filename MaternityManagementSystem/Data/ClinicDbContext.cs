@@ -16,6 +16,7 @@ public class ClinicDbContext : DbContext
     public DbSet<RecordVersion> RecordVersions => Set<RecordVersion>();
     public DbSet<LaboratoryResult> LaboratoryResults => Set<LaboratoryResult>();
     public DbSet<Appointment> Appointments => Set<Appointment>();
+    public DbSet<AppointmentSmsReminder> AppointmentSmsReminders => Set<AppointmentSmsReminder>();
     public DbSet<SystemSetting> SystemSettings => Set<SystemSetting>();
 
 
@@ -414,6 +415,10 @@ public class ClinicDbContext : DbContext
                 .IsRequired()
                 .HasMaxLength(30);
 
+            entity.Property(a => a.ScheduleRevision)
+                .HasDefaultValue(1)
+                .IsRequired();
+
             // Cancellation information
             entity.Property(a => a.CancellationReason)
                 .HasMaxLength(1000)
@@ -464,6 +469,69 @@ public class ClinicDbContext : DbContext
             entity.Property(a => a.ArchiveReason)
                 .HasMaxLength(1000)
                 .IsRequired(false);
+        });
+
+        modelBuilder.Entity<AppointmentSmsReminder>(entity =>
+        {
+            entity.HasKey(reminder => reminder.Id);
+
+            entity.Property(reminder => reminder.ReminderType)
+                .HasConversion<string>()
+                .HasMaxLength(30)
+                .IsRequired();
+
+            entity.Property(reminder => reminder.Status)
+                .HasConversion<string>()
+                .HasMaxLength(30)
+                .IsRequired();
+
+            entity.Property(reminder => reminder.ScheduledAtUtc)
+                .IsRequired();
+
+            entity.Property(reminder => reminder.AppointmentDateSnapshot)
+                .IsRequired();
+
+            entity.Property(reminder => reminder.AppointmentStartTimeSnapshot)
+                .IsRequired();
+
+            entity.Property(reminder => reminder.CreatedAtUtc)
+                .IsRequired();
+
+            entity.Property(reminder => reminder.StatusChangedAtUtc)
+                .IsRequired();
+
+            entity.Property(reminder => reminder.ProviderReference)
+                .HasMaxLength(200)
+                .IsRequired(false);
+
+            entity.Property(reminder => reminder.ProviderStatus)
+                .HasMaxLength(100)
+                .IsRequired(false);
+
+            entity.Property(reminder => reminder.SanitizedOutcomeCode)
+                .HasMaxLength(100)
+                .IsRequired(false);
+
+            entity.HasOne(reminder => reminder.Appointment)
+                .WithMany()
+                .HasForeignKey(reminder => reminder.AppointmentId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasIndex(reminder => new
+            {
+                reminder.AppointmentId,
+                reminder.ScheduleRevision,
+                reminder.ReminderType
+            }).IsUnique();
+
+            entity.HasIndex(reminder => new
+            {
+                reminder.Status,
+                reminder.ScheduledAtUtc
+            });
+
+            entity.HasIndex(reminder => reminder.ProviderReference)
+                .IsUnique();
         });
 
 

@@ -51,6 +51,10 @@ public class AppointmentRepository
 
         ValidateDefaultDuration(defaultAppointmentDurationMinutes);
 
+        // Revisions are assigned by the repository so direct repository callers
+        // cannot create an appointment with an arbitrary initial revision.
+        appointment.ScheduleRevision = 1;
+
         await using var dbContext =
             await CreateDbContextAsync(cancellationToken);
 
@@ -325,6 +329,14 @@ public class AppointmentRepository
         var previousValues = new Dictionary<string, object?>();
         var newValues = new Dictionary<string, object?>();
 
+        bool scheduleChanged =
+            existingAppointment.AppointmentDate != appointment.AppointmentDate ||
+            existingAppointment.StartTime != appointment.StartTime;
+
+        int nextScheduleRevision = scheduleChanged
+            ? checked(existingAppointment.ScheduleRevision + 1)
+            : existingAppointment.ScheduleRevision;
+
         void TrackChange(
             string fieldName,
             object? previousValue,
@@ -348,6 +360,11 @@ public class AppointmentRepository
             nameof(Appointment.StartTime),
             existingAppointment.StartTime,
             appointment.StartTime);
+
+        TrackChange(
+            nameof(Appointment.ScheduleRevision),
+            existingAppointment.ScheduleRevision,
+            nextScheduleRevision);
 
         TrackChange(
             nameof(Appointment.EndTime),
@@ -394,6 +411,8 @@ public class AppointmentRepository
 
         existingAppointment.StartTime =
             appointment.StartTime;
+
+        existingAppointment.ScheduleRevision = nextScheduleRevision;
 
         existingAppointment.EndTime =
             appointment.EndTime;

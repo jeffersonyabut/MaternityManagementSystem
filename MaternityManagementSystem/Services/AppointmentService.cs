@@ -450,6 +450,14 @@ public class AppointmentService
             defaultDuration,
             cancellationToken);
 
+        // Keep the returned instance consistent with the repository's
+        // persisted revision, which is derived from the stored schedule.
+        if (scheduleChanged)
+        {
+            existingAppointment.ScheduleRevision =
+                checked(existingAppointment.ScheduleRevision + 1);
+        }
+
         return existingAppointment;
     }
 

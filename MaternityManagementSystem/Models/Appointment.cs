@@ -20,6 +20,9 @@ public class Appointment
 
     public TimeOnly StartTime { get; set; }
 
+    // Incremented only when the clinic-local appointment date or start time changes.
+    public int ScheduleRevision { get; set; } = 1;
+
     public TimeOnly? EndTime { get; set; }
 
     // Appointment details

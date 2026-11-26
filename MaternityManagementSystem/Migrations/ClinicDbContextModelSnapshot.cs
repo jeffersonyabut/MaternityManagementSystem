@@ -63,6 +63,11 @@ namespace MaternityManagementSystem.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("TEXT");
 
+                    b.Property<int>("ScheduleRevision")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasDefaultValue(1);
+
                     b.Property<TimeOnly>("StartTime")
                         .HasColumnType("TEXT");
 
@@ -87,6 +92,74 @@ namespace MaternityManagementSystem.Migrations
                     b.HasIndex("AppointmentDate", "StartTime");
 
                     b.ToTable("Appointments");
+                });
+
+            modelBuilder.Entity("MaternityManagementSystem.Models.AppointmentSmsReminder", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateOnly>("AppointmentDateSnapshot")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("AppointmentId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<TimeOnly>("AppointmentStartTimeSnapshot")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("AttemptStartedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("FinalizedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ProviderReference")
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ProviderStatus")
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ReminderType")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("SanitizedOutcomeCode")
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("ScheduleRevision")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("ScheduledAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("StatusChangedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ProviderReference")
+                        .IsUnique();
+
+                    b.HasIndex("Status", "ScheduledAtUtc");
+
+                    b.HasIndex("AppointmentId", "ScheduleRevision", "ReminderType")
+                        .IsUnique();
+
+                    b.ToTable("AppointmentSmsReminders");
                 });
 
             modelBuilder.Entity("MaternityManagementSystem.Models.AuditLog", b =>
@@ -583,6 +656,17 @@ namespace MaternityManagementSystem.Migrations
                     b.Navigation("Patient");
 
                     b.Navigation("Pregnancy");
+                });
+
+            modelBuilder.Entity("MaternityManagementSystem.Models.AppointmentSmsReminder", b =>
+                {
+                    b.HasOne("MaternityManagementSystem.Models.Appointment", "Appointment")
+                        .WithMany()
+                        .HasForeignKey("AppointmentId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Appointment");
                 });
 
             modelBuilder.Entity("MaternityManagementSystem.Models.LaboratoryResult", b =>
