@@ -398,6 +398,87 @@ public class PatientRepository
         await dbContext.SaveChangesAsync(cancellationToken);
     }
 
+    public async Task<Patient> UpdateSmsReminderConsentAsync(
+        int patientId,
+        bool hasConsent,
+        DateTime recordedAtUtc,
+        int recordedByStaffId,
+        AuditLog auditLog,
+        CancellationToken cancellationToken = default)
+    {
+        if (patientId <= 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(patientId));
+        }
+
+        if (recordedByStaffId <= 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(recordedByStaffId));
+        }
+
+        ArgumentNullException.ThrowIfNull(auditLog);
+
+        await using var dbContext =
+            await CreateDbContextAsync(cancellationToken);
+
+        var patient = await dbContext.Patients
+            .FirstOrDefaultAsync(
+                item => item.Id == patientId,
+                cancellationToken);
+
+        if (patient is null)
+        {
+            throw new KeyNotFoundException(
+                $"Patient with ID {patientId} was not found.");
+        }
+
+        var previousValues = new Dictionary<string, object?>
+        {
+            [nameof(Patient.HasSmsReminderConsent)] =
+                patient.HasSmsReminderConsent,
+            [nameof(Patient.SmsReminderConsentRecordedAtUtc)] =
+                patient.SmsReminderConsentRecordedAtUtc,
+            [nameof(Patient.SmsReminderConsentRecordedByStaffId)] =
+                patient.SmsReminderConsentRecordedByStaffId
+        };
+
+        patient.HasSmsReminderConsent = hasConsent;
+        patient.SmsReminderConsentRecordedAtUtc = recordedAtUtc;
+        patient.SmsReminderConsentRecordedByStaffId = recordedByStaffId;
+        patient.UpdatedAtUtc = recordedAtUtc;
+
+        var newValues = new Dictionary<string, object?>
+        {
+            [nameof(Patient.HasSmsReminderConsent)] =
+                patient.HasSmsReminderConsent,
+            [nameof(Patient.SmsReminderConsentRecordedAtUtc)] =
+                patient.SmsReminderConsentRecordedAtUtc,
+            [nameof(Patient.SmsReminderConsentRecordedByStaffId)] =
+                patient.SmsReminderConsentRecordedByStaffId
+        };
+
+        auditLog.EntityId = patient.Id;
+        auditLog.OccurredAtUtc = recordedAtUtc;
+
+        var recordVersion = new RecordVersion
+        {
+            EntityType = "Patient",
+            EntityId = patient.Id,
+            PreviousValuesJson = JsonSerializer.Serialize(previousValues),
+            NewValuesJson = JsonSerializer.Serialize(newValues),
+            StaffId = recordedByStaffId,
+            Username = auditLog.Username,
+            ChangedAtUtc = recordedAtUtc
+        };
+
+        dbContext.AuditLogs.Add(auditLog);
+        dbContext.RecordVersions.Add(recordVersion);
+
+        await dbContext.SaveChangesAsync(cancellationToken);
+
+        return patient;
+    }
+
     public async Task<IndividualPatientRecordReport?> GetIndividualPatientRecordReportAsync(
         int patientId,
         CancellationToken cancellationToken = default)

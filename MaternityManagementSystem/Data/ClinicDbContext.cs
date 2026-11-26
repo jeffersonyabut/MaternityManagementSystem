@@ -148,6 +148,22 @@ public class ClinicDbContext : DbContext
             entity.Property(patient => patient.EmergencyContactNumber)
                   .HasMaxLength(30);
 
+            entity.Property(patient => patient.HasSmsReminderConsent)
+                  .HasDefaultValue(false)
+                  .IsRequired();
+
+            entity.Property(patient => patient.SmsReminderConsentRecordedAtUtc)
+                  .IsRequired(false);
+
+            entity.HasOne(patient => patient.SmsReminderConsentRecordedByStaff)
+                  .WithMany()
+                  .HasForeignKey(patient =>
+                      patient.SmsReminderConsentRecordedByStaffId)
+                  .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasIndex(patient =>
+                patient.SmsReminderConsentRecordedByStaffId);
+
             entity.Property(patient => patient.CreatedAtUtc)
                   .IsRequired();
 

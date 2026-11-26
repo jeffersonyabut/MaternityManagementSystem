@@ -139,6 +139,60 @@
                              MaxLength="30"
                              Margin="0,4,0,24"/>
 
+                    <Border Padding="16"
+                            Margin="0,0,0,24"
+                            CornerRadius="8"
+                            Background="{DynamicResource MaterialDesignCardBackground}">
+
+                        <StackPanel>
+                            <TextBlock Text="SMS Appointment Reminder Consent"
+                                       FontSize="15"
+                                       FontWeight="SemiBold"
+                                       Margin="0,0,0,8"/>
+
+                            <TextBlock Text="I agree to receive SMS notifications from Goldenstate Maternity Clinic about my upcoming appointments."
+                                       TextWrapping="Wrap"/>
+
+                            <TextBlock Text="Consent is optional and can be withdrawn at any time."
+                                       Margin="0,5,0,10"
+                                       FontSize="12"
+                                       Opacity="0.7"
+                                       TextWrapping="Wrap"/>
+
+                            <TextBlock Text="{Binding SmsReminderConsentStatus}"
+                                       FontWeight="SemiBold"
+                                       TextWrapping="Wrap"/>
+
+                            <TextBlock Text="{Binding SmsReminderConsentDecisionDetails}"
+                                       Margin="0,4,0,0"
+                                       FontSize="12"
+                                       Opacity="0.7"
+                                       TextWrapping="Wrap"/>
+
+                            <TextBlock Text="{Binding SmsReminderConsentFeedback}"
+                                       Margin="0,8,0,0"
+                                       TextWrapping="Wrap"/>
+
+                            <StackPanel Orientation="Horizontal"
+                                        HorizontalAlignment="Right"
+                                        Margin="0,12,0,0">
+                                <Button Content="Grant Consent"
+                                        IsEnabled="{Binding CanGrantSmsReminderConsent}"
+                                        Command="{Binding GrantSmsReminderConsentCommand}"
+                                        Padding="16,8"
+                                        Margin="0,0,8,0"
+                                        Style="{StaticResource MaterialDesignOutlinedButton}"/>
+
+                                <Button Content="Withdraw Consent"
+                                        IsEnabled="{Binding CanWithdrawSmsReminderConsent}"
+                                        Command="{Binding WithdrawSmsReminderConsentCommand}"
+                                        Padding="16,8"
+                                        Style="{StaticResource MaterialDesignOutlinedButton}"/>
+                            </StackPanel>
+                        </StackPanel>
+
+                    </Border>
+
 
                     <StackPanel Orientation="Horizontal"
                                 HorizontalAlignment="Right">

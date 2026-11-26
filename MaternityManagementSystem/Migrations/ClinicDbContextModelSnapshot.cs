@@ -251,6 +251,11 @@ namespace MaternityManagementSystem.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("TEXT");
 
+                    b.Property<bool>("HasSmsReminderConsent")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasDefaultValue(false);
+
                     b.Property<string>("LastName")
                         .IsRequired()
                         .HasMaxLength(100)
@@ -269,6 +274,12 @@ namespace MaternityManagementSystem.Migrations
                         .HasMaxLength(30)
                         .HasColumnType("TEXT");
 
+                    b.Property<DateTime?>("SmsReminderConsentRecordedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int?>("SmsReminderConsentRecordedByStaffId")
+                        .HasColumnType("INTEGER");
+
                     b.Property<DateTime?>("UpdatedAtUtc")
                         .HasColumnType("TEXT");
 
@@ -276,6 +287,8 @@ namespace MaternityManagementSystem.Migrations
 
                     b.HasIndex("PatientNumber")
                         .IsUnique();
+
+                    b.HasIndex("SmsReminderConsentRecordedByStaffId");
 
                     b.ToTable("Patients");
                 });
@@ -588,6 +601,16 @@ namespace MaternityManagementSystem.Migrations
                     b.Navigation("Patient");
 
                     b.Navigation("PrenatalVisit");
+                });
+
+            modelBuilder.Entity("MaternityManagementSystem.Models.Patient", b =>
+                {
+                    b.HasOne("MaternityManagementSystem.Models.Staff", "SmsReminderConsentRecordedByStaff")
+                        .WithMany()
+                        .HasForeignKey("SmsReminderConsentRecordedByStaffId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("SmsReminderConsentRecordedByStaff");
                 });
 
             modelBuilder.Entity("MaternityManagementSystem.Models.Pregnancy", b =>

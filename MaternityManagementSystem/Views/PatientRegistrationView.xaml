@@ -149,6 +149,27 @@
                              VerticalContentAlignment="Top"
                              materialDesign:HintAssist.Hint="Home address"
                              Text="{Binding Address, UpdateSourceTrigger=PropertyChanged}"/>
+
+                    <Border Padding="14"
+                            Margin="0,16,0,0"
+                            CornerRadius="8"
+                            Background="{DynamicResource MaterialDesignCardBackground}">
+
+                        <StackPanel>
+                            <CheckBox IsChecked="{Binding HasSmsReminderConsent, UpdateSourceTrigger=PropertyChanged}"
+                                      VerticalContentAlignment="Center">
+                                <TextBlock Text="I agree to receive SMS notifications from Goldenstate Maternity Clinic about my upcoming appointments."
+                                           TextWrapping="Wrap"/>
+                            </CheckBox>
+
+                            <TextBlock Text="Optional. Leave unchecked to decline. Consent can be withdrawn at any time."
+                                       Margin="28,6,0,0"
+                                       FontSize="12"
+                                       Opacity="0.7"
+                                       TextWrapping="Wrap"/>
+                        </StackPanel>
+
+                    </Border>
                 </StackPanel>
             </Border>
 

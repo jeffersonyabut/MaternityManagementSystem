@@ -4,6 +4,7 @@ using CommunityToolkit.Mvvm.Input;
 using MaternityManagementSystem.Models;
 using MaternityManagementSystem.Services;
 using System;
+using System.Globalization;
 using System.Threading.Tasks;
 
 namespace MaternityManagementSystem.ViewModels;
@@ -34,6 +35,11 @@ public partial class PatientEditViewModel : ObservableObject
         Address = patient.Address ?? string.Empty;
         EmergencyContactName = patient.EmergencyContactName ?? string.Empty;
         EmergencyContactNumber = patient.EmergencyContactNumber ?? string.Empty;
+        HasSmsReminderConsent = patient.HasSmsReminderConsent;
+        SmsReminderConsentRecordedAtUtc =
+            patient.SmsReminderConsentRecordedAtUtc;
+        SmsReminderConsentRecordedByStaffId =
+            patient.SmsReminderConsentRecordedByStaffId;
     }
 
     [ObservableProperty] private string firstName = string.Empty;
@@ -66,8 +72,129 @@ public partial class PatientEditViewModel : ObservableObject
     [ObservableProperty] private bool isBusy;
     [ObservableProperty] private string statusMessage = string.Empty;
     [ObservableProperty] private bool saveSucceeded;
+    [ObservableProperty] private bool hasSmsReminderConsent;
+    [ObservableProperty] private DateTime? smsReminderConsentRecordedAtUtc;
+    [ObservableProperty] private int? smsReminderConsentRecordedByStaffId;
+    [ObservableProperty] private string smsReminderConsentFeedback = string.Empty;
+
+    public string SmsReminderConsentStatus => HasSmsReminderConsent
+        ? "SMS appointment reminder consent is granted."
+        : "SMS appointment reminder consent is not granted.";
+
+    public bool CanGrantSmsReminderConsent =>
+        !HasSmsReminderConsent && !IsBusy;
+
+    public bool CanWithdrawSmsReminderConsent =>
+        HasSmsReminderConsent && !IsBusy;
+
+    public string SmsReminderConsentDecisionDetails
+    {
+        get
+        {
+            if (SmsReminderConsentRecordedAtUtc is not DateTime recordedAtUtc ||
+                SmsReminderConsentRecordedByStaffId is not int staffId)
+            {
+                return "No consent decision has been recorded.";
+            }
+
+            return "Last decision recorded " +
+                   recordedAtUtc.ToString(
+                       "yyyy-MM-dd HH:mm 'UTC'",
+                       CultureInfo.InvariantCulture) +
+                   $" by staff member #{staffId}.";
+        }
+    }
+
+    partial void OnHasSmsReminderConsentChanged(bool value)
+    {
+        OnPropertyChanged(nameof(SmsReminderConsentStatus));
+        OnPropertyChanged(nameof(CanGrantSmsReminderConsent));
+        OnPropertyChanged(nameof(CanWithdrawSmsReminderConsent));
+    }
+
+    partial void OnIsBusyChanged(bool value)
+    {
+        OnPropertyChanged(nameof(CanGrantSmsReminderConsent));
+        OnPropertyChanged(nameof(CanWithdrawSmsReminderConsent));
+    }
+
+    partial void OnSmsReminderConsentRecordedAtUtcChanged(DateTime? value)
+    {
+        OnPropertyChanged(nameof(SmsReminderConsentDecisionDetails));
+    }
+
+    partial void OnSmsReminderConsentRecordedByStaffIdChanged(int? value)
+    {
+        OnPropertyChanged(nameof(SmsReminderConsentDecisionDetails));
+    }
 
     public event Action? PatientUpdated;
+
+    [RelayCommand]
+    private Task GrantSmsReminderConsentAsync()
+    {
+        return SetSmsReminderConsentAsync(true);
+    }
+
+    [RelayCommand]
+    private Task WithdrawSmsReminderConsentAsync()
+    {
+        return SetSmsReminderConsentAsync(false);
+    }
+
+    private async Task SetSmsReminderConsentAsync(bool hasConsent)
+    {
+        if (IsBusy)
+        {
+            return;
+        }
+
+        IsBusy = true;
+        SmsReminderConsentFeedback = string.Empty;
+
+        try
+        {
+            Patient updatedPatient =
+                await _patientService.SetSmsReminderConsentAsync(
+                    originalPatient.Id,
+                    hasConsent);
+
+            HasSmsReminderConsent = updatedPatient.HasSmsReminderConsent;
+            SmsReminderConsentRecordedAtUtc =
+                updatedPatient.SmsReminderConsentRecordedAtUtc;
+            SmsReminderConsentRecordedByStaffId =
+                updatedPatient.SmsReminderConsentRecordedByStaffId;
+
+            originalPatient.HasSmsReminderConsent =
+                updatedPatient.HasSmsReminderConsent;
+            originalPatient.SmsReminderConsentRecordedAtUtc =
+                updatedPatient.SmsReminderConsentRecordedAtUtc;
+            originalPatient.SmsReminderConsentRecordedByStaffId =
+                updatedPatient.SmsReminderConsentRecordedByStaffId;
+
+            SmsReminderConsentFeedback = hasConsent
+                ? "Consent granted and recorded."
+                : "Consent withdrawn and recorded.";
+        }
+        catch (UnauthorizedAccessException)
+        {
+            SmsReminderConsentFeedback =
+                "An authenticated staff session is required to change consent.";
+        }
+        catch (ArgumentException ex)
+        {
+            SmsReminderConsentFeedback = ex.Message;
+        }
+        catch (Exception)
+        {
+            SmsReminderConsentFeedback =
+                "Unable to record the consent decision. Please try again.";
+        }
+        finally
+        {
+            IsBusy = false;
+        }
+    }
 
     [RelayCommand]
     private async Task SaveChangesAsync()

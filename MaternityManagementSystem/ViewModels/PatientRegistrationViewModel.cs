@@ -52,6 +52,9 @@ public partial class PatientRegistrationViewModel : ObservableObject
     private string emergencyContactNumber = string.Empty;
 
     [ObservableProperty]
+    private bool hasSmsReminderConsent;
+
+    [ObservableProperty]
     private string statusMessage = string.Empty;
 
     [ObservableProperty]
@@ -84,7 +87,8 @@ public partial class PatientRegistrationViewModel : ObservableObject
                 Email = Email,
                 Address = Address,
                 EmergencyContactName = EmergencyContactName,
-                EmergencyContactNumber = EmergencyContactNumber
+                EmergencyContactNumber = EmergencyContactNumber,
+                HasSmsReminderConsent = HasSmsReminderConsent
             };
 
             Patient registeredPatient =
@@ -124,6 +128,7 @@ public partial class PatientRegistrationViewModel : ObservableObject
         Address = string.Empty;
         EmergencyContactName = string.Empty;
         EmergencyContactNumber = string.Empty;
+        HasSmsReminderConsent = false;
         StatusMessage = string.Empty;
     }
 

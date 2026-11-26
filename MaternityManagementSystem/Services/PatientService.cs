@@ -76,13 +76,27 @@ public class PatientService
                 "You must be logged in to register a patient.");
         }
 
+        if (patient.HasSmsReminderConsent)
+        {
+            patient.SmsReminderConsentRecordedAtUtc = DateTime.UtcNow;
+            patient.SmsReminderConsentRecordedByStaffId =
+                currentUser.StaffId;
+        }
+        else
+        {
+            patient.SmsReminderConsentRecordedAtUtc = null;
+            patient.SmsReminderConsentRecordedByStaffId = null;
+        }
+
         var auditLog = new AuditLog
         {
             StaffId = currentUser.StaffId,
             Username = currentUser.Username,
             Action = "Created",
             EntityType = "Patient",
-            Details = "Patient record registered."
+            Details = patient.HasSmsReminderConsent
+                ? "Patient record registered with SMS appointment reminder consent."
+                : "Patient record registered without SMS appointment reminder consent."
         };
 
         return await _patientRepository.AddAsync(
@@ -175,6 +189,52 @@ public class PatientService
             cancellationToken);
 
         return existingPatient;
+    }
+
+    public async Task<Patient> SetSmsReminderConsentAsync(
+        int patientId,
+        bool hasConsent,
+        CancellationToken cancellationToken = default)
+    {
+        await _authorizationService.EnsureAuthenticatedAsync();
+
+        if (patientId <= 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(patientId));
+        }
+
+        var currentUser = _sessionService.CurrentUser;
+
+        if (currentUser is null)
+        {
+            throw new UnauthorizedAccessException(
+                "You must be logged in to record patient consent.");
+        }
+
+        DateTime recordedAtUtc = DateTime.UtcNow;
+        string action = hasConsent
+            ? "SMS Reminder Consent Granted"
+            : "SMS Reminder Consent Withdrawn";
+
+        var auditLog = new AuditLog
+        {
+            StaffId = currentUser.StaffId,
+            Username = currentUser.Username,
+            Action = action,
+            EntityType = "Patient",
+            EntityId = patientId,
+            Details = hasConsent
+                ? "SMS appointment reminder consent granted."
+                : "SMS appointment reminder consent withdrawn."
+        };
+
+        return await _patientRepository.UpdateSmsReminderConsentAsync(
+            patientId,
+            hasConsent,
+            recordedAtUtc,
+            currentUser.StaffId,
+            auditLog,
+            cancellationToken);
     }
 
     public async Task<Patient?> GetPatientByIdAsync(

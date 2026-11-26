@@ -25,6 +25,12 @@ public class Patient
     public string? EmergencyContactName { get; set; }
     public string? EmergencyContactNumber { get; set; }
 
+    // SMS appointment reminder consent
+    public bool HasSmsReminderConsent { get; set; }
+    public DateTime? SmsReminderConsentRecordedAtUtc { get; set; }
+    public int? SmsReminderConsentRecordedByStaffId { get; set; }
+    public Staff? SmsReminderConsentRecordedByStaff { get; set; }
+
     // Audit information
     public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;
     public DateTime? UpdatedAtUtc { get; set; }
