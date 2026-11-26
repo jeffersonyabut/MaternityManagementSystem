@@ -20,6 +20,7 @@ public class AppointmentService
     private readonly PregnancyRepository _pregnancyRepository;
     private readonly AuthorizationService _authorizationService;
     private readonly SessionService _sessionService;
+    private readonly AppointmentSmsReminderService? _reminderService;
 
     public AppointmentService(
         AppointmentRepository appointmentRepository,
@@ -28,7 +29,8 @@ public class AppointmentService
         AuthorizationService authorizationService,
         SessionService sessionService,
         RegionalSettingsService regionalSettingsService,
-        SystemSettingService systemSettingService)
+        SystemSettingService systemSettingService,
+        AppointmentSmsReminderService? reminderService = null)
     {
         ArgumentNullException.ThrowIfNull(appointmentRepository);
         ArgumentNullException.ThrowIfNull(patientRepository);
@@ -45,6 +47,7 @@ public class AppointmentService
         _sessionService = sessionService;
         _regionalSettingsService = regionalSettingsService;
         _systemSettingService = systemSettingService;
+        _reminderService = reminderService;
     }
 
     // CREATE
@@ -106,11 +109,15 @@ public class AppointmentService
             Details = "Appointment scheduled."
         };
 
-        return await _appointmentRepository.AddAsync(
+        Appointment createdAppointment = await _appointmentRepository.AddAsync(
             appointment,
             auditLog,
             defaultDuration,
             cancellationToken);
+
+        await TryReconcileReminderAsync(createdAppointment.Id, cancellationToken);
+
+        return createdAppointment;
     }
 
     // RETRIEVE
@@ -450,6 +457,8 @@ public class AppointmentService
             defaultDuration,
             cancellationToken);
 
+        await TryReconcileReminderAsync(existingAppointment.Id, cancellationToken);
+
         // Keep the returned instance consistent with the repository's
         // persisted revision, which is derived from the stored schedule.
         if (scheduleChanged)
@@ -538,6 +547,8 @@ public class AppointmentService
             auditLog,
             defaultDuration,
             cancellationToken);
+
+        await TryReconcileReminderAsync(appointment.Id, cancellationToken);
     }
 
     // STATUS
@@ -627,6 +638,8 @@ public class AppointmentService
             auditLog,
             defaultDuration,
             cancellationToken);
+
+        await TryReconcileReminderAsync(appointment.Id, cancellationToken);
     }
 
     // ARCHIVE
@@ -677,6 +690,32 @@ public class AppointmentService
             normalizedReason,
             auditLog,
             cancellationToken);
+
+        await TryReconcileReminderAsync(appointmentId, cancellationToken);
+    }
+
+    private async Task TryReconcileReminderAsync(
+        int appointmentId,
+        CancellationToken cancellationToken)
+    {
+        if (_reminderService is null)
+        {
+            return;
+        }
+
+        try
+        {
+            await _reminderService.ReconcileAppointmentAsync(
+                appointmentId,
+                cancellationToken: cancellationToken);
+        }
+        catch (Exception)
+        {
+            // The appointment save has already committed. Startup reconciliation
+            // will recover pending reminder work without blocking clinic actions.
+            System.Diagnostics.Debug.WriteLine(
+                "Appointment reminder reconciliation failed; pending work will be retried at startup.");
+        }
     }
 
     // VALIDATION

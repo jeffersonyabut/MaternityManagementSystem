@@ -49,7 +49,8 @@ public partial class AppointmentOverviewView : UserControl
             authorizationService,
             app.SessionService,
             app.RegionalSettings,
-            systemSettingService);
+            systemSettingService,
+            app.ReminderService);
 
         _viewModel = new AppointmentOverviewViewModel(
             _appointmentService,

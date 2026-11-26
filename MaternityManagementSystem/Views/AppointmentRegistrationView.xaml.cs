@@ -54,7 +54,8 @@ public partial class AppointmentRegistrationView : UserControl
             authorizationService,
             app.SessionService,
             app.RegionalSettings,
-            systemSettingService);
+            systemSettingService,
+            app.ReminderService);
 
         _viewModel = new AppointmentViewModel(
             appointmentService,

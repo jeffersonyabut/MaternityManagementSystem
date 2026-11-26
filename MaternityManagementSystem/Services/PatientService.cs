@@ -12,11 +12,13 @@ public class PatientService
     private readonly AuthorizationService _authorizationService;
     private readonly SessionService _sessionService;
     private readonly RegionalSettingsService? _regionalSettingsService;
+    private readonly AppointmentSmsReminderService? _reminderService;
 
     public PatientService(
         PatientRepository patientRepository,
         AuthorizationService authorizationService,
-        SessionService sessionService)
+        SessionService sessionService,
+        AppointmentSmsReminderService? reminderService = null)
     {
         ArgumentNullException.ThrowIfNull(patientRepository);
         ArgumentNullException.ThrowIfNull(authorizationService);
@@ -25,17 +27,20 @@ public class PatientService
         _patientRepository = patientRepository;
         _authorizationService = authorizationService;
         _sessionService = sessionService;
+        _reminderService = reminderService;
     }
 
     public PatientService(
         PatientRepository patientRepository,
         AuthorizationService authorizationService,
         SessionService sessionService,
-        RegionalSettingsService regionalSettingsService)
+        RegionalSettingsService regionalSettingsService,
+        AppointmentSmsReminderService? reminderService = null)
         : this(
             patientRepository,
             authorizationService,
-            sessionService)
+            sessionService,
+            reminderService)
     {
         ArgumentNullException.ThrowIfNull(regionalSettingsService);
 
@@ -136,6 +141,10 @@ public class PatientService
                 "The patient record could not be found.");
         }
 
+        bool contactNumberChanged =
+            existingPatient.ContactNumber !=
+            NormalizeOptionalText(patient.ContactNumber);
+
         bool hasChanges =
             existingPatient.FirstName != patient.FirstName.Trim() ||
             existingPatient.MiddleName != NormalizeOptionalText(patient.MiddleName) ||
@@ -192,6 +201,13 @@ public class PatientService
             auditLog,
             cancellationToken);
 
+        if (contactNumberChanged)
+        {
+            await TryReconcilePatientRemindersAsync(
+                patient.Id,
+                cancellationToken);
+        }
+
         return existingPatient;
     }
 
@@ -232,13 +248,46 @@ public class PatientService
                 : "SMS appointment reminder consent withdrawn."
         };
 
-        return await _patientRepository.UpdateSmsReminderConsentAsync(
+        Patient updatedPatient = await _patientRepository.UpdateSmsReminderConsentAsync(
             patientId,
             hasConsent,
             recordedAtUtc,
             currentUser.StaffId,
             auditLog,
             cancellationToken);
+
+        await TryReconcilePatientRemindersAsync(
+            patientId,
+            cancellationToken,
+            recordedAtUtc);
+
+        return updatedPatient;
+    }
+
+    private async Task TryReconcilePatientRemindersAsync(
+        int patientId,
+        CancellationToken cancellationToken,
+        DateTime? nowUtc = null)
+    {
+        if (_reminderService is null)
+        {
+            return;
+        }
+
+        try
+        {
+            await _reminderService.ReconcilePatientAsync(
+                patientId,
+                nowUtc,
+                cancellationToken);
+        }
+        catch (Exception)
+        {
+            // The patient change is already committed. A later startup pass
+            // can recover reminder state without blocking consent/profile edits.
+            System.Diagnostics.Debug.WriteLine(
+                "Patient reminder reconciliation failed; pending work will be retried at startup.");
+        }
     }
 
     public async Task<Patient?> GetPatientByIdAsync(

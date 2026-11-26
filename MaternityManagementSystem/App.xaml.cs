@@ -24,6 +24,10 @@ public partial class App : Application
     public RegionalSettingsService RegionalSettings { get; } =
         new(new SystemSettingRepository());
 
+    public AppointmentSmsReminderService ReminderService { get; } = new(
+        new AppointmentSmsReminderRepository(new ClinicDbContextFactory()),
+        new SystemSettingRepository(new ClinicDbContextFactory()));
+
     protected override async void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);
@@ -37,6 +41,18 @@ public partial class App : Application
             await settingsInitializer.InitializeAsync();
 
             await RegionalSettings.RefreshAsync();
+
+            // Run a single catch-up reconciliation at startup. This schedules
+            // and suppresses local records only; it does not contact UniSMS.
+            try
+            {
+                await ReminderService.ReconcileAllAsync();
+            }
+            catch (Exception)
+            {
+                System.Diagnostics.Debug.WriteLine(
+                    "Appointment reminder reconciliation will be retried at the next application startup.");
+            }
 
             // Check whether an administrator/staff account exists.
             var repository = new StaffRepository();

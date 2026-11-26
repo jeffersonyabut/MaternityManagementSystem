@@ -98,7 +98,7 @@ The patient SMS consent and appointment reminder schema now supports separate co
 - Expanded the reminder unique key to `(AppointmentId, ScheduleRevision, ConsentGeneration, ReminderType)`, allowing a new reminder pair after consent is granted again while retaining terminal history from previous consent decisions.
 - Explicit consent state changes increment the generation, including a grant selected during registration. Repeating the current consent state and ordinary patient profile edits do not. Existing consent timestamps, staff attribution, audit logs, and record versions remain recorded.
 - Migration `20261126210209_AddPatientSmsConsentGeneration` updates the schema and snapshot. Its Down migration checks for collisions under the old unique key before changing indexes or dropping columns. A collision aborts with an actionable error; the migration transaction leaves schema and reminder rows unchanged.
-- Reminder scheduling, reconciliation, workers, and automatic SMS dispatch are not implemented.
+- This schema checkpoint did not implement scheduling or reconciliation; those capabilities are recorded in the following section. Workers and automatic SMS dispatch remain unimplemented.
 
 Verification results:
 
@@ -107,6 +107,24 @@ Verification results:
 - **Solution build:** succeeded; 0 warnings and 0 errors.
 - **Migration verification:** Up and collision-free Down preserved test data; collision Down failed safely and retained the expanded schema and all reminder rows. Tests used temporary SQLite databases only.
 - **Production database and messaging:** no production database was accessed or migrated; no SMS was sent and no network request was made.
+
+## Completed appointment SMS reminder scheduling and reconciliation
+
+Persistent appointment reminders are scheduled and reconciled locally without sending SMS:
+
+- `AppointmentSmsReminderService` converts clinic-local appointment date/time using `Singapore Standard Time` (Asia/Manila, UTC+8), calculates the exact 72-hour and 24-hour instants, and stores them as UTC. SQLite `DateTimeKind.Unspecified` values from UTC fields are explicitly treated as UTC.
+- Eligible future Scheduled and Confirmed appointments with current patient consent and a usable Philippine mobile number receive pending reminders for their current schedule revision and consent generation. No recipient number, appointment purpose, pregnancy detail, or message content is stored in reminder rows.
+- Reconciliation is idempotent. A process-wide gate serializes overlapping passes, while the database unique key and duplicate-safe repository insertion protect reminder creation. Old schedule revisions are superseded; pending reminders are skipped when an appointment has passed, is archived/ineligible, lacks consent, or lacks a usable contact. Terminal and Sending rows are not reset.
+- If both reminders are overdue while settings are enabled, the advance reminder is superseded and the 24-hour reminder remains pending. A lone overdue advance reminder remains pending. Disabled global SMS settings retain pending work and suppress due candidates; a later reconciliation after re-enabling applies catch-up rules.
+- Reconciliation is hooked after appointment creation, edit/reschedule, status change, cancellation, archive, patient consent changes, and contact-number edits. A single startup reconciliation recovers pending work; there is no timer or background worker in this milestone.
+- Provider dispatch is separate and remains unimplemented. No UniSMS calls, network requests, retries, or automatic SMS sends are made.
+
+Verification results:
+
+- **Focused reminder scheduling/reconciliation tests:** 26 passed, 0 failed, and 0 skipped.
+- **Full test suite:** 217 passed, 0 failed, and 0 skipped.
+- **Solution build:** succeeded; 0 warnings and 0 errors.
+- **Database and messaging:** tests used temporary SQLite databases; no production database was accessed or migrated, and no SMS or network request occurred.
 
 ## Baseline verification
 

@@ -30,7 +30,8 @@ public partial class PatientEditView : UserControl
         var patientService = new PatientService(
             new PatientRepository(),
             authorizationService,
-            app.SessionService);
+            app.SessionService,
+            app.ReminderService);
 
         _viewModel = new PatientEditViewModel(
             patientService,

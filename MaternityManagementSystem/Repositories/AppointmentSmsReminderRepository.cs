@@ -1,0 +1,326 @@
+using Microsoft.Data.Sqlite;
+using Microsoft.EntityFrameworkCore;
+using MaternityManagementSystem.Data;
+using MaternityManagementSystem.Models;
+
+namespace MaternityManagementSystem.Repositories;
+
+public sealed class AppointmentSmsReminderRepository
+{
+    private readonly IDbContextFactory<ClinicDbContext>? _contextFactory;
+
+    public AppointmentSmsReminderRepository()
+    {
+    }
+
+    public AppointmentSmsReminderRepository(
+        IDbContextFactory<ClinicDbContext> contextFactory)
+    {
+        ArgumentNullException.ThrowIfNull(contextFactory);
+        _contextFactory = contextFactory;
+    }
+
+    private async Task<ClinicDbContext> CreateDbContextAsync(
+        CancellationToken cancellationToken)
+    {
+        if (_contextFactory is not null)
+        {
+            return await _contextFactory.CreateDbContextAsync(cancellationToken);
+        }
+
+        return new ClinicDbContext();
+    }
+
+    public async Task<Appointment?> GetAppointmentForReconciliationAsync(
+        int appointmentId,
+        CancellationToken cancellationToken = default)
+    {
+        await using var context = await CreateDbContextAsync(cancellationToken);
+        return await context.Appointments
+            .AsNoTracking()
+            .Include(appointment => appointment.Patient)
+            .FirstOrDefaultAsync(
+                appointment => appointment.Id == appointmentId,
+                cancellationToken);
+    }
+
+    public async Task<List<int>> GetAppointmentIdsForReconciliationAsync(
+        DateOnly clinicToday,
+        int? patientId = null,
+        CancellationToken cancellationToken = default)
+    {
+        await using var context = await CreateDbContextAsync(cancellationToken);
+
+        var activeAppointmentIds = context.Appointments
+            .Where(appointment =>
+                !appointment.IsArchived &&
+                appointment.AppointmentDate >= clinicToday &&
+                (appointment.Status == "Scheduled" ||
+                 appointment.Status == "Confirmed"));
+
+        var pendingAppointmentIds = context.AppointmentSmsReminders
+            .Where(reminder => reminder.Status == AppointmentSmsReminderStatus.Pending)
+            .Select(reminder => reminder.AppointmentId);
+
+        if (patientId.HasValue)
+        {
+            activeAppointmentIds = activeAppointmentIds.Where(
+                appointment => appointment.PatientId == patientId.Value);
+            pendingAppointmentIds = pendingAppointmentIds.Where(
+                id => context.Appointments.Any(appointment =>
+                    appointment.Id == id && appointment.PatientId == patientId.Value));
+        }
+
+        return await activeAppointmentIds
+            .Select(appointment => appointment.Id)
+            .Concat(pendingAppointmentIds)
+            .Distinct()
+            .OrderBy(id => id)
+            .ToListAsync(cancellationToken);
+    }
+
+    public async Task<List<AppointmentSmsReminder>> GetByAppointmentAndRevisionAsync(
+        int appointmentId,
+        int scheduleRevision,
+        CancellationToken cancellationToken = default)
+    {
+        await using var context = await CreateDbContextAsync(cancellationToken);
+        List<AppointmentSmsReminder> reminders = await context.AppointmentSmsReminders
+            .AsNoTracking()
+            .Where(reminder =>
+                reminder.AppointmentId == appointmentId &&
+                reminder.ScheduleRevision == scheduleRevision)
+            .OrderBy(reminder => reminder.ConsentGeneration)
+            .ThenBy(reminder => reminder.ReminderType)
+            .ToListAsync(cancellationToken);
+
+        NormalizeUtcFields(reminders);
+        return reminders;
+    }
+
+    public async Task<List<AppointmentSmsReminder>> FindPendingDueAsync(
+        DateTime nowUtc,
+        CancellationToken cancellationToken = default)
+    {
+        nowUtc = TreatAsUtc(nowUtc);
+
+        await using var context = await CreateDbContextAsync(cancellationToken);
+        List<AppointmentSmsReminder> reminders = await context.AppointmentSmsReminders
+            .AsNoTracking()
+            .Include(reminder => reminder.Appointment)
+                .ThenInclude(appointment => appointment.Patient)
+            .Where(reminder =>
+                reminder.Status == AppointmentSmsReminderStatus.Pending &&
+                reminder.ScheduledAtUtc <= nowUtc &&
+                reminder.ScheduleRevision == reminder.Appointment.ScheduleRevision &&
+                reminder.ConsentGeneration ==
+                    reminder.Appointment.Patient.SmsReminderConsentGeneration &&
+                reminder.Appointment.Patient.HasSmsReminderConsent &&
+                !reminder.Appointment.IsArchived &&
+                (reminder.Appointment.Status == "Scheduled" ||
+                 reminder.Appointment.Status == "Confirmed"))
+            .OrderBy(reminder => reminder.ScheduledAtUtc)
+            .ThenBy(reminder => reminder.Id)
+            .ToListAsync(cancellationToken);
+
+        NormalizeUtcFields(reminders);
+        return reminders;
+    }
+
+    public async Task<int> SupersedePendingForOldRevisionsAsync(
+        int appointmentId,
+        int currentScheduleRevision,
+        DateTime changedAtUtc,
+        CancellationToken cancellationToken = default)
+    {
+        changedAtUtc = TreatAsUtc(changedAtUtc);
+
+        await using var context = await CreateDbContextAsync(cancellationToken);
+        return await context.AppointmentSmsReminders
+            .Where(reminder =>
+                reminder.AppointmentId == appointmentId &&
+                reminder.ScheduleRevision != currentScheduleRevision &&
+                reminder.Status == AppointmentSmsReminderStatus.Pending)
+            .ExecuteUpdateAsync(update => update
+                .SetProperty(reminder => reminder.Status,
+                    AppointmentSmsReminderStatus.Superseded)
+                .SetProperty(reminder => reminder.StatusChangedAtUtc, changedAtUtc)
+                .SetProperty(reminder => reminder.FinalizedAtUtc, changedAtUtc)
+                .SetProperty(reminder => reminder.SanitizedOutcomeCode,
+                    "schedule_revision_superseded"),
+                cancellationToken);
+    }
+
+    public async Task<int> SkipPendingForOtherConsentGenerationsAsync(
+        int appointmentId,
+        int currentConsentGeneration,
+        DateTime changedAtUtc,
+        CancellationToken cancellationToken = default)
+    {
+        changedAtUtc = TreatAsUtc(changedAtUtc);
+
+        await using var context = await CreateDbContextAsync(cancellationToken);
+        return await context.AppointmentSmsReminders
+            .Where(reminder =>
+                reminder.AppointmentId == appointmentId &&
+                reminder.ConsentGeneration != currentConsentGeneration &&
+                reminder.Status == AppointmentSmsReminderStatus.Pending)
+            .ExecuteUpdateAsync(update => update
+                .SetProperty(reminder => reminder.Status,
+                    AppointmentSmsReminderStatus.Skipped)
+                .SetProperty(reminder => reminder.StatusChangedAtUtc, changedAtUtc)
+                .SetProperty(reminder => reminder.FinalizedAtUtc, changedAtUtc)
+                .SetProperty(reminder => reminder.SanitizedOutcomeCode,
+                    "consent_generation_changed"),
+                cancellationToken);
+    }
+
+    public async Task<int> SkipAllPendingAsync(
+        int appointmentId,
+        string sanitizedReasonCode,
+        DateTime changedAtUtc,
+        CancellationToken cancellationToken = default)
+    {
+        ValidateReasonCode(sanitizedReasonCode);
+        changedAtUtc = TreatAsUtc(changedAtUtc);
+
+        await using var context = await CreateDbContextAsync(cancellationToken);
+        return await context.AppointmentSmsReminders
+            .Where(reminder =>
+                reminder.AppointmentId == appointmentId &&
+                reminder.Status == AppointmentSmsReminderStatus.Pending)
+            .ExecuteUpdateAsync(update => update
+                .SetProperty(reminder => reminder.Status,
+                    AppointmentSmsReminderStatus.Skipped)
+                .SetProperty(reminder => reminder.StatusChangedAtUtc, changedAtUtc)
+                .SetProperty(reminder => reminder.FinalizedAtUtc, changedAtUtc)
+                .SetProperty(reminder => reminder.SanitizedOutcomeCode,
+                    sanitizedReasonCode),
+                cancellationToken);
+    }
+
+    public async Task<int> SupersedePendingReminderAsync(
+        int appointmentId,
+        int scheduleRevision,
+        int consentGeneration,
+        AppointmentSmsReminderType reminderType,
+        DateTime changedAtUtc,
+        CancellationToken cancellationToken = default)
+    {
+        changedAtUtc = TreatAsUtc(changedAtUtc);
+
+        await using var context = await CreateDbContextAsync(cancellationToken);
+        return await context.AppointmentSmsReminders
+            .Where(reminder =>
+                reminder.AppointmentId == appointmentId &&
+                reminder.ScheduleRevision == scheduleRevision &&
+                reminder.ConsentGeneration == consentGeneration &&
+                reminder.ReminderType == reminderType &&
+                reminder.Status == AppointmentSmsReminderStatus.Pending)
+            .ExecuteUpdateAsync(update => update
+                .SetProperty(reminder => reminder.Status,
+                    AppointmentSmsReminderStatus.Superseded)
+                .SetProperty(reminder => reminder.StatusChangedAtUtc, changedAtUtc)
+                .SetProperty(reminder => reminder.FinalizedAtUtc, changedAtUtc)
+                .SetProperty(reminder => reminder.SanitizedOutcomeCode,
+                    "later_reminder_due"),
+                cancellationToken);
+    }
+
+    public async Task CreatePendingIdempotentlyAsync(
+        IReadOnlyCollection<AppointmentSmsReminder> reminders,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(reminders);
+        if (reminders.Count == 0)
+        {
+            return;
+        }
+
+        await using var context = await CreateDbContextAsync(cancellationToken);
+        await using var transaction =
+            await context.Database.BeginTransactionAsync(cancellationToken);
+
+        foreach (AppointmentSmsReminder reminder in reminders)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            reminder.Status = AppointmentSmsReminderStatus.Pending;
+
+            context.AppointmentSmsReminders.Add(reminder);
+            try
+            {
+                await context.SaveChangesAsync(cancellationToken);
+            }
+            catch (DbUpdateException exception) when
+                (IsUniqueConstraintViolation(exception))
+            {
+                context.Entry(reminder).State = EntityState.Detached;
+                bool exists = await context.AppointmentSmsReminders
+                    .AnyAsync(existing =>
+                        existing.AppointmentId == reminder.AppointmentId &&
+                        existing.ScheduleRevision == reminder.ScheduleRevision &&
+                        existing.ConsentGeneration == reminder.ConsentGeneration &&
+                        existing.ReminderType == reminder.ReminderType,
+                        cancellationToken);
+
+                if (!exists)
+                {
+                    throw;
+                }
+            }
+        }
+
+        await transaction.CommitAsync(cancellationToken);
+    }
+
+    private static bool IsUniqueConstraintViolation(Exception exception)
+    {
+        if (exception is SqliteException sqliteException)
+        {
+            return sqliteException.SqliteExtendedErrorCode is 1555 or 2067;
+        }
+
+        return exception.InnerException is not null &&
+               IsUniqueConstraintViolation(exception.InnerException);
+    }
+
+    private static void ValidateReasonCode(string value)
+    {
+        if (string.IsNullOrWhiteSpace(value) ||
+            value.Length > 100 ||
+            value.Any(character =>
+                !char.IsAsciiLetterOrDigit(character) && character != '_'))
+        {
+            throw new ArgumentException(
+                "A sanitized reminder outcome code is required.",
+                nameof(value));
+        }
+    }
+
+    private static DateTime TreatAsUtc(DateTime value)
+    {
+        return value.Kind switch
+        {
+            DateTimeKind.Utc => value,
+            DateTimeKind.Unspecified => DateTime.SpecifyKind(value, DateTimeKind.Utc),
+            _ => value.ToUniversalTime()
+        };
+    }
+
+    private static void NormalizeUtcFields(
+        IEnumerable<AppointmentSmsReminder> reminders)
+    {
+        foreach (AppointmentSmsReminder reminder in reminders)
+        {
+            reminder.ScheduledAtUtc = TreatAsUtc(reminder.ScheduledAtUtc);
+            reminder.CreatedAtUtc = TreatAsUtc(reminder.CreatedAtUtc);
+            reminder.StatusChangedAtUtc = TreatAsUtc(reminder.StatusChangedAtUtc);
+            reminder.AttemptStartedAtUtc = reminder.AttemptStartedAtUtc is DateTime startedAtUtc
+                ? TreatAsUtc(startedAtUtc)
+                : null;
+            reminder.FinalizedAtUtc = reminder.FinalizedAtUtc is DateTime finalizedAtUtc
+                ? TreatAsUtc(finalizedAtUtc)
+                : null;
+        }
+    }
+}
