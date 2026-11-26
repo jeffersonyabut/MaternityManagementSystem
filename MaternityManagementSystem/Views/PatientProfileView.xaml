@@ -3,7 +3,8 @@
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              Background="Transparent"
-             xmlns:converters="clr-namespace:MaternityManagementSystem.Converters">
+             xmlns:converters="clr-namespace:MaternityManagementSystem.Converters"
+             xmlns:models="clr-namespace:MaternityManagementSystem.Models">
     <UserControl.Resources>
         <converters:RegionalDateOnlyConverter
         x:Key="RegionalDateOnlyConverter"/>
@@ -415,24 +416,150 @@
                                                        FontSize="16"
                                                        FontWeight="SemiBold"/>
 
-
                                             <TextBlock DockPanel.Dock="Right"
-                                                       Text="{Binding TestDate,
-                                                              Converter={StaticResource RegionalDateOnlyConverter}}"
-                                                       Opacity="0.7"/>
+                                                       Opacity="0.7">
+                                                <TextBlock.Style>
+                                                    <Style TargetType="TextBlock">
+                                                        <Setter Property="Text" Value="Unknown / Unclassified"/>
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding Status}"
+                                                                         Value="{x:Static models:LaboratoryResultStatus.Requested}">
+                                                                <Setter Property="Text" Value="Requested"/>
+                                                            </DataTrigger>
+                                                            <DataTrigger Binding="{Binding Status}"
+                                                                         Value="{x:Static models:LaboratoryResultStatus.AwaitingResult}">
+                                                                <Setter Property="Text" Value="Awaiting Result"/>
+                                                            </DataTrigger>
+                                                            <DataTrigger Binding="{Binding Status}"
+                                                                         Value="{x:Static models:LaboratoryResultStatus.Resulted}">
+                                                                <Setter Property="Text" Value="Resulted"/>
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </TextBlock.Style>
+                                            </TextBlock>
                                         </DockPanel>
+
+                                        <TextBlock Margin="0,8,0,0"
+                                                   Opacity="0.7">
+                                            <TextBlock.Style>
+                                                <Style TargetType="TextBlock">
+                                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding Status}"
+                                                                     Value="{x:Static models:LaboratoryResultStatus.Requested}">
+                                                            <Setter Property="Visibility" Value="Visible"/>
+                                                        </DataTrigger>
+                                                        <DataTrigger Binding="{Binding Status}"
+                                                                     Value="{x:Static models:LaboratoryResultStatus.AwaitingResult}">
+                                                            <Setter Property="Visibility" Value="Visible"/>
+                                                        </DataTrigger>
+                                                        <DataTrigger Binding="{Binding Status}"
+                                                                     Value="{x:Static models:LaboratoryResultStatus.Resulted}">
+                                                            <Setter Property="Visibility" Value="Visible"/>
+                                                        </DataTrigger>
+                                                        <DataTrigger Binding="{Binding Status}"
+                                                                     Value="{x:Null}">
+                                                            <Setter Property="Visibility" Value="Visible"/>
+                                                        </DataTrigger>
+                                                        <DataTrigger Binding="{Binding RequestedDate}" Value="{x:Null}">
+                                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </TextBlock.Style>
+                                            <Run Text="Requested: "/>
+                                            <Run Text="{Binding RequestedDate,
+                                                              Converter={StaticResource RegionalDateOnlyConverter}}"/>
+                                        </TextBlock>
+
+                                        <TextBlock Margin="0,4,0,0"
+                                                   Opacity="0.7"
+                                                   TextWrapping="Wrap">
+                                            <TextBlock.Style>
+                                                <Style TargetType="TextBlock">
+                                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding Status}"
+                                                                     Value="{x:Static models:LaboratoryResultStatus.AwaitingResult}">
+                                                            <Setter Property="Visibility" Value="Visible"/>
+                                                        </DataTrigger>
+                                                        <DataTrigger Binding="{Binding Status}"
+                                                                     Value="{x:Static models:LaboratoryResultStatus.Resulted}">
+                                                            <Setter Property="Visibility" Value="Visible"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </TextBlock.Style>
+                                            <Run Text="Test date: "/>
+                                            <Run Text="{Binding TestDate,
+                                                              Converter={StaticResource RegionalDateOnlyConverter}}"/>
+                                        </TextBlock>
+
+                                        <TextBlock Text="Result not yet available"
+                                                   Margin="0,10,0,0"
+                                                   Opacity="0.7"
+                                                   TextWrapping="Wrap">
+                                            <TextBlock.Style>
+                                                <Style TargetType="TextBlock">
+                                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding Status}"
+                                                                     Value="{x:Static models:LaboratoryResultStatus.AwaitingResult}">
+                                                            <Setter Property="Visibility" Value="Visible"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </TextBlock.Style>
+                                        </TextBlock>
 
                                         <TextBlock Text="{Binding Result}"
                                                    Margin="0,10,0,0"
-                                                   TextWrapping="Wrap"/>
+                                                   TextWrapping="Wrap">
+                                            <TextBlock.Style>
+                                                <Style TargetType="TextBlock">
+                                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding Status}"
+                                                                     Value="{x:Static models:LaboratoryResultStatus.Resulted}">
+                                                            <Setter Property="Visibility" Value="Visible"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </TextBlock.Style>
+                                        </TextBlock>
 
                                         <TextBlock Text="{Binding Unit}"
                                                    Opacity="0.7"
-                                                   Margin="0,4,0,0"/>
+                                                   Margin="0,4,0,0">
+                                            <TextBlock.Style>
+                                                <Style TargetType="TextBlock">
+                                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding Status}"
+                                                                     Value="{x:Static models:LaboratoryResultStatus.Resulted}">
+                                                            <Setter Property="Visibility" Value="Visible"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </TextBlock.Style>
+                                        </TextBlock>
 
                                         <TextBlock Text="{Binding ReferenceRange}"
                                                    Opacity="0.7"
-                                                   Margin="0,4,0,0"/>
+                                                   Margin="0,4,0,0">
+                                            <TextBlock.Style>
+                                                <Style TargetType="TextBlock">
+                                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding Status}"
+                                                                     Value="{x:Static models:LaboratoryResultStatus.Resulted}">
+                                                            <Setter Property="Visibility" Value="Visible"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </TextBlock.Style>
+                                        </TextBlock>
 
                                         <TextBlock Text="{Binding Notes}"
                                                    TextWrapping="Wrap"
