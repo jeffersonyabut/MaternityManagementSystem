@@ -89,10 +89,10 @@ public sealed class StaffManagementService
             UsernameNormalizer.Normalize(username);
 
         if (string.IsNullOrWhiteSpace(password) ||
-            password.Length < 8)
+            password.Length < 12)
         {
             throw new ArgumentException(
-                "Password must contain at least 8 characters.");
+                "Password must contain at least 12 characters.");
         }
 
         if (password.Length > 1024)
@@ -338,10 +338,10 @@ public sealed class StaffManagementService
         }
 
         if (string.IsNullOrWhiteSpace(newPassword) ||
-            newPassword.Length < 8)
+            newPassword.Length < 12)
         {
             throw new ArgumentException(
-                "Password must contain at least 8 characters.");
+                "Password must contain at least 12 characters.");
         }
 
         if (newPassword.Length > 1024)

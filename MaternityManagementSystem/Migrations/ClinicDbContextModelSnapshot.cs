@@ -173,12 +173,18 @@ namespace MaternityManagementSystem.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("TEXT");
 
+                    b.Property<DateOnly?>("RequestedDate")
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("Result")
-                        .IsRequired()
                         .HasMaxLength(2000)
                         .HasColumnType("TEXT");
 
-                    b.Property<DateOnly>("TestDate")
+                    b.Property<string>("Status")
+                        .HasMaxLength(30)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateOnly?>("TestDate")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("TestName")

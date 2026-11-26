@@ -273,6 +273,16 @@ public class LaboratoryResultRepository
             laboratoryResult.TestName);
 
         TrackChange(
+            nameof(LaboratoryResult.Status),
+            existingResult.Status?.ToString(),
+            laboratoryResult.Status?.ToString());
+
+        TrackChange(
+            nameof(LaboratoryResult.RequestedDate),
+            existingResult.RequestedDate,
+            laboratoryResult.RequestedDate);
+
+        TrackChange(
             nameof(LaboratoryResult.TestDate),
             existingResult.TestDate,
             laboratoryResult.TestDate);
@@ -304,6 +314,8 @@ public class LaboratoryResultRepository
         }
 
         existingResult.TestName = laboratoryResult.TestName;
+        existingResult.Status = laboratoryResult.Status;
+        existingResult.RequestedDate = laboratoryResult.RequestedDate;
         existingResult.TestDate = laboratoryResult.TestDate;
         existingResult.Result = laboratoryResult.Result;
         existingResult.Unit = laboratoryResult.Unit;
@@ -464,8 +476,9 @@ public class LaboratoryResultRepository
         }
 
         return await query
+            .Where(result => result.TestDate.HasValue)
             .OrderBy(result => result.TestDate)
-            .Select(result => result.TestDate)
+            .Select(result => result.TestDate!.Value)
             .ToListAsync(cancellationToken);
     }
 

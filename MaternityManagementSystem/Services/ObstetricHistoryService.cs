@@ -15,7 +15,6 @@ public class ObstetricHistoryService
 
         var summary = new ObstetricHistorySummary
         {
-            Gravida = pregnancies.Count,
             LivingChildrenDisplay = "Not recorded"
         };
 
@@ -29,14 +28,22 @@ public class ObstetricHistoryService
                 continue;
             }
 
+            summary.Gravida++;
+
             // Current pregnancies count toward Gravida,
-            // but are not yet classified as completed outcomes.
-            if (pregnancy.Status == "Current")
+            // but are not classified as completed outcomes.
+            if (string.Equals(
+                pregnancy.Status,
+                "Current",
+                StringComparison.OrdinalIgnoreCase))
             {
                 continue;
             }
 
-            if (pregnancy.Status != "Completed")
+            if (!string.Equals(
+                pregnancy.Status,
+                "Completed",
+                StringComparison.OrdinalIgnoreCase))
             {
                 summary.UnclassifiedPregnancies++;
                 hasIncompleteLivingChildrenData = true;
@@ -50,14 +57,26 @@ public class ObstetricHistoryService
             else
             {
                 int weeks = pregnancy.GestationalAgeAtEndWeeks.Value;
-                int days = pregnancy.GestationalAgeAtEndDays ?? 0;
 
-                if (weeks < 20)
+                if (weeks is < 0 or > 45)
+                {
+                    summary.UnclassifiedPregnancies++;
+                }
+                else if (weeks < 20)
                 {
                     bool isPregnancyLoss =
-                        pregnancy.PregnancyOutcome == "Miscarriage" ||
-                        pregnancy.PregnancyOutcome == "Ectopic Pregnancy" ||
-                        pregnancy.PregnancyOutcome == "Molar Pregnancy";
+                        string.Equals(
+                            pregnancy.PregnancyOutcome,
+                            "Miscarriage",
+                            StringComparison.OrdinalIgnoreCase) ||
+                        string.Equals(
+                            pregnancy.PregnancyOutcome,
+                            "Ectopic Pregnancy",
+                            StringComparison.OrdinalIgnoreCase) ||
+                        string.Equals(
+                            pregnancy.PregnancyOutcome,
+                            "Molar Pregnancy",
+                            StringComparison.OrdinalIgnoreCase);
 
                     if (isPregnancyLoss)
                     {
@@ -68,27 +87,28 @@ public class ObstetricHistoryService
                         summary.UnclassifiedPregnancies++;
                     }
                 }
-                else if (weeks >= 37)
-                {
-                    summary.Term++;
-                }
-                else if (weeks >= 20 && weeks < 37)
+                else if (weeks < 37)
                 {
                     summary.Preterm++;
                 }
                 else
                 {
-                    summary.UnclassifiedPregnancies++;
+                    summary.Term++;
                 }
             }
 
-            if (!pregnancy.LivingChildrenCount.HasValue)
+            // LivingChildrenCount represents the number of
+            // children from this particular pregnancy who
+            // are currently alive.
+            if (!pregnancy.LivingChildrenCount.HasValue ||
+                pregnancy.LivingChildrenCount.Value < 0)
             {
                 hasIncompleteLivingChildrenData = true;
             }
             else
             {
-                totalLivingChildren += pregnancy.LivingChildrenCount.Value;
+                totalLivingChildren +=
+                    pregnancy.LivingChildrenCount.Value;
             }
         }
 

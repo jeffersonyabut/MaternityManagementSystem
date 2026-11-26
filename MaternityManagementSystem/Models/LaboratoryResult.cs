@@ -20,11 +20,19 @@ public class LaboratoryResult
     // Laboratory test information
     public string TestName { get; set; } = string.Empty;
 
-    public DateOnly TestDate { get; set; } =
+    // Null status is reserved for legacy rows whose blank result does not
+    // provide enough information to infer a lifecycle state.
+    public LaboratoryResultStatus? Status { get; set; } =
+        LaboratoryResultStatus.Resulted;
+
+    public DateOnly? RequestedDate { get; set; } =
+        DateOnly.FromDateTime(DateTime.Today);
+
+    public DateOnly? TestDate { get; set; } =
         DateOnly.FromDateTime(DateTime.Today);
 
     // Laboratory result
-    public string Result { get; set; } = string.Empty;
+    public string? Result { get; set; } = string.Empty;
 
     public string? Unit { get; set; }
 

@@ -1,8 +1,9 @@
+
 using Microsoft.EntityFrameworkCore;
 using MaternityManagementSystem.Data;
 using MaternityManagementSystem.Models;
-using System.Text.Json;
 using MaternityManagementSystem.Models.Reports;
+using System.Text.Json;
 
 namespace MaternityManagementSystem.Repositories;
 
@@ -71,9 +72,8 @@ public class PatientRepository
         int patientId,
         CancellationToken cancellationToken = default)
     {
-
         await using var dbContext =
-        await CreateDbContextAsync(cancellationToken);
+            await CreateDbContextAsync(cancellationToken);
 
         return await dbContext.Patients
             .AsNoTracking()
@@ -89,7 +89,7 @@ public class PatientRepository
         ArgumentException.ThrowIfNullOrWhiteSpace(patientNumber);
 
         await using var dbContext =
-        await CreateDbContextAsync(cancellationToken);
+            await CreateDbContextAsync(cancellationToken);
 
         return await dbContext.Patients
             .AsNoTracking()
@@ -102,13 +102,45 @@ public class PatientRepository
         CancellationToken cancellationToken = default)
     {
         await using var dbContext =
-        await CreateDbContextAsync(cancellationToken);
+            await CreateDbContextAsync(cancellationToken);
 
         return await dbContext.Patients
             .AsNoTracking()
             .OrderBy(patient => patient.LastName)
             .ThenBy(patient => patient.FirstName)
             .ToListAsync(cancellationToken);
+    }
+
+    // Shared search logic used by all patient search methods.
+    private static IQueryable<Patient> ApplySearchFilter(
+        IQueryable<Patient> query,
+        string? searchTerm)
+    {
+        if (string.IsNullOrWhiteSpace(searchTerm))
+        {
+            return query;
+        }
+
+        string[] searchTerms = searchTerm
+            .Trim()
+            .ToLowerInvariant()
+            .Split(
+                ' ',
+                StringSplitOptions.RemoveEmptyEntries);
+
+        foreach (string term in searchTerms)
+        {
+            query = query.Where(patient =>
+                patient.PatientNumber.ToLower().Contains(term) ||
+                patient.FirstName.ToLower().Contains(term) ||
+                (patient.MiddleName != null &&
+                 patient.MiddleName.ToLower().Contains(term)) ||
+                patient.LastName.ToLower().Contains(term) ||
+                (patient.ContactNumber != null &&
+                 patient.ContactNumber.Contains(term)));
+        }
+
+        return query;
     }
 
     public async Task<List<Patient>> SearchAsync(
@@ -117,35 +149,20 @@ public class PatientRepository
     {
         ArgumentNullException.ThrowIfNull(searchTerm);
 
-        string normalizedSearchTerm = searchTerm.Trim();
-
         await using var dbContext =
-        await CreateDbContextAsync(cancellationToken);
+            await CreateDbContextAsync(cancellationToken);
 
-        if (normalizedSearchTerm.Length == 0)
-        {
-            return await dbContext.Patients
-                .AsNoTracking()
-                .OrderBy(patient => patient.LastName)
-                .ThenBy(patient => patient.FirstName)
-                .ToListAsync(cancellationToken);
-        }
+        var query = dbContext.Patients
+            .AsNoTracking();
 
-        return await dbContext.Patients
-            .AsNoTracking()
-            .Where(patient =>
-                patient.PatientNumber.Contains(normalizedSearchTerm) ||
-                patient.FirstName.Contains(normalizedSearchTerm) ||
-                (patient.MiddleName != null &&
-                 patient.MiddleName.Contains(normalizedSearchTerm)) ||
-                patient.LastName.Contains(normalizedSearchTerm) ||
-                (patient.ContactNumber != null &&
-                 patient.ContactNumber.Contains(normalizedSearchTerm)))
+        query = ApplySearchFilter(query, searchTerm);
+
+        return await query
             .OrderBy(patient => patient.LastName)
             .ThenBy(patient => patient.FirstName)
+            .ThenBy(patient => patient.Id)
             .ToListAsync(cancellationToken);
     }
-
 
     public async Task<List<Patient>> SearchPageAsync(
         string searchTerm,
@@ -165,27 +182,13 @@ public class PatientRepository
             throw new ArgumentOutOfRangeException(nameof(pageSize));
         }
 
-
-        string normalizedSearchTerm = searchTerm.Trim();
-        string search = normalizedSearchTerm.ToLowerInvariant();
-
         await using var dbContext =
-        await CreateDbContextAsync(cancellationToken);
+            await CreateDbContextAsync(cancellationToken);
 
         var query = dbContext.Patients
             .AsNoTracking();
 
-        if (normalizedSearchTerm.Length > 0)
-        {
-            query = query.Where(patient =>
-            patient.PatientNumber.ToLower().Contains(search) ||
-            patient.FirstName.ToLower().Contains(search) ||
-            (patient.MiddleName != null &&
-             patient.MiddleName.ToLower().Contains(search)) ||
-            patient.LastName.ToLower().Contains(search) ||
-            (patient.ContactNumber != null &&
-             patient.ContactNumber.Contains(normalizedSearchTerm)));
-        }
+        query = ApplySearchFilter(query, searchTerm);
 
         return await query
             .OrderBy(patient => patient.LastName)
@@ -194,9 +197,7 @@ public class PatientRepository
             .Skip((pageNumber - 1) * pageSize)
             .Take(pageSize)
             .ToListAsync(cancellationToken);
-
     }
-
 
     public async Task<int> CountSearchResultsAsync(
         string searchTerm,
@@ -204,34 +205,16 @@ public class PatientRepository
     {
         ArgumentNullException.ThrowIfNull(searchTerm);
 
-        string normalizedSearchTerm = searchTerm.Trim();
-        string search = normalizedSearchTerm.ToLowerInvariant();
-
         await using var dbContext =
-        await CreateDbContextAsync(cancellationToken);
+            await CreateDbContextAsync(cancellationToken);
 
-        if (normalizedSearchTerm.Length == 0)
-        {
-            return await dbContext.Patients
-                .CountAsync(cancellationToken);
-        }
+        var query = dbContext.Patients
+            .AsNoTracking();
 
+        query = ApplySearchFilter(query, searchTerm);
 
-        return await dbContext.Patients
-            .Where(patient =>
-                patient.PatientNumber.ToLower().Contains(search) ||
-                patient.FirstName.ToLower().Contains(search) ||
-                (patient.MiddleName != null &&
-                 patient.MiddleName.ToLower().Contains(search)) ||
-                patient.LastName.ToLower().Contains(search) ||
-                (patient.ContactNumber != null &&
-                 patient.ContactNumber.Contains(normalizedSearchTerm)))
-            .CountAsync(cancellationToken);
-
+        return await query.CountAsync(cancellationToken);
     }
-
-
-
 
     public async Task<List<Patient>> GetPatientMasterListAsync(
         DateTime? startUtc = null,
@@ -250,11 +233,6 @@ public class PatientRepository
 
         string? normalizedSex =
             string.IsNullOrWhiteSpace(sex) ? null : sex.Trim();
-
-        string normalizedSearch =
-            searchTerm?.Trim() ?? string.Empty;
-
-        string search = normalizedSearch.ToLowerInvariant();
 
         await using var dbContext =
             await CreateDbContextAsync(cancellationToken);
@@ -282,25 +260,8 @@ public class PatientRepository
                 patient.Sex == normalizedSex);
         }
 
-        // Patient number and full-name search.
-        if (search.Length > 0)
-        {
-            query = query.Where(patient =>
-                patient.PatientNumber.ToLower().Contains(search) ||
-                patient.FirstName.ToLower().Contains(search) ||
-                patient.LastName.ToLower().Contains(search) ||
-                (
-                    patient.MiddleName != null &&
-                    patient.MiddleName.ToLower().Contains(search)
-                ) ||
-                (
-                    (patient.FirstName + " " +
-                     (patient.MiddleName ?? "") + " " +
-                     patient.LastName)
-                    .ToLower()
-                    .Contains(search)
-                ));
-        }
+        // Shared patient search.
+        query = ApplySearchFilter(query, searchTerm);
 
         return await query
             .OrderBy(patient => patient.LastName)
@@ -309,9 +270,6 @@ public class PatientRepository
             .ToListAsync(cancellationToken);
     }
 
-
-
-
     public async Task UpdateAsync(
         Patient patient,
         AuditLog auditLog,
@@ -319,6 +277,11 @@ public class PatientRepository
     {
         ArgumentNullException.ThrowIfNull(patient);
         ArgumentNullException.ThrowIfNull(auditLog);
+
+        if (patient.Id <= 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(patient.Id));
+        }
 
         await using var dbContext =
             await CreateDbContextAsync(cancellationToken);
@@ -334,7 +297,7 @@ public class PatientRepository
                 $"Patient with ID {patient.Id} was not found.");
         }
 
-        // Capture the existing values before applying changes.
+        // Capture existing editable values.
         var previousValues = new Dictionary<string, object?>
         {
             ["FirstName"] = existingPatient.FirstName,
@@ -350,7 +313,7 @@ public class PatientRepository
             ["EmergencyContactNumber"] = existingPatient.EmergencyContactNumber
         };
 
-        // Capture the submitted values.
+        // Capture submitted editable values.
         var updatedValues = new Dictionary<string, object?>
         {
             ["FirstName"] = patient.FirstName,
@@ -366,7 +329,7 @@ public class PatientRepository
             ["EmergencyContactNumber"] = patient.EmergencyContactNumber
         };
 
-        // Keep only fields whose values actually changed.
+        // Identify actual changes.
         var changedPreviousValues = new Dictionary<string, object?>();
         var changedNewValues = new Dictionary<string, object?>();
 
@@ -379,22 +342,34 @@ public class PatientRepository
             }
         }
 
-        // Nothing meaningful changed. Do not create unnecessary history
-        // or audit entries.
+        // Nothing changed.
         if (changedPreviousValues.Count == 0)
         {
             return;
         }
 
-        // Apply the submitted values to the tracked database entity.
-        dbContext.Entry(existingPatient).CurrentValues.SetValues(patient);
-
         DateTime changedAtUtc = DateTime.UtcNow;
 
+        // Update ONLY editable patient fields.
+        existingPatient.FirstName = patient.FirstName;
+        existingPatient.MiddleName = patient.MiddleName;
+        existingPatient.LastName = patient.LastName;
+        existingPatient.DateOfBirth = patient.DateOfBirth;
+        existingPatient.Sex = patient.Sex;
+        existingPatient.CivilStatus = patient.CivilStatus;
+        existingPatient.ContactNumber = patient.ContactNumber;
+        existingPatient.Email = patient.Email;
+        existingPatient.Address = patient.Address;
+        existingPatient.EmergencyContactName = patient.EmergencyContactName;
+        existingPatient.EmergencyContactNumber = patient.EmergencyContactNumber;
+
+        existingPatient.UpdatedAtUtc = changedAtUtc;
+
+        // Prepare audit information.
         auditLog.EntityId = existingPatient.Id;
         auditLog.OccurredAtUtc = changedAtUtc;
 
-        // Create the before-and-after version.
+        // Prepare record version.
         var recordVersion = new RecordVersion
         {
             EntityType = "Patient",
@@ -411,7 +386,6 @@ public class PatientRepository
             ChangedAtUtc = changedAtUtc
         };
 
-        // Save the patient update, audit log, and version history together.
         await dbContext.AuditLogs.AddAsync(
             auditLog,
             cancellationToken);
@@ -420,14 +394,13 @@ public class PatientRepository
             recordVersion,
             cancellationToken);
 
+        // Patient update, audit, and version history are saved together.
         await dbContext.SaveChangesAsync(cancellationToken);
     }
 
-
-
     public async Task<IndividualPatientRecordReport?> GetIndividualPatientRecordReportAsync(
-    int patientId,
-    CancellationToken cancellationToken = default)
+        int patientId,
+        CancellationToken cancellationToken = default)
     {
         if (patientId <= 0)
         {
@@ -503,12 +476,11 @@ public class PatientRepository
         };
     }
 
-
     public async Task<PrenatalCareReport> GetPrenatalCareReportAsync(
-    DateOnly? startDate = null,
-    DateOnly? endDate = null,
-    string? searchTerm = null,
-    CancellationToken cancellationToken = default)
+        DateOnly? startDate = null,
+        DateOnly? endDate = null,
+        string? searchTerm = null,
+        CancellationToken cancellationToken = default)
     {
         if (startDate.HasValue &&
             endDate.HasValue &&
@@ -583,9 +555,6 @@ public class PatientRepository
         };
     }
 
-
-
-
     public async Task<int> GetRegistrationCountForClinicActivityReportAsync(
         DateTime? startUtc,
         DateTime? endUtcExclusive,
@@ -658,7 +627,4 @@ public class PatientRepository
             .Select(patient => patient.CreatedAtUtc)
             .ToListAsync(cancellationToken);
     }
-
-
-
 }

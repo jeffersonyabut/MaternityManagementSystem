@@ -41,6 +41,22 @@ public static class PregnancyValidator
                 "A valid patient must be selected.");
         }
 
+        DateOnly today = DateOnly.FromDateTime(DateTime.Today);
+
+        if (pregnancy.LastMenstrualPeriod.HasValue &&
+            pregnancy.LastMenstrualPeriod.Value > today)
+        {
+            throw new ArgumentException(
+                "The last menstrual period cannot be in the future.");
+        }
+
+        if (pregnancy.PregnancyEndDate.HasValue &&
+            pregnancy.PregnancyEndDate.Value > today)
+        {
+            throw new ArgumentException(
+                "The pregnancy end date cannot be in the future.");
+        }
+
         if (pregnancy.LastMenstrualPeriod.HasValue &&
             pregnancy.PregnancyEndDate.HasValue &&
             pregnancy.PregnancyEndDate.Value <
@@ -62,7 +78,10 @@ public static class PregnancyValidator
         if (string.IsNullOrWhiteSpace(pregnancy.Status) ||
             !Array.Exists(
                 ValidStatuses,
-                status => status == pregnancy.Status.Trim()))
+                status => string.Equals(
+                    status,
+                    pregnancy.Status.Trim(),
+                    StringComparison.OrdinalIgnoreCase)))
         {
             throw new ArgumentException(
                 "The pregnancy status is invalid.");
@@ -71,7 +90,10 @@ public static class PregnancyValidator
         if (!string.IsNullOrWhiteSpace(pregnancy.PregnancyOutcome) &&
             !Array.Exists(
                 ValidOutcomes,
-                outcome => outcome == pregnancy.PregnancyOutcome.Trim()))
+                outcome => string.Equals(
+                    outcome,
+                    pregnancy.PregnancyOutcome.Trim(),
+                    StringComparison.OrdinalIgnoreCase)))
         {
             throw new ArgumentException(
                 "The pregnancy outcome is invalid.");
@@ -80,7 +102,10 @@ public static class PregnancyValidator
         if (!string.IsNullOrWhiteSpace(pregnancy.DeliveryMethod) &&
             !Array.Exists(
                 ValidDeliveryMethods,
-                method => method == pregnancy.DeliveryMethod.Trim()))
+                method => string.Equals(
+                    method,
+                    pregnancy.DeliveryMethod.Trim(),
+                    StringComparison.OrdinalIgnoreCase)))
         {
             throw new ArgumentException(
                 "The delivery method is invalid.");
@@ -102,6 +127,21 @@ public static class PregnancyValidator
         {
             throw new ArgumentException(
                 "The number of infants must be between 1 and 10.");
+        }
+
+        if (pregnancy.LivingChildrenCount is < 0)
+        {
+            throw new ArgumentException(
+                "The number of living children cannot be negative.");
+        }
+
+        if (pregnancy.NumberOfInfants.HasValue &&
+            pregnancy.LivingChildrenCount.HasValue &&
+            pregnancy.LivingChildrenCount.Value >
+            pregnancy.NumberOfInfants.Value)
+        {
+            throw new ArgumentException(
+                "The number of living children cannot exceed the number of infants.");
         }
 
         if (!string.IsNullOrWhiteSpace(pregnancy.Complications) &&

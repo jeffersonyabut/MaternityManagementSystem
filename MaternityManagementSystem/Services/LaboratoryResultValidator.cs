@@ -34,28 +34,91 @@ public static class LaboratoryResultValidator
                 "Laboratory test name cannot exceed 150 characters.");
         }
 
-        if (laboratoryResult.TestDate == default)
+        if (laboratoryResult.Status is null ||
+            !Enum.IsDefined(laboratoryResult.Status.Value))
+        {
+            throw new ArgumentException(
+                "A valid laboratory result status is required.");
+        }
+
+        if (laboratoryResult.RequestedDate is { } requestedDate &&
+            requestedDate == default)
+        {
+            throw new ArgumentException(
+                "A valid laboratory requested date is required.");
+        }
+
+        if (laboratoryResult.RequestedDate is null &&
+            laboratoryResult.Status != LaboratoryResultStatus.Resulted)
+        {
+            throw new ArgumentException(
+                "A valid laboratory requested date is required.");
+        }
+
+        if (laboratoryResult.TestDate is { } testDate &&
+            testDate == default)
         {
             throw new ArgumentException(
                 "A valid laboratory test date is required.");
         }
 
-        if (laboratoryResult.TestDate > DateOnly.FromDateTime(DateTime.Today))
+        if (laboratoryResult.TestDate.HasValue &&
+            laboratoryResult.TestDate.Value >
+            DateOnly.FromDateTime(DateTime.Today))
         {
             throw new ArgumentException(
                 "Laboratory test date cannot be in the future.");
         }
 
-        if (string.IsNullOrWhiteSpace(laboratoryResult.Result))
-        {
-            throw new ArgumentException(
-                "Laboratory result is required.");
-        }
+        bool hasResult =
+            !string.IsNullOrWhiteSpace(laboratoryResult.Result);
 
-        if (laboratoryResult.Result.Trim().Length > 2000)
+        switch (laboratoryResult.Status.Value)
         {
-            throw new ArgumentException(
-                "Laboratory result cannot exceed 2000 characters.");
+            case LaboratoryResultStatus.Requested:
+                if (laboratoryResult.TestDate.HasValue || hasResult)
+                {
+                    throw new ArgumentException(
+                        "A requested test cannot have a performed date or result.");
+                }
+
+                break;
+
+            case LaboratoryResultStatus.AwaitingResult:
+                if (!laboratoryResult.TestDate.HasValue)
+                {
+                    throw new ArgumentException(
+                        "A performed date is required while awaiting a result.");
+                }
+
+                if (hasResult)
+                {
+                    throw new ArgumentException(
+                        "A test awaiting a result cannot already have a result.");
+                }
+
+                break;
+
+            case LaboratoryResultStatus.Resulted:
+                if (!laboratoryResult.TestDate.HasValue)
+                {
+                    throw new ArgumentException(
+                        "A performed date is required for a resulted test.");
+                }
+
+                if (!hasResult)
+                {
+                    throw new ArgumentException(
+                        "A laboratory result is required for a resulted test.");
+                }
+
+                if (laboratoryResult.Result!.Trim().Length > 2000)
+                {
+                    throw new ArgumentException(
+                        "Laboratory result cannot exceed 2000 characters.");
+                }
+
+                break;
         }
 
         if (!string.IsNullOrWhiteSpace(laboratoryResult.Unit) &&

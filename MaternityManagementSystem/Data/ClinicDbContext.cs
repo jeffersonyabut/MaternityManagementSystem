@@ -317,9 +317,20 @@ public class ClinicDbContext : DbContext
                 .IsRequired()
                 .HasMaxLength(150);
 
+            entity.Property(lr => lr.Status)
+                .HasConversion<string>()
+                .HasMaxLength(30)
+                .IsRequired(false);
+
+            entity.Property(lr => lr.RequestedDate)
+                .IsRequired(false);
+
             entity.Property(lr => lr.Result)
-                .IsRequired()
+                .IsRequired(false)
                 .HasMaxLength(2000);
+
+            entity.Property(lr => lr.TestDate)
+                .IsRequired(false);
 
             entity.Property(lr => lr.Unit)
                 .HasMaxLength(50)

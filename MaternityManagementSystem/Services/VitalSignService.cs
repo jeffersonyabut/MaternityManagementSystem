@@ -66,6 +66,10 @@ public class VitalSignService
         vitalSign.CreatedAtUtc = DateTime.UtcNow;
         vitalSign.UpdatedAtUtc = null;
 
+        vitalSign.IsArchived = false;
+        vitalSign.ArchivedAtUtc = null;
+        vitalSign.ArchiveReason = null;
+
         var currentUser = _sessionService.CurrentUser!;
 
         var auditLog = new AuditLog
@@ -216,6 +220,13 @@ public class VitalSignService
         {
             throw new ArgumentException(
                 "An archive reason is required.",
+                nameof(archiveReason));
+        }
+
+        if (archiveReason.Trim().Length > 1000)
+        {
+            throw new ArgumentException(
+                "Archive reason cannot exceed 1000 characters.",
                 nameof(archiveReason));
         }
 

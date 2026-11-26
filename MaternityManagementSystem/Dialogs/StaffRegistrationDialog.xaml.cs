@@ -85,9 +85,9 @@ public partial class StaffRegistrationDialog : Window
             return;
         }
 
-        if (password.Length < 8)
+        if (password.Length < 12)
         {
-            ShowValidation("Password must contain at least 8 characters.");
+            ShowValidation("Password must contain at least 12 characters.");
             PasswordBox.Focus();
             return;
         }

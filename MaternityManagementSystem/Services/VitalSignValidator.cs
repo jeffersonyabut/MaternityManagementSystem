@@ -1,3 +1,4 @@
+
 using System;
 using MaternityManagementSystem.Models;
 
@@ -41,6 +42,15 @@ public static class VitalSignValidator
                 "Blood pressure values must be greater than zero.");
         }
 
+        if (vitalSign.SystolicBloodPressure.HasValue &&
+            vitalSign.DiastolicBloodPressure.HasValue &&
+            vitalSign.SystolicBloodPressure.Value <=
+            vitalSign.DiastolicBloodPressure.Value)
+        {
+            throw new ArgumentException(
+                "Systolic blood pressure must be greater than diastolic blood pressure.");
+        }
+
         if (vitalSign.HeartRate <= 0)
         {
             throw new ArgumentException(
@@ -59,10 +69,10 @@ public static class VitalSignValidator
                 "Temperature must be greater than zero.");
         }
 
-        if (vitalSign.OxygenSaturation is < 0 or > 100)
+        if (vitalSign.OxygenSaturation is <= 0 or > 100)
         {
             throw new ArgumentException(
-                "Oxygen saturation must be between 0 and 100.");
+                "Oxygen saturation must be greater than 0 and cannot exceed 100.");
         }
 
         if (vitalSign.WeightKg <= 0)

@@ -56,6 +56,9 @@ public class LaboratoryResultService
 
         NormalizeFields(laboratoryResult);
 
+        laboratoryResult.RequestedDate ??=
+            DateOnly.FromDateTime(DateTime.Today);
+
         LaboratoryResultValidator.Validate(laboratoryResult);
 
         laboratoryResult.CreatedAtUtc = DateTime.UtcNow;
@@ -73,7 +76,7 @@ public class LaboratoryResultService
             Username = currentUser.Username,
             Action = "Created",
             EntityType = "LaboratoryResult",
-            Details = "Laboratory result record created."
+            Details = $"Laboratory test record created with status {laboratoryResult.Status}."
         };
 
         return await _laboratoryResultRepository.AddAsync(
@@ -276,6 +279,12 @@ public class LaboratoryResultService
         existingLaboratoryResult.TestName =
             updatedLaboratoryResult.TestName;
 
+        existingLaboratoryResult.Status =
+            updatedLaboratoryResult.Status;
+
+        existingLaboratoryResult.RequestedDate =
+            updatedLaboratoryResult.RequestedDate;
+
         existingLaboratoryResult.TestDate =
             updatedLaboratoryResult.TestDate;
 
@@ -420,8 +429,8 @@ public class LaboratoryResultService
         laboratoryResult.TestName =
             laboratoryResult.TestName?.Trim() ?? string.Empty;
 
-        laboratoryResult.Result =
-            laboratoryResult.Result?.Trim() ?? string.Empty;
+        laboratoryResult.Result = NormalizeOptionalText(
+            laboratoryResult.Result);
 
         laboratoryResult.Unit =
             NormalizeOptionalText(laboratoryResult.Unit);

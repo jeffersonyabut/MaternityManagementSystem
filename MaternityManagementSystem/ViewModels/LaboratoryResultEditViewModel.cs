@@ -93,8 +93,8 @@ public partial class LaboratoryResultEditViewModel : ObservableObject
                     : $"Visit dated {laboratoryResult.PrenatalVisit.VisitDate:MMM dd, yyyy}";
 
             TestName = laboratoryResult.TestName;
-            TestDate = laboratoryResult.TestDate.ToDateTime(TimeOnly.MinValue);
-            Result = laboratoryResult.Result;
+            TestDate = laboratoryResult.TestDate?.ToDateTime(TimeOnly.MinValue);
+            Result = laboratoryResult.Result ?? string.Empty;
             Unit = laboratoryResult.Unit;
             ReferenceRange = laboratoryResult.ReferenceRange;
             Notes = laboratoryResult.Notes;
@@ -139,6 +139,8 @@ public partial class LaboratoryResultEditViewModel : ObservableObject
                 Id = _existingLaboratoryResult.Id,
                 PatientId = _existingLaboratoryResult.PatientId,
                 PrenatalVisitId = _existingLaboratoryResult.PrenatalVisitId,
+                Status = _existingLaboratoryResult.Status,
+                RequestedDate = _existingLaboratoryResult.RequestedDate,
                 TestName = TestName,
                 TestDate = DateOnly.FromDateTime(TestDate.Value),
                 Result = Result,
