@@ -304,7 +304,7 @@
 
                             <Border Style="{StaticResource MetricCardStyle}">
                                 <StackPanel>
-                                    <TextBlock Text="Laboratory Results"
+                                    <TextBlock Text="Laboratory Records"
                                                Style="{StaticResource MetricLabelStyle}"/>
 
                                     <TextBlock Text="{Binding Report.TotalLaboratoryResults}"
@@ -335,7 +335,24 @@
                                 </StackPanel>
                             </Border>
 
+                            <Border Style="{StaticResource MetricCardStyle}">
+                                <StackPanel>
+                                    <TextBlock Text="Unassigned Activity Date"
+                                               Style="{StaticResource MetricLabelStyle}"/>
+
+                                    <TextBlock Text="{Binding Report.UnassignedActivityDateCount}"
+                                               Style="{StaticResource MetricValueStyle}"
+                                               Foreground="#64748B"/>
+                                </StackPanel>
+                            </Border>
+
                         </UniformGrid>
+
+                        <TextBlock Text="Unassigned Activity Date counts records without an applicable date only when no date range is selected. These records are not assigned to a month."
+                                   FontSize="11"
+                                   Foreground="#777184"
+                                   TextWrapping="Wrap"
+                                   Margin="0,0,0,12"/>
 
                         <!-- Appointment Status -->
                         <TextBlock Text="Appointment Status Breakdown"

@@ -177,6 +177,14 @@ public class ClinicActivityReportService
                     endDate,
                     cancellationToken);
 
+        report.UnassignedActivityDateCount =
+            startDate.HasValue || endDate.HasValue
+                ? 0
+                : Math.Max(
+                    0,
+                    report.TotalLaboratoryResults -
+                    laboratoryResultDates.Count);
+
         var appointmentDates =
             await _appointmentService
                 .GetAppointmentDatesForClinicActivityReportAsync(

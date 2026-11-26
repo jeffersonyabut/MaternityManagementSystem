@@ -153,7 +153,7 @@ public partial class ClinicActivityReportViewModel : ObservableObject
 
         MonthlyActivitySeries.Add(new ColumnSeries<int>
         {
-            Name = "Laboratory Results",
+            Name = "Laboratory Records",
             Values = monthlyData.Select(x => x.LaboratoryResults).ToArray(),
             Fill = new SolidColorPaint(PalePurple),
             Stroke = null,

@@ -437,13 +437,17 @@ public class LaboratoryResultRepository
         if (startDate.HasValue)
         {
             query = query.Where(result =>
-                result.TestDate >= startDate.Value);
+                (result.Status == LaboratoryResultStatus.Requested
+                    ? result.RequestedDate
+                    : result.TestDate) >= startDate.Value);
         }
 
         if (endDate.HasValue)
         {
             query = query.Where(result =>
-                result.TestDate <= endDate.Value);
+                (result.Status == LaboratoryResultStatus.Requested
+                    ? result.RequestedDate
+                    : result.TestDate) <= endDate.Value);
         }
 
         return await query.CountAsync(cancellationToken);
@@ -473,19 +477,32 @@ public class LaboratoryResultRepository
         if (startDate.HasValue)
         {
             query = query.Where(result =>
-                result.TestDate >= startDate.Value);
+                (result.Status == LaboratoryResultStatus.Requested
+                    ? result.RequestedDate
+                    : result.TestDate) >= startDate.Value);
         }
 
         if (endDate.HasValue)
         {
             query = query.Where(result =>
-                result.TestDate <= endDate.Value);
+                (result.Status == LaboratoryResultStatus.Requested
+                    ? result.RequestedDate
+                    : result.TestDate) <= endDate.Value);
         }
 
         return await query
-            .Where(result => result.TestDate.HasValue)
-            .OrderBy(result => result.TestDate)
-            .Select(result => result.TestDate!.Value)
+            .Where(result =>
+                (result.Status == LaboratoryResultStatus.Requested
+                    ? result.RequestedDate
+                    : result.TestDate).HasValue)
+            .OrderBy(result =>
+                result.Status == LaboratoryResultStatus.Requested
+                    ? result.RequestedDate
+                    : result.TestDate)
+            .Select(result =>
+                (result.Status == LaboratoryResultStatus.Requested
+                    ? result.RequestedDate
+                    : result.TestDate)!.Value)
             .ToListAsync(cancellationToken);
     }
 
@@ -513,13 +530,17 @@ public class LaboratoryResultRepository
         if (startDate.HasValue)
         {
             query = query.Where(result =>
-                result.TestDate >= startDate.Value);
+                (result.Status == LaboratoryResultStatus.Requested
+                    ? result.RequestedDate
+                    : result.TestDate) >= startDate.Value);
         }
 
         if (endDate.HasValue)
         {
             query = query.Where(result =>
-                result.TestDate <= endDate.Value);
+                (result.Status == LaboratoryResultStatus.Requested
+                    ? result.RequestedDate
+                    : result.TestDate) <= endDate.Value);
         }
 
         return await query

@@ -299,23 +299,26 @@ public partial class ClinicActivityReportView : UserControl
         y += 25;
 
         double cardGap = 12;
+        const int metricColumns = 4;
         double cardWidth =
-            (PageWidth - LeftMargin - RightMargin - (cardGap * 2)) / 3;
+            (PageWidth - LeftMargin - RightMargin -
+             (cardGap * (metricColumns - 1))) / metricColumns;
 
         var metrics = new[]
         {
             ("Patient Registrations", report.TotalPatientRegistrations),
             ("Pregnancy Records", report.TotalPregnancyRecords),
             ("Prenatal Visits", report.TotalPrenatalVisits),
-            ("Laboratory Results", report.TotalLaboratoryResults),
+            ("Laboratory Records", report.TotalLaboratoryResults),
             ("Appointments", report.TotalAppointments),
-            ("Unique Patients Served", report.UniquePatientsServed)
+            ("Unique Patients Served", report.UniquePatientsServed),
+            ("Unassigned Activity Date", report.UnassignedActivityDateCount)
         };
 
         for (int i = 0; i < metrics.Length; i++)
         {
-            int row = i / 3;
-            int column = i % 3;
+            int row = i / metricColumns;
+            int column = i % metricColumns;
 
             double x = LeftMargin + column * (cardWidth + cardGap);
             double cardY = y + row * 65;
@@ -330,7 +333,19 @@ public partial class ClinicActivityReportView : UserControl
                 metrics[i].Item2.ToString("N0"));
         }
 
-        y += 145;
+        y += 125;
+
+        AddText(
+            page,
+            "Unassigned Activity Date counts records without an applicable date only when no date range is selected. These records are not assigned to a month.",
+            LeftMargin,
+            y,
+            PageWidth - LeftMargin - RightMargin,
+            16,
+            8,
+            SecondaryText);
+
+        y += 41;
 
         AddSectionTitle(page, "APPOINTMENT STATUS BREAKDOWN", y);
 
@@ -396,7 +411,7 @@ public partial class ClinicActivityReportView : UserControl
             "Patient Registrations",
             "Pregnancy Records",
             "Prenatal Visits",
-            "Laboratory Results",
+            "Laboratory Records",
             "Appointments"
         };
 

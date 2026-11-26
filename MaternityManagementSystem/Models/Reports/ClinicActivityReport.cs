@@ -17,6 +17,8 @@ public class ClinicActivityReport
 
     public int TotalLaboratoryResults { get; set; }
 
+    public int UnassignedActivityDateCount { get; set; }
+
     public int TotalAppointments { get; set; }
 
     // Appointment status breakdown
