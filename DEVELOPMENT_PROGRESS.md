@@ -19,9 +19,9 @@ Established architecture decisions:
 
 ClinicDbContext uses SQLite. Its default database is clinic.db under the current user's Local Application Data Golddie directory.
 
-The application applies EF Core migrations during startup. Startup includes a staged username-normalization migration process that applies the normalized-username column migration, backfills existing usernames, and then applies later migrations. The repository contains 17 migration classes and an EF Core model snapshot.
+The application applies EF Core migrations during startup. Startup includes a staged username-normalization migration process that applies the normalized-username column migration, backfills existing usernames, and then applies later migrations. The repository contains 21 migration classes and an EF Core model snapshot.
 
-Tests use temporary SQLite databases created with EnsureCreatedAsync; this does not verify the production migration sequence.
+Most tests use temporary SQLite databases created with EnsureCreatedAsync. Focused migration tests also exercise migration Up and Down against temporary SQLite databases; no production migration is applied by those tests.
 
 The assumption behind the existing +8-hour prenatal date migration has not been confirmed and remains a pending review item.
 
@@ -89,6 +89,24 @@ Verification results:
 - **Solution build:** succeeded; 0 errors and 0 warnings.
 - **Manual verification:** a test SMS was successfully received on a TM mobile number.
 - **Production database:** no production SQLite database was accessed or modified, and no migration was run for this feature.
+
+## Completed appointment SMS consent-generation schema
+
+The patient SMS consent and appointment reminder schema now supports separate consent generations without changing the meaning of `Appointment.ScheduleRevision`:
+
+- Added `Patient.SmsReminderConsentGeneration` and `AppointmentSmsReminder.ConsentGeneration`, both defaulting to `0`; existing rows are migrated with value `0`. A new patient who explicitly grants consent during registration starts at generation `1`.
+- Expanded the reminder unique key to `(AppointmentId, ScheduleRevision, ConsentGeneration, ReminderType)`, allowing a new reminder pair after consent is granted again while retaining terminal history from previous consent decisions.
+- Explicit consent state changes increment the generation, including a grant selected during registration. Repeating the current consent state and ordinary patient profile edits do not. Existing consent timestamps, staff attribution, audit logs, and record versions remain recorded.
+- Migration `20261126210209_AddPatientSmsConsentGeneration` updates the schema and snapshot. Its Down migration checks for collisions under the old unique key before changing indexes or dropping columns. A collision aborts with an actionable error; the migration transaction leaves schema and reminder rows unchanged.
+- Reminder scheduling, reconciliation, workers, and automatic SMS dispatch are not implemented.
+
+Verification results:
+
+- **Focused patient consent, consent-generation, and reminder schema tests:** 18 passed, 0 failed, and 0 skipped.
+- **Full test suite:** 191 passed, 0 failed, and 0 skipped.
+- **Solution build:** succeeded; 0 warnings and 0 errors.
+- **Migration verification:** Up and collision-free Down preserved test data; collision Down failed safely and retained the expanded schema and all reminder rows. Tests used temporary SQLite databases only.
+- **Production database and messaging:** no production database was accessed or migrated; no SMS was sent and no network request was made.
 
 ## Baseline verification
 

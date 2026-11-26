@@ -153,6 +153,10 @@ public class ClinicDbContext : DbContext
                   .HasDefaultValue(false)
                   .IsRequired();
 
+            entity.Property(patient => patient.SmsReminderConsentGeneration)
+                  .HasDefaultValue(0)
+                  .IsRequired();
+
             entity.Property(patient => patient.SmsReminderConsentRecordedAtUtc)
                   .IsRequired(false);
 
@@ -521,6 +525,7 @@ public class ClinicDbContext : DbContext
             {
                 reminder.AppointmentId,
                 reminder.ScheduleRevision,
+                reminder.ConsentGeneration,
                 reminder.ReminderType
             }).IsUnique();
 

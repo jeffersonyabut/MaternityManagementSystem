@@ -25,12 +25,14 @@ public class PatientSmsConsentTests
         Patient patient = await service.RegisterPatientAsync(CreatePatient());
 
         Assert.False(patient.HasSmsReminderConsent);
+        Assert.Equal(0, patient.SmsReminderConsentGeneration);
         Assert.Null(patient.SmsReminderConsentRecordedAtUtc);
         Assert.Null(patient.SmsReminderConsentRecordedByStaffId);
 
         await using var context = await database.Factory.CreateDbContextAsync();
         Patient saved = await context.Patients.SingleAsync(item => item.Id == patient.Id);
         Assert.False(saved.HasSmsReminderConsent);
+        Assert.Equal(0, saved.SmsReminderConsentGeneration);
         Assert.Null(saved.SmsReminderConsentRecordedAtUtc);
         Assert.Null(saved.SmsReminderConsentRecordedByStaffId);
     }
@@ -54,6 +56,7 @@ public class PatientSmsConsentTests
             beforeRegistrationUtc,
             afterRegistrationUtc);
         Assert.Equal(1, patient.SmsReminderConsentRecordedByStaffId);
+        Assert.Equal(1, patient.SmsReminderConsentGeneration);
 
         await using var context = await database.Factory.CreateDbContextAsync();
         AuditLog creationLog = await context.AuditLogs.SingleAsync(
@@ -84,6 +87,7 @@ public class PatientSmsConsentTests
             beforeGrantUtc,
             afterGrantUtc);
         Assert.Equal(1, granted.SmsReminderConsentRecordedByStaffId);
+        Assert.Equal(1, granted.SmsReminderConsentGeneration);
 
         DateTime beforeWithdrawalUtc = DateTime.UtcNow;
         Patient withdrawn = await service.SetSmsReminderConsentAsync(
@@ -98,6 +102,7 @@ public class PatientSmsConsentTests
             beforeWithdrawalUtc,
             afterWithdrawalUtc);
         Assert.Equal(1, withdrawn.SmsReminderConsentRecordedByStaffId);
+        Assert.Equal(2, withdrawn.SmsReminderConsentGeneration);
 
         await using var context = await database.Factory.CreateDbContextAsync();
         var consentLogs = await context.AuditLogs
@@ -115,6 +120,7 @@ public class PatientSmsConsentTests
         Patient savedPatient = await context.Patients
             .SingleAsync(item => item.Id == patient.Id);
         Assert.False(savedPatient.HasSmsReminderConsent);
+        Assert.Equal(2, savedPatient.SmsReminderConsentGeneration);
         Assert.Equal(
             withdrawn.SmsReminderConsentRecordedByStaffId,
             savedPatient.SmsReminderConsentRecordedByStaffId);
@@ -132,11 +138,15 @@ public class PatientSmsConsentTests
             versions[0].NewValuesJson).RootElement;
         Assert.True(grantedValues.GetProperty("HasSmsReminderConsent").GetBoolean());
         Assert.Equal(1, grantedValues.GetProperty(
+            "SmsReminderConsentGeneration").GetInt32());
+        Assert.Equal(1, grantedValues.GetProperty(
             "SmsReminderConsentRecordedByStaffId").GetInt32());
 
         JsonElement withdrawnValues = JsonDocument.Parse(
             versions[1].NewValuesJson).RootElement;
         Assert.False(withdrawnValues.GetProperty("HasSmsReminderConsent").GetBoolean());
+        Assert.Equal(2, withdrawnValues.GetProperty(
+            "SmsReminderConsentGeneration").GetInt32());
         Assert.Equal(1, withdrawnValues.GetProperty(
             "SmsReminderConsentRecordedByStaffId").GetInt32());
     }
@@ -200,6 +210,7 @@ public class PatientSmsConsentTests
         Patient saved = await context.Patients.SingleAsync(item => item.Id == patient.Id);
         Assert.Equal("Updated", saved.FirstName);
         Assert.False(saved.HasSmsReminderConsent);
+        Assert.Equal(0, saved.SmsReminderConsentGeneration);
         Assert.Null(saved.SmsReminderConsentRecordedAtUtc);
         Assert.Null(saved.SmsReminderConsentRecordedByStaffId);
 

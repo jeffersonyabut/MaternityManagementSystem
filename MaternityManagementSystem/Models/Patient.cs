@@ -27,6 +27,7 @@ public class Patient
 
     // SMS appointment reminder consent
     public bool HasSmsReminderConsent { get; set; }
+    public int SmsReminderConsentGeneration { get; set; }
     public DateTime? SmsReminderConsentRecordedAtUtc { get; set; }
     public int? SmsReminderConsentRecordedByStaffId { get; set; }
     public Staff? SmsReminderConsentRecordedByStaff { get; set; }

@@ -67,6 +67,7 @@ public class PatientService
 
         patient.CreatedAtUtc = DateTime.UtcNow;
         patient.UpdatedAtUtc = null;
+        patient.SmsReminderConsentGeneration = 0;
 
         var currentUser = _sessionService.CurrentUser;
 
@@ -78,6 +79,9 @@ public class PatientService
 
         if (patient.HasSmsReminderConsent)
         {
+            // A newly registered patient begins at generation 0; an explicit
+            // grant during registration is the first consent state change.
+            patient.SmsReminderConsentGeneration = 1;
             patient.SmsReminderConsentRecordedAtUtc = DateTime.UtcNow;
             patient.SmsReminderConsentRecordedByStaffId =
                 currentUser.StaffId;

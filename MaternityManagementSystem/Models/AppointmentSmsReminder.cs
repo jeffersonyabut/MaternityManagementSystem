@@ -29,6 +29,7 @@ public class AppointmentSmsReminder
     public Appointment Appointment { get; set; } = null!;
 
     public int ScheduleRevision { get; set; }
+    public int ConsentGeneration { get; set; }
     public AppointmentSmsReminderType ReminderType { get; set; }
     public DateTime ScheduledAtUtc { get; set; }
     public DateOnly AppointmentDateSnapshot { get; set; }

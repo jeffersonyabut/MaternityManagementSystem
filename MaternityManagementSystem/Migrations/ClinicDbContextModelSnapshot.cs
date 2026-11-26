@@ -112,6 +112,9 @@ namespace MaternityManagementSystem.Migrations
                     b.Property<DateTime?>("AttemptStartedAtUtc")
                         .HasColumnType("TEXT");
 
+                    b.Property<int>("ConsentGeneration")
+                        .HasColumnType("INTEGER");
+
                     b.Property<DateTime>("CreatedAtUtc")
                         .HasColumnType("TEXT");
 
@@ -156,7 +159,7 @@ namespace MaternityManagementSystem.Migrations
 
                     b.HasIndex("Status", "ScheduledAtUtc");
 
-                    b.HasIndex("AppointmentId", "ScheduleRevision", "ReminderType")
+                    b.HasIndex("AppointmentId", "ScheduleRevision", "ConsentGeneration", "ReminderType")
                         .IsUnique();
 
                     b.ToTable("AppointmentSmsReminders");
@@ -346,6 +349,11 @@ namespace MaternityManagementSystem.Migrations
                     b.Property<string>("Sex")
                         .HasMaxLength(30)
                         .HasColumnType("TEXT");
+
+                    b.Property<int>("SmsReminderConsentGeneration")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasDefaultValue(0);
 
                     b.Property<DateTime?>("SmsReminderConsentRecordedAtUtc")
                         .HasColumnType("TEXT");

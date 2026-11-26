@@ -436,11 +436,19 @@ public class PatientRepository
         {
             [nameof(Patient.HasSmsReminderConsent)] =
                 patient.HasSmsReminderConsent,
+            [nameof(Patient.SmsReminderConsentGeneration)] =
+                patient.SmsReminderConsentGeneration,
             [nameof(Patient.SmsReminderConsentRecordedAtUtc)] =
                 patient.SmsReminderConsentRecordedAtUtc,
             [nameof(Patient.SmsReminderConsentRecordedByStaffId)] =
                 patient.SmsReminderConsentRecordedByStaffId
         };
+
+        if (patient.HasSmsReminderConsent != hasConsent)
+        {
+            patient.SmsReminderConsentGeneration =
+                checked(patient.SmsReminderConsentGeneration + 1);
+        }
 
         patient.HasSmsReminderConsent = hasConsent;
         patient.SmsReminderConsentRecordedAtUtc = recordedAtUtc;
@@ -451,6 +459,8 @@ public class PatientRepository
         {
             [nameof(Patient.HasSmsReminderConsent)] =
                 patient.HasSmsReminderConsent,
+            [nameof(Patient.SmsReminderConsentGeneration)] =
+                patient.SmsReminderConsentGeneration,
             [nameof(Patient.SmsReminderConsentRecordedAtUtc)] =
                 patient.SmsReminderConsentRecordedAtUtc,
             [nameof(Patient.SmsReminderConsentRecordedByStaffId)] =
