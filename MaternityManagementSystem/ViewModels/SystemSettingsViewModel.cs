@@ -13,19 +13,76 @@ public partial class SystemSettingsViewModel : ObservableObject
 {
     private readonly SystemSettingService _systemSettingService;
     private readonly RegionalSettingsService _regionalSettingsService;
+    private readonly DatabaseBackupService? _databaseBackupService;
 
     private readonly Dictionary<string, string> _originalValues =
         new(StringComparer.OrdinalIgnoreCase);
 
     public SystemSettingsViewModel(
         SystemSettingService systemSettingService,
-        RegionalSettingsService regionalSettingsService)
+        RegionalSettingsService regionalSettingsService,
+        DatabaseBackupService? databaseBackupService = null)
     {
         ArgumentNullException.ThrowIfNull(systemSettingService);
         ArgumentNullException.ThrowIfNull(regionalSettingsService);
 
         _systemSettingService = systemSettingService;
         _regionalSettingsService = regionalSettingsService;
+        _databaseBackupService = databaseBackupService;
+    }
+
+    [ObservableProperty]
+    private bool isCreatingBackup;
+
+    [ObservableProperty]
+    private string backupStatusMessage = string.Empty;
+
+    public async Task CreateDatabaseBackupAsync(
+        string destinationDirectory,
+        CancellationToken cancellationToken = default)
+    {
+        if (IsCreatingBackup)
+        {
+            return;
+        }
+
+        if (_databaseBackupService is null)
+        {
+            BackupStatusMessage =
+                "Database backup is not available in this context.";
+            return;
+        }
+
+        IsCreatingBackup = true;
+        BackupStatusMessage = "Creating and validating database backup...";
+
+        try
+        {
+            string backupPath = await _databaseBackupService.CreateBackupAsync(
+                destinationDirectory,
+                cancellationToken);
+
+            BackupStatusMessage =
+                $"Backup completed: {System.IO.Path.GetFileName(backupPath)}";
+        }
+        catch (UnauthorizedAccessException)
+        {
+            BackupStatusMessage =
+                "Your session is not authorized to create database backups.";
+        }
+        catch (OperationCanceledException)
+        {
+            BackupStatusMessage = "Database backup was cancelled.";
+        }
+        catch (Exception)
+        {
+            BackupStatusMessage =
+                "Backup failed. Check the selected folder and available disk space.";
+        }
+        finally
+        {
+            IsCreatingBackup = false;
+        }
     }
 
     // CLINIC PROFILE

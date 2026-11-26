@@ -618,7 +618,8 @@ public partial class DashboardWindow : Window
 
         var viewModel = new SystemSettingsViewModel(
             systemSettingService,
-            app.RegionalSettings);
+            app.RegionalSettings,
+            new DatabaseBackupService(authorizationService));
 
         var view = new SystemSettingsView
         {

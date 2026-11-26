@@ -55,6 +55,23 @@ Verification results:
 
 The migration is present in the application, but the production SQLite database migration has not been applied as part of this work.
 
+## Completed administrative database backup
+
+An Admin-only live SQLite database backup action is available from System Settings:
+
+- `DatabaseBackupService` uses `SqliteConnection.BackupDatabase` to create a consistent backup without copying the live database file directly.
+- The service writes to a timestamped temporary file in the selected destination and validates it with `PRAGMA integrity_check` and `PRAGMA foreign_key_check` before moving it to its final backup filename.
+- Service-layer access is restricted with `AuthorizationService.EnsureAdminAsync`; the settings UI does not serve as the only authorization boundary.
+- Backup failures are reported without exposing database contents or low-level exception details.
+
+Verification results:
+
+- **Focused database backup tests:** 3 passed, 0 failed.
+- **Solution build:** succeeded; 0 errors and 0 warnings.
+- **Manual verification:** Admin backup workflow was verified in the WPF application.
+- **Database restoration:** not implemented or verified.
+- **Production migration:** no production SQLite database migration was run for this feature.
+
 ## Baseline verification
 
 Baseline commands were run against the solution:

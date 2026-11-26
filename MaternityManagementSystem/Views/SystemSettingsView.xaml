@@ -379,6 +379,66 @@
 
                 </Border>
 
+                <!-- DATABASE BACKUP -->
+
+                <Border Style="{StaticResource SettingsCardStyle}"
+                        Margin="0,0,0,18">
+
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+
+                        <StackPanel VerticalAlignment="Center">
+                            <TextBlock Text="Database Backup"
+                                       Style="{StaticResource SectionTitleStyle}"/>
+
+                            <TextBlock Text="Create and validate a timestamped backup of the clinic database."
+                                       Style="{StaticResource SectionDescriptionStyle}"
+                                       TextWrapping="Wrap"/>
+
+                            <TextBlock Text="Backup files contain sensitive clinic records. Store them in an approved secure location."
+                                       FontSize="10"
+                                       Foreground="{StaticResource MutedBrush}"
+                                       TextWrapping="Wrap"
+                                       Margin="0,8,0,0"/>
+
+                            <TextBlock Text="{Binding BackupStatusMessage}"
+                                       FontSize="11"
+                                       Foreground="{StaticResource MutedBrush}"
+                                       TextWrapping="Wrap"
+                                       Margin="0,8,0,0"/>
+                        </StackPanel>
+
+                        <Button Grid.Column="1"
+                                Content="Create Backup"
+                                Background="{StaticResource PrimaryBrush}"
+                                Foreground="White"
+                                BorderThickness="0"
+                                Padding="18,9"
+                                MinHeight="40"
+                                FontWeight="SemiBold"
+                                FontSize="12"
+                                Cursor="Hand"
+                                VerticalAlignment="Center"
+                                Click="CreateDatabaseBackupButton_Click">
+                            <Button.Style>
+                                <Style TargetType="Button">
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsCreatingBackup}"
+                                                     Value="True">
+                                            <Setter Property="IsEnabled" Value="False"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Button.Style>
+                        </Button>
+
+                    </Grid>
+
+                </Border>
+
                 <!-- FOOTER -->
 
                 <Border Background="White"
