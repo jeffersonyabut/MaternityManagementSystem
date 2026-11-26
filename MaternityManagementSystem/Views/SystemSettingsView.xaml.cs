@@ -59,4 +59,50 @@ public partial class SystemSettingsView : UserControl
         await viewModel.CreateDatabaseBackupAsync(
             folderDialog.FolderName);
     }
+
+    private async void SaveUniSmsApiKeyButton_Click(
+        object sender,
+        RoutedEventArgs e)
+    {
+        if (DataContext is not SystemSettingsViewModel viewModel)
+        {
+            return;
+        }
+
+        string apiKey = UniSmsApiKeyPasswordBox.Password;
+
+        try
+        {
+            await viewModel.SaveUniSmsApiKeyAsync(apiKey);
+        }
+        finally
+        {
+            UniSmsApiKeyPasswordBox.Clear();
+        }
+    }
+
+    private async void RemoveUniSmsApiKeyButton_Click(
+        object sender,
+        RoutedEventArgs e)
+    {
+        if (DataContext is not SystemSettingsViewModel viewModel)
+        {
+            return;
+        }
+
+        await viewModel.RemoveUniSmsApiKeyAsync();
+    }
+
+    private async void SendUniSmsTestButton_Click(
+        object sender,
+        RoutedEventArgs e)
+    {
+        if (DataContext is not SystemSettingsViewModel viewModel ||
+            viewModel.IsUniSmsBusy)
+        {
+            return;
+        }
+
+        await viewModel.SendUniSmsTestMessageAsync();
+    }
 }

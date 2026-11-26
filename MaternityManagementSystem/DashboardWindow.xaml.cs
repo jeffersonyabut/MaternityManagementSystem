@@ -616,10 +616,15 @@ public partial class DashboardWindow : Window
             authorizationService,
             sessionService);
 
+        var uniSmsCredentialService = new UniSmsCredentialService(
+            authorizationService);
+
         var viewModel = new SystemSettingsViewModel(
             systemSettingService,
             app.RegionalSettings,
-            new DatabaseBackupService(authorizationService));
+            new DatabaseBackupService(authorizationService),
+            uniSmsCredentialService,
+            new UniSmsClient(uniSmsCredentialService));
 
         var view = new SystemSettingsView
         {
@@ -629,6 +634,7 @@ public partial class DashboardWindow : Window
         view.Loaded += async (_, _) =>
         {
             await viewModel.LoadSettingsAsync();
+            await viewModel.LoadUniSmsConfigurationStatusAsync();
         };
 
         _navigationService.NavigateToView(view);

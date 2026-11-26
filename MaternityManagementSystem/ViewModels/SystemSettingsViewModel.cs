@@ -14,6 +14,8 @@ public partial class SystemSettingsViewModel : ObservableObject
     private readonly SystemSettingService _systemSettingService;
     private readonly RegionalSettingsService _regionalSettingsService;
     private readonly DatabaseBackupService? _databaseBackupService;
+    private readonly UniSmsCredentialService? _uniSmsCredentialService;
+    private readonly IUniSmsClient? _uniSmsClient;
 
     private readonly Dictionary<string, string> _originalValues =
         new(StringComparer.OrdinalIgnoreCase);
@@ -21,7 +23,9 @@ public partial class SystemSettingsViewModel : ObservableObject
     public SystemSettingsViewModel(
         SystemSettingService systemSettingService,
         RegionalSettingsService regionalSettingsService,
-        DatabaseBackupService? databaseBackupService = null)
+        DatabaseBackupService? databaseBackupService = null,
+        UniSmsCredentialService? uniSmsCredentialService = null,
+        IUniSmsClient? uniSmsClient = null)
     {
         ArgumentNullException.ThrowIfNull(systemSettingService);
         ArgumentNullException.ThrowIfNull(regionalSettingsService);
@@ -29,6 +33,8 @@ public partial class SystemSettingsViewModel : ObservableObject
         _systemSettingService = systemSettingService;
         _regionalSettingsService = regionalSettingsService;
         _databaseBackupService = databaseBackupService;
+        _uniSmsCredentialService = uniSmsCredentialService;
+        _uniSmsClient = uniSmsClient;
     }
 
     [ObservableProperty]
@@ -82,6 +88,209 @@ public partial class SystemSettingsViewModel : ObservableObject
         finally
         {
             IsCreatingBackup = false;
+        }
+    }
+
+    [ObservableProperty]
+    private bool isUniSmsBusy;
+
+    [ObservableProperty]
+    private bool isUniSmsConfigured;
+
+    [ObservableProperty]
+    private string uniSmsConfigurationStatusMessage = string.Empty;
+
+    [ObservableProperty]
+    private string uniSmsTestRecipient = string.Empty;
+
+    [ObservableProperty]
+    private string uniSmsTestMessageStatus = string.Empty;
+
+    public string UniSmsTestMessagePreview => UniSmsClient.TestMessage;
+
+    public bool IsUniSmsAvailable => !IsUniSmsBusy;
+
+    partial void OnIsUniSmsBusyChanged(bool value)
+    {
+        OnPropertyChanged(nameof(IsUniSmsAvailable));
+    }
+
+    public async Task LoadUniSmsConfigurationStatusAsync(
+        CancellationToken cancellationToken = default)
+    {
+        if (_uniSmsCredentialService is null)
+        {
+            UniSmsConfigurationStatusMessage =
+                "UniSMS secure configuration is unavailable.";
+            return;
+        }
+
+        try
+        {
+            IsUniSmsConfigured = await _uniSmsCredentialService.IsConfiguredAsync(
+                cancellationToken);
+
+            UniSmsConfigurationStatusMessage = IsUniSmsConfigured
+                ? "API key configured. Connection has not been tested."
+                : "API key is not configured.";
+        }
+        catch (UnauthorizedAccessException)
+        {
+            UniSmsConfigurationStatusMessage =
+                "Administrator access is required to view UniSMS configuration.";
+        }
+        catch (OperationCanceledException)
+        {
+            UniSmsConfigurationStatusMessage =
+                "UniSMS configuration check was cancelled.";
+        }
+        catch (Exception)
+        {
+            UniSmsConfigurationStatusMessage =
+                "Unable to read UniSMS secure configuration.";
+        }
+    }
+
+    public async Task SaveUniSmsApiKeyAsync(
+        string apiKey,
+        CancellationToken cancellationToken = default)
+    {
+        if (IsUniSmsBusy)
+        {
+            return;
+        }
+
+        if (_uniSmsCredentialService is null)
+        {
+            UniSmsConfigurationStatusMessage =
+                "UniSMS secure configuration is unavailable.";
+            return;
+        }
+
+        IsUniSmsBusy = true;
+
+        try
+        {
+            await _uniSmsCredentialService.SaveApiKeyAsync(
+                apiKey,
+                cancellationToken);
+
+            IsUniSmsConfigured = true;
+            UniSmsConfigurationStatusMessage =
+                "API key securely saved. Connection has not been tested.";
+        }
+        catch (UnauthorizedAccessException)
+        {
+            UniSmsConfigurationStatusMessage =
+                "Administrator access is required to save the UniSMS API key.";
+        }
+        catch (OperationCanceledException)
+        {
+            UniSmsConfigurationStatusMessage =
+                "Saving the UniSMS API key was cancelled.";
+        }
+        catch (Exception)
+        {
+            UniSmsConfigurationStatusMessage =
+                "Unable to securely save the UniSMS API key.";
+        }
+        finally
+        {
+            IsUniSmsBusy = false;
+        }
+    }
+
+    public async Task RemoveUniSmsApiKeyAsync(
+        CancellationToken cancellationToken = default)
+    {
+        if (IsUniSmsBusy)
+        {
+            return;
+        }
+
+        if (_uniSmsCredentialService is null)
+        {
+            UniSmsConfigurationStatusMessage =
+                "UniSMS secure configuration is unavailable.";
+            return;
+        }
+
+        IsUniSmsBusy = true;
+
+        try
+        {
+            await _uniSmsCredentialService.RemoveApiKeyAsync(
+                cancellationToken);
+
+            IsUniSmsConfigured = false;
+            UniSmsConfigurationStatusMessage =
+                "UniSMS API key removed from secure storage.";
+        }
+        catch (UnauthorizedAccessException)
+        {
+            UniSmsConfigurationStatusMessage =
+                "Administrator access is required to remove the UniSMS API key.";
+        }
+        catch (OperationCanceledException)
+        {
+            UniSmsConfigurationStatusMessage =
+                "Removing the UniSMS API key was cancelled.";
+        }
+        catch (Exception)
+        {
+            UniSmsConfigurationStatusMessage =
+                "Unable to remove the UniSMS API key from secure storage.";
+        }
+        finally
+        {
+            IsUniSmsBusy = false;
+        }
+    }
+
+    public async Task SendUniSmsTestMessageAsync(
+        CancellationToken cancellationToken = default)
+    {
+        if (IsUniSmsBusy)
+        {
+            return;
+        }
+
+        if (_uniSmsClient is null)
+        {
+            UniSmsTestMessageStatus =
+                "UniSMS sending is unavailable in this context.";
+            return;
+        }
+
+        IsUniSmsBusy = true;
+        UniSmsTestMessageStatus = "Sending one test SMS...";
+
+        try
+        {
+            UniSmsSendResult result = await _uniSmsClient.SendTestSmsAsync(
+                UniSmsTestRecipient,
+                cancellationToken);
+
+            UniSmsTestMessageStatus = result.UserMessage;
+        }
+        catch (UnauthorizedAccessException)
+        {
+            UniSmsTestMessageStatus =
+                "Administrator access is required to send a test SMS.";
+        }
+        catch (OperationCanceledException)
+        {
+            UniSmsTestMessageStatus =
+                "The test SMS request was cancelled. Check the provider before trying again.";
+        }
+        catch (Exception)
+        {
+            UniSmsTestMessageStatus =
+                "Unable to determine the test SMS result. Check the provider before trying again.";
+        }
+        finally
+        {
+            IsUniSmsBusy = false;
         }
     }
 

@@ -325,6 +325,127 @@
 
                 </Border>
 
+                <!-- UNISMS CREDENTIALS -->
+
+                <Border Style="{StaticResource SettingsCardStyle}"
+                        Margin="0,0,0,18">
+
+                    <StackPanel>
+
+                        <TextBlock Text="UniSMS Configuration"
+                                   Style="{StaticResource SectionTitleStyle}"/>
+
+                        <TextBlock Text="Configure the API key used by the UniSMS test sender. Saving a key does not test the connection or send a message."
+                                   Style="{StaticResource SectionDescriptionStyle}"
+                                   TextWrapping="Wrap"
+                                   Margin="0,5,0,16"/>
+
+                        <TextBlock Text="API Key"
+                                   Style="{StaticResource FieldLabelStyle}"/>
+
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+
+                            <PasswordBox x:Name="UniSmsApiKeyPasswordBox"
+                                         Height="40"
+                                         FontSize="12"
+                                         Padding="12,9"
+                                         VerticalContentAlignment="Center"
+                                         BorderBrush="#E4E3EB"
+                                         BorderThickness="1"
+                                         Background="White"
+                                         Margin="0,0,10,0"/>
+
+                            <Button Grid.Column="1"
+                                    Content="Save API Key"
+                                    IsEnabled="{Binding IsUniSmsAvailable}"
+                                    Background="{StaticResource PrimaryBrush}"
+                                    Foreground="White"
+                                    BorderThickness="0"
+                                    Padding="16,8"
+                                    MinHeight="40"
+                                    FontWeight="SemiBold"
+                                    FontSize="12"
+                                    Cursor="Hand"
+                                    Margin="0,0,10,0"
+                                    Click="SaveUniSmsApiKeyButton_Click"/>
+
+                            <Button Grid.Column="2"
+                                    Content="Remove API Key"
+                                    IsEnabled="{Binding IsUniSmsAvailable}"
+                                    Background="White"
+                                    Foreground="{StaticResource PrimaryBrush}"
+                                    BorderBrush="{StaticResource PrimaryBrush}"
+                                    BorderThickness="1"
+                                    Padding="16,8"
+                                    MinHeight="40"
+                                    FontWeight="SemiBold"
+                                    FontSize="12"
+                                    Cursor="Hand"
+                                    Click="RemoveUniSmsApiKeyButton_Click"/>
+                        </Grid>
+
+                        <TextBlock Text="{Binding UniSmsConfigurationStatusMessage}"
+                                   FontSize="11"
+                                   Foreground="{StaticResource MutedBrush}"
+                                   TextWrapping="Wrap"
+                                   Margin="0,10,0,0"/>
+
+                        <TextBlock Text="Send Test SMS"
+                                   Style="{StaticResource FieldLabelStyle}"
+                                   Margin="0,18,0,7"/>
+
+                        <TextBlock Text="Enter a Philippine mobile number. Sending is a manual action and may use one UniSMS credit."
+                                   FontSize="11"
+                                   Foreground="{StaticResource MutedBrush}"
+                                   TextWrapping="Wrap"
+                                   Margin="0,0,0,10"/>
+
+                        <TextBlock Text="{Binding UniSmsTestMessagePreview}"
+                                   FontSize="11"
+                                   Foreground="{StaticResource TextBrush}"
+                                   TextWrapping="Wrap"
+                                   Margin="0,0,0,10"/>
+
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+
+                            <TextBox Text="{Binding UniSmsTestRecipient, UpdateSourceTrigger=PropertyChanged}"
+                                     Style="{StaticResource SettingsTextBoxStyle}"
+                                     Margin="0,0,10,0"
+                                     ToolTip="09XXXXXXXXX or +639XXXXXXXXX"/>
+
+                            <Button Grid.Column="1"
+                                    Content="Send Test SMS"
+                                    IsEnabled="{Binding IsUniSmsAvailable}"
+                                    Background="{StaticResource PrimaryBrush}"
+                                    Foreground="White"
+                                    BorderThickness="0"
+                                    Padding="16,8"
+                                    MinHeight="40"
+                                    FontWeight="SemiBold"
+                                    FontSize="12"
+                                    Cursor="Hand"
+                                    Click="SendUniSmsTestButton_Click"/>
+                        </Grid>
+
+                        <TextBlock Text="{Binding UniSmsTestMessageStatus}"
+                                   FontSize="11"
+                                   Foreground="{StaticResource MutedBrush}"
+                                   TextWrapping="Wrap"
+                                   Margin="0,10,0,0"/>
+
+                    </StackPanel>
+
+                </Border>
+
                 <!-- REGIONAL SETTINGS -->
 
                 <Border Style="{StaticResource SettingsCardStyle}"

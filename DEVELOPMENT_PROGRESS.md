@@ -72,6 +72,24 @@ Verification results:
 - **Database restoration:** not implemented or verified.
 - **Production migration:** no production SQLite database migration was run for this feature.
 
+## Completed UniSMS test messaging integration
+
+UniSMS API key configuration and an Admin-only manual test SMS workflow are available in System Settings:
+
+- `UniSmsCredentialService` stores the API Secret Key encrypted with Windows DPAPI using the `CurrentUser` scope under the local Golddie application data directory. Credential access is protected by `AuthorizationService.EnsureAdminAsync`.
+- `UniSmsClient` sends the fixed test message to `POST https://unismsapi.com/api/sms` using HTTP Basic Authentication (API key as username and an empty password), with the `Unisoft` sender ID.
+- The Admin explicitly enters a Philippine mobile number and selects **Send Test SMS**. The interface prevents repeat submission while a request is in progress. No automatic appointment reminders or retries are implemented.
+- Provider message statuses are presented distinctly. Pending and retrying are not described as delivered; provider-reported sent is not described as confirmed receipt. Unclear outcomes direct the Admin to check the provider before trying again.
+- Client tests use a fake HTTP handler and temporary test data; they make no real provider requests.
+
+Verification results:
+
+- **Focused UniSMS tests:** 14 passed, 0 failed, and 0 skipped.
+- **Full test suite:** 173 passed, 0 failed, and 0 skipped.
+- **Solution build:** succeeded; 0 errors and 0 warnings.
+- **Manual verification:** a test SMS was successfully received on a TM mobile number.
+- **Production database:** no production SQLite database was accessed or modified, and no migration was run for this feature.
+
 ## Baseline verification
 
 Baseline commands were run against the solution:
