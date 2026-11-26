@@ -240,7 +240,7 @@ public partial class LaboratoryResultsReportView : UserControl
         if (report.LaboratoryResults.Count == 0)
         {
             composer.AddText(
-                "NO LABORATORY RESULTS FOUND",
+                "NO LABORATORY RECORDS FOUND",
                 13,
                 FontWeights.Bold,
                 PrimaryBrush,
@@ -375,6 +375,15 @@ public partial class LaboratoryResultsReportView : UserControl
             : "Any";
     }
 
+    private static string FormatRecordDate(
+        DateOnly? date,
+        RegionalSettingsService regionalSettingsService)
+    {
+        return LaboratoryResultsReportViewModel.FormatRecordDate(
+            date,
+            regionalSettingsService);
+    }
+
     private static string FormatDateTime(
         DateTime utc,
         RegionalSettingsService regionalSettingsService)
@@ -386,29 +395,19 @@ public partial class LaboratoryResultsReportView : UserControl
     {
         private static readonly string[] TableHeaders =
         [
-            "Test Date",
-            "Patient No.",
-            "Patient Name",
-            "Test Name",
-            "Result",
-            "Unit",
-            "Reference Range",
-            "Notes"
+            "STATUS AND DATES",
+            "PATIENT AND TEST",
+            "RECORDED RESULT DETAILS"
         ];
 
         private static readonly double[] ColumnWidths =
         [
-            90,
-            85,
-            130,
-            130,
-            130,
-            55,
-            130,
-            226
+            300,
+            280,
+            396
         ];
 
-        private const double TableRowHeight = 42;
+        private const double TableRowHeight = 72;
 
         public List<FixedPage> Pages { get; } = [];
 
@@ -556,8 +555,8 @@ public partial class LaboratoryResultsReportView : UserControl
             {
                 new[]
                 {
-                    "Total Results",
-                    _report.TotalResults.ToString(),
+                    "Total Laboratory Records",
+                    _report.TotalLaboratoryRecords.ToString(),
                     "Unique Patients",
                     _report.LaboratoryResults
                         .Select(result => result.PatientId)
@@ -567,11 +566,25 @@ public partial class LaboratoryResultsReportView : UserControl
                 },
                 new[]
                 {
-                    "Test Date From",
+                    "Requested",
+                    _report.RequestedCount.ToString(),
+                    "Awaiting Result",
+                    _report.AwaitingResultCount.ToString()
+                },
+                new[]
+                {
+                    "Resulted",
+                    _report.ResultedCount.ToString(),
+                    "Unknown / Unclassified",
+                    _report.UnknownUnclassifiedCount.ToString()
+                },
+                new[]
+                {
+                    "Record Date From",
                     FormatDate(
                         _report.StartDate,
                         _regionalSettingsService),
-                    "Test Date To",
+                    "Record Date To",
                     FormatDate(
                         _report.EndDate,
                         _regionalSettingsService)
@@ -602,15 +615,6 @@ public partial class LaboratoryResultsReportView : UserControl
 
             foreach (var result in _report.LaboratoryResults)
             {
-                if (_currentTop + TableRowHeight > ContentBottom)
-                {
-                    CreateNewPage();
-
-                    AddSectionTitle("LABORATORY RESULTS · CONTINUED");
-
-                    AddTableHeader();
-                }
-
                 var patient = result.Patient;
 
                 var patientName = patient is null
@@ -625,24 +629,90 @@ public partial class LaboratoryResultsReportView : UserControl
                         }.Where(value =>
                             !string.IsNullOrWhiteSpace(value)));
 
-                var values = new[]
+                var statusAndDates = string.Join(
+                    Environment.NewLine,
+                    $"Status: {LaboratoryResultsReportViewModel.GetStatusDisplay(result.Status)}",
+                    $"Requested: {FormatRecordDate(result.RequestedDate, _regionalSettingsService)}",
+                    $"Test date: {FormatRecordDate(result.TestDate, _regionalSettingsService)}");
+
+                var patientAndTest = string.Join(
+                    Environment.NewLine,
+                    $"Patient No.: {Display(patient?.PatientNumber)}",
+                    $"Patient: {Display(patientName)}",
+                    $"Test: {Display(result.TestName)}");
+
+                var resultDetails = new List<string>
                 {
-                    FormatDate(
-                        result.TestDate,
-                        _regionalSettingsService),
-                    Display(patient?.PatientNumber),
-                    Display(patientName),
-                    Display(result.TestName),
-                    Display(result.Result),
-                    Display(result.Unit),
-                    Display(result.ReferenceRange),
-                    Display(result.Notes)
+                    $"Result: {LaboratoryResultsReportViewModel.FormatResultValue(result.Result)}"
                 };
 
-                AddTableRow(values, TableRowHeight);
+                if (!string.IsNullOrWhiteSpace(result.Unit))
+                {
+                    resultDetails.Add($"Unit: {result.Unit}");
+                }
+
+                if (!string.IsNullOrWhiteSpace(result.ReferenceRange))
+                {
+                    resultDetails.Add($"Reference range: {result.ReferenceRange}");
+                }
+
+                if (!string.IsNullOrWhiteSpace(result.Notes))
+                {
+                    resultDetails.Add($"Notes: {result.Notes}");
+                }
+
+                var values = new[]
+                {
+                    statusAndDates,
+                    patientAndTest,
+                    string.Join(Environment.NewLine, resultDetails)
+                };
+
+                double rowHeight = CalculateRowHeight(values);
+
+                if (_currentTop + rowHeight > ContentBottom)
+                {
+                    CreateNewPage();
+
+                    AddSectionTitle("LABORATORY RESULTS · CONTINUED");
+
+                    AddTableHeader();
+                }
+
+                AddTableRow(values, rowHeight);
             }
 
             _currentTop += 14;
+        }
+
+        private static double CalculateRowHeight(string[] values)
+        {
+            const double averageCharacterWidth = 4.3;
+            const double lineHeight = 10.5;
+            const double verticalPadding = 10;
+
+            var maximumLineCount = 1;
+
+            for (var index = 0; index < values.Length; index++)
+            {
+                var charactersPerLine = Math.Max(
+                    1,
+                    (int)((ColumnWidths[index] - 12) /
+                          averageCharacterWidth));
+
+                var lineCount = values[index]
+                    .Split(Environment.NewLine)
+                    .Sum(line => Math.Max(
+                        1,
+                        (int)Math.Ceiling(
+                            (double)line.Length / charactersPerLine)));
+
+                maximumLineCount = Math.Max(maximumLineCount, lineCount);
+            }
+
+            return Math.Max(
+                TableRowHeight,
+                maximumLineCount * lineHeight + verticalPadding);
         }
 
         private void AddTable(

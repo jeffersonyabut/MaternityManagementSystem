@@ -167,13 +167,17 @@ public class LaboratoryResultRepository
         if (startDate.HasValue)
         {
             query = query.Where(result =>
-                result.TestDate >= startDate.Value);
+                (result.Status == LaboratoryResultStatus.Requested
+                    ? result.RequestedDate
+                    : result.TestDate) >= startDate.Value);
         }
 
         if (endDate.HasValue)
         {
             query = query.Where(result =>
-                result.TestDate <= endDate.Value);
+                (result.Status == LaboratoryResultStatus.Requested
+                    ? result.RequestedDate
+                    : result.TestDate) <= endDate.Value);
         }
 
         if (!string.IsNullOrWhiteSpace(searchTerm))
@@ -197,7 +201,10 @@ public class LaboratoryResultRepository
         }
 
         return await query
-            .OrderByDescending(result => result.TestDate)
+            .OrderByDescending(result =>
+                result.Status == LaboratoryResultStatus.Requested
+                    ? result.RequestedDate
+                    : result.TestDate)
             .ThenBy(result => result.Patient.LastName)
             .ToListAsync(cancellationToken);
     }

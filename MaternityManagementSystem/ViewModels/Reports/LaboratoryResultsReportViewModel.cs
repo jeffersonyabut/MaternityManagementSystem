@@ -1,7 +1,9 @@
 
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using MaternityManagementSystem.Models;
 using MaternityManagementSystem.Models.Reports;
+using MaternityManagementSystem.Services;
 using MaternityManagementSystem.Services.Reports;
 
 namespace MaternityManagementSystem.ViewModels.Reports;
@@ -45,10 +47,22 @@ public partial class LaboratoryResultsReportViewModel : ObservableObject
     public bool HasGeneratedReport => Report is not null;
 
     public bool HasLaboratoryResults =>
-        Report is not null && Report.TotalResults > 0;
+        Report is not null && Report.TotalLaboratoryRecords > 0;
 
     public bool HasNoLaboratoryResults =>
-        Report is not null && Report.TotalResults == 0;
+        Report is not null && Report.TotalLaboratoryRecords == 0;
+
+    public int TotalLaboratoryRecords =>
+        Report?.TotalLaboratoryRecords ?? 0;
+
+    public int RequestedCount => Report?.RequestedCount ?? 0;
+
+    public int AwaitingResultCount => Report?.AwaitingResultCount ?? 0;
+
+    public int ResultedCount => Report?.ResultedCount ?? 0;
+
+    public int UnknownUnclassifiedCount =>
+        Report?.UnknownUnclassifiedCount ?? 0;
 
     public bool HasError =>
         !string.IsNullOrWhiteSpace(ErrorMessage);
@@ -67,6 +81,11 @@ public partial class LaboratoryResultsReportViewModel : ObservableObject
         OnPropertyChanged(nameof(HasLaboratoryResults));
         OnPropertyChanged(nameof(HasNoLaboratoryResults));
         OnPropertyChanged(nameof(UniquePatientCount));
+        OnPropertyChanged(nameof(TotalLaboratoryRecords));
+        OnPropertyChanged(nameof(RequestedCount));
+        OnPropertyChanged(nameof(AwaitingResultCount));
+        OnPropertyChanged(nameof(ResultedCount));
+        OnPropertyChanged(nameof(UnknownUnclassifiedCount));
     }
 
     partial void OnErrorMessageChanged(string value)
@@ -149,5 +168,32 @@ public partial class LaboratoryResultsReportViewModel : ObservableObject
         TestName = string.Empty;
         Report = null;
         ErrorMessage = string.Empty;
+    }
+
+    public static string GetStatusDisplay(LaboratoryResultStatus? status)
+    {
+        return status switch
+        {
+            LaboratoryResultStatus.Requested => "Requested",
+            LaboratoryResultStatus.AwaitingResult => "Awaiting Result",
+            LaboratoryResultStatus.Resulted => "Resulted",
+            _ => "Unknown / Unclassified"
+        };
+    }
+
+    public static string FormatRecordDate(
+        DateOnly? date,
+        RegionalSettingsService regionalSettingsService)
+    {
+        ArgumentNullException.ThrowIfNull(regionalSettingsService);
+
+        return date.HasValue
+            ? regionalSettingsService.FormatDate(date.Value)
+            : "—";
+    }
+
+    public static string FormatResultValue(string? value)
+    {
+        return string.IsNullOrWhiteSpace(value) ? "—" : value;
     }
 }
