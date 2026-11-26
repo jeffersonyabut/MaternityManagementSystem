@@ -37,6 +37,24 @@ Steps 1 through 5 represent completed development improvements; they do not nece
 
 Clinical policies or workflow decisions implied by these changes that have not been approved by the clinic remain subject to confirmation.
 
+## Completed laboratory workflow
+
+The laboratory-result workflow is implemented across the data layer and user interface:
+
+- Added the laboratory lifecycle data model, EF Core migration, validation, service, repository, and audit tracking.
+- Added laboratory registration and editing workflows.
+- Added laboratory history to the patient profile.
+- Added laboratory status, requested date, test date, and result availability display to prenatal visits.
+
+Verification results:
+
+- **Focused laboratory workflow tests:** 18 passed, 0 failed.
+- **Full test suite:** 141 passed, 0 failed, and 0 skipped.
+- **Solution build:** 0 errors and 10 existing CS0108 warnings.
+- **Manual verification:** Patient profile laboratory history and prenatal visit laboratory status displays were verified.
+
+The migration is present in the application, but the production SQLite database migration has not been applied as part of this work.
+
 ## Baseline verification
 
 Baseline commands were run against the solution:
@@ -77,20 +95,10 @@ At inspection, git status reported the following 13 paths as modified. These wer
 
 Four paths had identical worktree and HEAD hashes during inspection despite being reported as modified by Git. This discrepancy is unexplained; it was not investigated or changed. No staged or untracked files were reported.
 
-## Current next task
-
-**Pending:** Define and implement the laboratory-result workflow for both:
-
-- A test that was requested but not performed.
-- A test that was performed but is awaiting results.
-
-The exact workflow, state transitions, and user-facing behavior require confirmation. Any clinical policies must be confirmed by the clinic before implementation.
-
 ## Remaining roadmap
 
 All items below are **pending**. Clinical policies and clinic workflow decisions remain subject to confirmation.
 
-- Define the laboratory workflow for requested-but-not-performed tests and performed-but-awaiting-results tests.
 - Standardize archive-reason validation.
 - Review concurrency handling for last-admin protection.
 - Validate UserSession constructor arguments.
