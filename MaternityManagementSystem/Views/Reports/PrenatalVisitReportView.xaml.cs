@@ -394,11 +394,11 @@ public partial class PrenatalVisitReportView : UserControl
 
         top += 25;
 
-        AddSectionTitle(page, "5. LABORATORY RESULTS", ref top);
+        AddSectionTitle(page, "5. LABORATORY RECORDS", ref top);
 
         AddText(
             page,
-            $"Total laboratory results: {report.TotalLaboratoryResults}",
+            $"Total Laboratory Records: {report.TotalLaboratoryResults}",
             MarginSize,
             top,
             ContentWidth,
@@ -411,28 +411,38 @@ public partial class PrenatalVisitReportView : UserControl
 
         var labHeaders = new[]
         {
+            "Status",
+            "Requested Date",
             "Test Date",
             "Test Name",
             "Result",
             "Unit",
-            "Reference Range"
+            "Reference Range",
+            "Notes"
         };
 
         var labRows = report.LaboratoryResults.Select(r => new[]
         {
+            PrenatalVisitReportViewModel.GetLaboratoryStatusDisplay(r.Status),
+            FormatDate(r.RequestedDate, regionalSettingsService),
             FormatDate(r.TestDate, regionalSettingsService),
             Display(r.TestName),
-            Display(r.Result),
+            PrenatalVisitReportViewModel.GetLaboratoryResultDisplay(
+                r.Status,
+                r.Result),
             Display(r.Unit),
-            Display(r.ReferenceRange)
+            Display(r.ReferenceRange),
+            Display(r.Notes)
         }).ToList();
 
         AddTable(
             page,
             labHeaders,
             labRows,
-            new double[] { 105, 140, 100, 70, 175 },
-            ref top);
+            new double[] { 96, 76, 76, 100, 100, 48, 100, 130 },
+            ref top,
+            rowHeight: 44,
+            emptyMessage: "No laboratory records linked to this visit.");
 
         top += 35;
 
@@ -549,13 +559,15 @@ public partial class PrenatalVisitReportView : UserControl
         string[] headers,
         System.Collections.Generic.List<string[]> rows,
         double[] columnWidths,
-        ref double top)
+        ref double top,
+        double rowHeight = 32,
+        string emptyMessage = "No records available.")
     {
         if (rows.Count == 0)
         {
             AddText(
                 page,
-                "No records available.",
+                emptyMessage,
                 MarginSize,
                 top,
                 ContentWidth,
@@ -600,7 +612,7 @@ public partial class PrenatalVisitReportView : UserControl
                     left,
                     top,
                     columnWidths[i],
-                    32,
+                    rowHeight,
                     Brushes.WhiteSmoke,
                     Brushes.Black,
                     false);
@@ -608,7 +620,7 @@ public partial class PrenatalVisitReportView : UserControl
                 left += columnWidths[i];
             }
 
-            top += 32;
+            top += rowHeight;
         }
     }
 
@@ -701,16 +713,16 @@ public partial class PrenatalVisitReportView : UserControl
 
     private static string Display(string? value)
     {
-        return string.IsNullOrWhiteSpace(value) ? "—" : value;
+        return PrenatalVisitReportViewModel.GetLaboratoryValueDisplay(value);
     }
 
     private static string FormatDate(
         DateOnly? date,
         RegionalSettingsService regionalSettingsService)
     {
-        return date.HasValue
-            ? regionalSettingsService.FormatDate(date.Value)
-            : "—";
+        return PrenatalVisitReportViewModel.GetLaboratoryDateDisplay(
+            date,
+            regionalSettingsService);
     }
 
     private static string FormatDate(

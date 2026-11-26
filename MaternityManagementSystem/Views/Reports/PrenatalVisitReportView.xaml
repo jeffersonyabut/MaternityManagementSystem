@@ -349,30 +349,95 @@
                         </StackPanel>
                     </Border>
 
-                    <!-- 5. Laboratory Results -->
+                    <!-- 5. Laboratory Records -->
                     <Border Style="{StaticResource SectionCardStyle}">
                         <StackPanel>
-                            <TextBlock Text="5. Laboratory Results"
+                            <TextBlock Text="5. Laboratory Records"
                                        Style="{StaticResource SectionTitleStyle}"/>
 
-                            <DataGrid ItemsSource="{Binding Report.LaboratoryResults}"
-                                      Style="{StaticResource ReportDataGridStyle}"
-                                      MinHeight="90">
-                                <DataGrid.Columns>
-                                    <DataGridTextColumn Header="Test Date"
-                                                        Binding="{Binding TestDate,
-                                                            Converter={StaticResource RegionalDateOnlyConverter}}"
-                                                        Width="*"/>
+                            <TextBlock FontSize="12"
+                                       Foreground="{StaticResource SecondaryText}"
+                                       Margin="0,0,0,8">
+                                <Run Text="Total Laboratory Records: "/>
+                                <Run Text="{Binding Report.TotalLaboratoryResults, Mode=OneWay}"/>
+                            </TextBlock>
 
-                                    <DataGridTextColumn Header="Test Name" Binding="{Binding TestName}" Width="*"/>
-                                    <DataGridTextColumn Header="Result" Binding="{Binding Result}" Width="*"/>
-                                    <DataGridTextColumn Header="Unit" Binding="{Binding Unit}" Width="*"/>
-                                    <DataGridTextColumn Header="Reference Range" Binding="{Binding ReferenceRange}" Width="*"/>
-                                    <DataGridTextColumn Header="Notes" Binding="{Binding Notes}" Width="*"/>
+                            <DataGrid x:Name="LaboratoryResultsDataGrid"
+                                      ItemsSource="{Binding Report.LaboratoryResults}"
+                                      Style="{StaticResource ReportDataGridStyle}"
+                                      MinHeight="90"
+                                      RowHeight="56"
+                                      MinColumnWidth="72"
+                                      HorizontalScrollBarVisibility="Auto">
+                                <DataGrid.Columns>
+                                    <DataGridTextColumn Header="Status"
+                                                        Binding="{Binding Status, TargetNullValue='Unknown / Unclassified'}"
+                                                        Width="1.2*"/>
+                                    <DataGridTemplateColumn Header="Requested Date" Width="1.2*">
+                                        <DataGridTemplateColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <TextBlock TextWrapping="Wrap">
+                                                    <TextBlock.Style>
+                                                        <Style TargetType="TextBlock">
+                                                            <Setter Property="Text" Value="{Binding RequestedDate, Converter={StaticResource RegionalDateOnlyConverter}}"/>
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding RequestedDate}" Value="{x:Null}">
+                                                                    <Setter Property="Text" Value="—"/>
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </TextBlock.Style>
+                                                </TextBlock>
+                                            </DataTemplate>
+                                        </DataGridTemplateColumn.CellTemplate>
+                                    </DataGridTemplateColumn>
+                                    <DataGridTemplateColumn Header="Test Date" Width="1.2*">
+                                        <DataGridTemplateColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <TextBlock TextWrapping="Wrap">
+                                                    <TextBlock.Style>
+                                                        <Style TargetType="TextBlock">
+                                                            <Setter Property="Text" Value="{Binding TestDate, Converter={StaticResource RegionalDateOnlyConverter}}"/>
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding TestDate}" Value="{x:Null}">
+                                                                    <Setter Property="Text" Value="—"/>
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </TextBlock.Style>
+                                                </TextBlock>
+                                            </DataTemplate>
+                                        </DataGridTemplateColumn.CellTemplate>
+                                    </DataGridTemplateColumn>
+                                    <DataGridTextColumn Header="Test Name" Binding="{Binding TestName}" Width="1.4*"/>
+                                    <DataGridTemplateColumn Header="Result" Width="1.4*">
+                                        <DataGridTemplateColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <TextBlock TextWrapping="Wrap">
+                                                    <TextBlock.Style>
+                                                        <Style TargetType="TextBlock">
+                                                            <Setter Property="Text" Value="{Binding Result, TargetNullValue='—'}"/>
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding Result}" Value="">
+                                                                    <Setter Property="Text" Value="—"/>
+                                                                </DataTrigger>
+                                                                <DataTrigger Binding="{Binding Status}" Value="AwaitingResult">
+                                                                    <Setter Property="Text" Value="Result not yet available"/>
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </TextBlock.Style>
+                                                </TextBlock>
+                                            </DataTemplate>
+                                        </DataGridTemplateColumn.CellTemplate>
+                                    </DataGridTemplateColumn>
+                                    <DataGridTextColumn Header="Unit" Binding="{Binding Unit, TargetNullValue='—'}" Width="0.8*"/>
+                                    <DataGridTextColumn Header="Reference Range" Binding="{Binding ReferenceRange, TargetNullValue='—'}" Width="1.4*"/>
+                                    <DataGridTextColumn Header="Notes" Binding="{Binding Notes, TargetNullValue='—'}" Width="1.5*"/>
                                 </DataGrid.Columns>
                             </DataGrid>
 
-                            <TextBlock Text="No laboratory results linked to this visit."
+                            <TextBlock Text="No laboratory records linked to this visit."
                                        FontSize="12"
                                        Foreground="{StaticResource SecondaryText}"
                                        Margin="0,10,0,0"

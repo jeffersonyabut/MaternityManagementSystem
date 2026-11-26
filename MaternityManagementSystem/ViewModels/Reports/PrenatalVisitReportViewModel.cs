@@ -1,12 +1,50 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using MaternityManagementSystem.Models;
 using MaternityManagementSystem.Models.Reports;
+using MaternityManagementSystem.Services;
 using MaternityManagementSystem.Services.Reports;
 
 namespace MaternityManagementSystem.ViewModels.Reports;
 
 public partial class PrenatalVisitReportViewModel : ObservableObject
 {
+    public static string GetLaboratoryStatusDisplay(
+        LaboratoryResultStatus? status)
+    {
+        return status?.ToString() ?? "Unknown / Unclassified";
+    }
+
+    public static string GetLaboratoryResultDisplay(
+        LaboratoryResultStatus? status,
+        string? result)
+    {
+        if (!string.IsNullOrWhiteSpace(result))
+        {
+            return result;
+        }
+
+        return status == LaboratoryResultStatus.AwaitingResult
+            ? "Result not yet available"
+            : "—";
+    }
+
+    public static string GetLaboratoryValueDisplay(string? value)
+    {
+        return string.IsNullOrWhiteSpace(value) ? "—" : value;
+    }
+
+    public static string GetLaboratoryDateDisplay(
+        DateOnly? date,
+        RegionalSettingsService regionalSettingsService)
+    {
+        ArgumentNullException.ThrowIfNull(regionalSettingsService);
+
+        return date.HasValue
+            ? regionalSettingsService.FormatDate(date.Value)
+            : "—";
+    }
+
     private readonly PrenatalVisitReportService _prenatalVisitReportService;
     private readonly int _visitId;
 
@@ -70,7 +108,9 @@ public partial class PrenatalVisitReportViewModel : ObservableObject
             Report = await _prenatalVisitReportService
                 .GeneratePrenatalVisitReportAsync(
                     _visitId,
-                    cancellationToken);
+                    cancellationToken); // 
+
+
         }
         catch (OperationCanceledException)
         {
