@@ -6,11 +6,145 @@ using MaternityManagementSystem.Models;
 using MaternityManagementSystem.Repositories;
 using MaternityManagementSystem.Services;
 using MaternityManagementSystem.Sessions;
+using MaternityManagementSystem.ViewModels;
 
 namespace MaternityManagementSystem.Tests;
 
 public class LaboratoryResultWorkflowTests
 {
+    [Fact]
+    public async Task RegistrationViewModel_WhenStatusChanges_UpdatesFieldAvailabilityWithoutClearingValues()
+    {
+        await using var testDatabase = await TestDatabase.CreateAsync();
+        var service = await CreateServiceAsync(testDatabase);
+        var viewModel = new LaboratoryResultRegistrationViewModel(
+            service,
+            new PregnancyRepository(testDatabase.Factory),
+            new PrenatalVisitRepository(testDatabase.Factory),
+            new Patient { Id = 1 });
+
+        Assert.Equal(LaboratoryResultStatus.Requested, viewModel.Status);
+        Assert.True(viewModel.IsRequestedDateRequired);
+        Assert.False(viewModel.IsTestDateEnabled);
+        Assert.False(viewModel.IsResultEnabled);
+
+        var performedDate = DateTime.Today.AddDays(-1);
+        viewModel.TestDate = performedDate;
+        viewModel.Result = "Existing entry";
+
+        viewModel.Status = LaboratoryResultStatus.AwaitingResult;
+
+        Assert.True(viewModel.IsTestDateEnabled);
+        Assert.False(viewModel.IsResultEnabled);
+        Assert.True(viewModel.IsRequestedDateRequired);
+        Assert.Equal(performedDate, viewModel.TestDate);
+        Assert.Equal("Existing entry", viewModel.Result);
+
+        viewModel.Status = LaboratoryResultStatus.Resulted;
+
+        Assert.True(viewModel.IsTestDateEnabled);
+        Assert.True(viewModel.IsResultEnabled);
+        Assert.False(viewModel.IsRequestedDateRequired);
+        Assert.Contains("Optional", viewModel.RequestedDateLabel);
+        Assert.Equal(performedDate, viewModel.TestDate);
+        Assert.Equal("Existing entry", viewModel.Result);
+    }
+
+    [Fact]
+    public async Task RegistrationViewModel_SaveRequested_AllowsNullTestDateAndResult()
+    {
+        await using var testDatabase = await TestDatabase.CreateAsync();
+        var (patientId, _) = await CreatePatientAndVisitAsync(testDatabase);
+        var service = await CreateServiceAsync(testDatabase);
+        var viewModel = new LaboratoryResultRegistrationViewModel(
+            service,
+            new PregnancyRepository(testDatabase.Factory),
+            new PrenatalVisitRepository(testDatabase.Factory),
+            new Patient { Id = patientId });
+        viewModel.TestName = "CBC";
+        viewModel.TestDate = null;
+        viewModel.Result = string.Empty;
+
+        await viewModel.SaveCommand.ExecuteAsync(null);
+
+        Assert.Equal(
+            "Laboratory result saved successfully.",
+            viewModel.StatusMessage);
+
+        await using var verificationContext =
+            await testDatabase.Factory.CreateDbContextAsync();
+
+        var saved = await verificationContext.LaboratoryResults
+            .SingleAsync(result => result.PatientId == patientId);
+
+        Assert.Equal(LaboratoryResultStatus.Requested, saved.Status);
+        Assert.NotNull(saved.RequestedDate);
+        Assert.Null(saved.TestDate);
+        Assert.Null(saved.Result);
+    }
+
+    [Fact]
+    public async Task EditViewModel_WhenLegacyDatesAreNull_PreservesNullsUntilExplicitStatusSelection()
+    {
+        await using var testDatabase = await TestDatabase.CreateAsync();
+        var (patientId, visitId) = await CreatePatientAndVisitAsync(testDatabase);
+        int laboratoryResultId;
+
+        await using (var dbContext =
+            await testDatabase.Factory.CreateDbContextAsync())
+        {
+            var legacyResult = new LaboratoryResult
+            {
+                PatientId = patientId,
+                PrenatalVisitId = visitId,
+                TestName = "Legacy test",
+                Status = null,
+                RequestedDate = null,
+                TestDate = DateOnly.FromDateTime(DateTime.Today.AddDays(-1)),
+                Result = "Legacy result"
+            };
+
+            dbContext.LaboratoryResults.Add(legacyResult);
+            await dbContext.SaveChangesAsync();
+            laboratoryResultId = legacyResult.Id;
+        }
+
+        var service = await CreateServiceAsync(testDatabase);
+        var viewModel = new LaboratoryResultEditViewModel(service);
+        await viewModel.LoadLaboratoryResultAsync(laboratoryResultId);
+
+        Assert.Null(viewModel.Status);
+        Assert.Null(viewModel.RequestedDate);
+        Assert.Contains("no status", viewModel.StatusHelpText);
+        Assert.Contains("before selecting Requested", viewModel.RequestedDateHelpText);
+
+        viewModel.Status = LaboratoryResultStatus.Requested;
+
+        Assert.True(viewModel.IsRequestedDateRequired);
+        Assert.False(viewModel.IsTestDateEnabled);
+        Assert.False(viewModel.IsResultEnabled);
+        Assert.Null(viewModel.RequestedDate);
+        Assert.Contains("before saving", viewModel.RequestedDateHelpText);
+        Assert.Equal(DateTime.Today.AddDays(-1), viewModel.TestDate);
+        Assert.Equal("Legacy result", viewModel.Result);
+
+        viewModel.Status = LaboratoryResultStatus.AwaitingResult;
+
+        Assert.True(viewModel.IsTestDateEnabled);
+        Assert.False(viewModel.IsResultEnabled);
+        Assert.True(viewModel.IsRequestedDateRequired);
+        Assert.Null(viewModel.RequestedDate);
+        Assert.Equal("Legacy result", viewModel.Result);
+
+        viewModel.Status = LaboratoryResultStatus.Resulted;
+
+        Assert.True(viewModel.IsTestDateEnabled);
+        Assert.True(viewModel.IsResultEnabled);
+        Assert.False(viewModel.IsRequestedDateRequired);
+        Assert.Contains("Optional", viewModel.RequestedDateLabel);
+        Assert.Null(viewModel.RequestedDate);
+    }
+
     [Theory]
     [InlineData(LaboratoryResultStatus.Requested)]
     [InlineData(LaboratoryResultStatus.AwaitingResult)]
@@ -76,6 +210,24 @@ public class LaboratoryResultWorkflowTests
         Assert.NotNull(result.RequestedDate);
         Assert.Null(result.TestDate);
         Assert.Null(result.Result);
+    }
+
+    [Fact]
+    public async Task CreateLaboratoryResultAsync_WhenRequestedDateIsMissing_RejectsInsteadOfSubstitutingToday()
+    {
+        await using var testDatabase = await TestDatabase.CreateAsync();
+        var (patientId, visitId) = await CreatePatientAndVisitAsync(testDatabase);
+        var service = await CreateServiceAsync(testDatabase);
+        var laboratoryResult = CreateValidResult(
+            LaboratoryResultStatus.Requested);
+        laboratoryResult.PatientId = patientId;
+        laboratoryResult.PrenatalVisitId = visitId;
+        laboratoryResult.RequestedDate = null;
+
+        var exception = await Assert.ThrowsAsync<ArgumentException>(
+            () => service.CreateLaboratoryResultAsync(laboratoryResult));
+
+        Assert.Contains("requested date", exception.Message);
     }
 
     [Fact]
@@ -193,6 +345,48 @@ public class LaboratoryResultWorkflowTests
         Assert.Equal(
             LaboratoryResultStatus.Resulted.ToString(),
             secondNewValues.GetProperty("Status").GetString());
+    }
+
+    [Fact]
+    public async Task UpdateLaboratoryResultAsync_WhenStatusMovesBackward_RejectsWithoutChangingRecordedData()
+    {
+        await using var testDatabase = await TestDatabase.CreateAsync();
+        var (patientId, visitId) = await CreatePatientAndVisitAsync(testDatabase);
+        var service = await CreateServiceAsync(testDatabase);
+
+        var resulted = CreateValidResult(LaboratoryResultStatus.Resulted);
+        resulted.PatientId = patientId;
+        resulted.PrenatalVisitId = visitId;
+        var created = await service.CreateLaboratoryResultAsync(resulted);
+
+        var update = CreateValidResult(
+            LaboratoryResultStatus.AwaitingResult);
+        update.Id = created.Id;
+        update.PatientId = patientId;
+        update.PrenatalVisitId = visitId;
+        update.Result = created.Result;
+
+        var exception = await Assert.ThrowsAsync<ArgumentException>(
+            () => service.UpdateLaboratoryResultAsync(update));
+
+        Assert.Contains("cannot move backward", exception.Message);
+
+        await using var verificationContext =
+            await testDatabase.Factory.CreateDbContextAsync();
+
+        var unchanged = await verificationContext.LaboratoryResults
+            .SingleAsync(item => item.Id == created.Id);
+
+        Assert.Equal(LaboratoryResultStatus.Resulted, unchanged.Status);
+        Assert.Equal(created.TestDate, unchanged.TestDate);
+        Assert.Equal(created.Result, unchanged.Result);
+        Assert.Equal(0, await verificationContext.AuditLogs.CountAsync(log =>
+            log.EntityType == "LaboratoryResult" &&
+            log.EntityId == created.Id &&
+            log.Action == "Updated"));
+        Assert.Equal(0, await verificationContext.RecordVersions.CountAsync(
+            version => version.EntityType == "LaboratoryResult" &&
+                       version.EntityId == created.Id));
     }
 
     private static LaboratoryResult CreateValidResult(

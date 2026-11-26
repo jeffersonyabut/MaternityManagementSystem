@@ -56,9 +56,6 @@ public class LaboratoryResultService
 
         NormalizeFields(laboratoryResult);
 
-        laboratoryResult.RequestedDate ??=
-            DateOnly.FromDateTime(DateTime.Today);
-
         LaboratoryResultValidator.Validate(laboratoryResult);
 
         laboratoryResult.CreatedAtUtc = DateTime.UtcNow;
@@ -273,6 +270,10 @@ public class LaboratoryResultService
         }
 
         NormalizeFields(updatedLaboratoryResult);
+
+        LaboratoryResultValidator.ValidateTransition(
+            existingLaboratoryResult.Status,
+            updatedLaboratoryResult.Status);
 
         LaboratoryResultValidator.Validate(updatedLaboratoryResult);
 

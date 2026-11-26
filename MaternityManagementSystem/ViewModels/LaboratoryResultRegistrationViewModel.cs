@@ -51,7 +51,18 @@ public partial class LaboratoryResultRegistrationViewModel : ObservableObject
     private string testName = string.Empty;
 
     [ObservableProperty]
-    private DateTime? testDate = DateTime.Today;
+    private LaboratoryResultStatus? status =
+        LaboratoryResultStatus.Requested;
+
+    [ObservableProperty]
+    private IReadOnlyList<LaboratoryResultStatusOption> statusOptions =
+        LaboratoryResultStatusOption.All;
+
+    [ObservableProperty]
+    private DateTime? requestedDate = DateTime.Today;
+
+    [ObservableProperty]
+    private DateTime? testDate;
 
     [ObservableProperty]
     private string result = string.Empty;
@@ -76,6 +87,43 @@ public partial class LaboratoryResultRegistrationViewModel : ObservableObject
 
     [ObservableProperty]
     private string statusMessage = string.Empty;
+
+    public bool IsTestDateEnabled =>
+        Status is LaboratoryResultStatus.AwaitingResult or
+            LaboratoryResultStatus.Resulted;
+
+    public bool IsResultEnabled =>
+        Status == LaboratoryResultStatus.Resulted;
+
+    public bool IsRequestedDateRequired =>
+        Status is LaboratoryResultStatus.Requested or
+            LaboratoryResultStatus.AwaitingResult;
+
+    public string RequestedDateLabel =>
+        IsRequestedDateRequired
+            ? "Requested Date (Required)"
+            : "Requested Date (Optional)";
+
+    public string RequestedDateHelpText =>
+        IsRequestedDateRequired && !RequestedDate.HasValue
+            ? "Enter a requested date before saving this status."
+            : IsRequestedDateRequired
+                ? "Required for Requested and Awaiting Result."
+                : "Optional for Resulted.";
+
+    partial void OnStatusChanged(LaboratoryResultStatus? value)
+    {
+        OnPropertyChanged(nameof(IsTestDateEnabled));
+        OnPropertyChanged(nameof(IsResultEnabled));
+        OnPropertyChanged(nameof(IsRequestedDateRequired));
+        OnPropertyChanged(nameof(RequestedDateLabel));
+        OnPropertyChanged(nameof(RequestedDateHelpText));
+    }
+
+    partial void OnRequestedDateChanged(DateTime? value)
+    {
+        OnPropertyChanged(nameof(RequestedDateHelpText));
+    }
 
     public event Action? LaboratoryResultSaved;
 
@@ -143,18 +191,18 @@ public partial class LaboratoryResultRegistrationViewModel : ObservableObject
 
         try
         {
-            if (!TestDate.HasValue)
-            {
-                throw new ArgumentException(
-                    "Laboratory test date is required.");
-            }
-
             var laboratoryResult = new LaboratoryResult
             {
                 PatientId = _patientId,
                 PrenatalVisitId = SelectedVisit?.Visit?.Id,
                 TestName = TestName,
-                TestDate = DateOnly.FromDateTime(TestDate.Value),
+                Status = Status,
+                RequestedDate = RequestedDate.HasValue
+                    ? DateOnly.FromDateTime(RequestedDate.Value)
+                    : null,
+                TestDate = TestDate.HasValue
+                    ? DateOnly.FromDateTime(TestDate.Value)
+                    : null,
                 Result = Result,
                 Unit = Unit,
                 ReferenceRange = ReferenceRange,
@@ -176,6 +224,54 @@ public partial class LaboratoryResultRegistrationViewModel : ObservableObject
         {
             IsBusy = false;
         }
+    }
+}
+
+public sealed class LaboratoryResultStatusOption
+{
+    private LaboratoryResultStatusOption(
+        LaboratoryResultStatus value,
+        string displayText)
+    {
+        Value = value;
+        DisplayText = displayText;
+    }
+
+    public LaboratoryResultStatus Value { get; }
+
+    public string DisplayText { get; }
+
+    public static IReadOnlyList<LaboratoryResultStatusOption> All { get; } =
+    [
+        new(LaboratoryResultStatus.Requested, "Requested"),
+        new(LaboratoryResultStatus.AwaitingResult, "Awaiting Result"),
+        new(LaboratoryResultStatus.Resulted, "Resulted")
+    ];
+
+    public static IReadOnlyList<LaboratoryResultStatusOption> ForCurrentStatus(
+        LaboratoryResultStatus? currentStatus)
+    {
+        if (currentStatus is null)
+        {
+            return All;
+        }
+
+        return currentStatus.Value switch
+        {
+            LaboratoryResultStatus.Requested =>
+            [
+                All[0],
+                All[1],
+                All[2]
+            ],
+            LaboratoryResultStatus.AwaitingResult =>
+            [
+                All[1],
+                All[2]
+            ],
+            LaboratoryResultStatus.Resulted => [All[2]],
+            _ => All
+        };
     }
 }
 

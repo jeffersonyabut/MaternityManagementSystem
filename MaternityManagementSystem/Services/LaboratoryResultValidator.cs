@@ -6,6 +6,29 @@ namespace MaternityManagementSystem.Services;
 
 public static class LaboratoryResultValidator
 {
+    public static void ValidateTransition(
+        LaboratoryResultStatus? currentStatus,
+        LaboratoryResultStatus? updatedStatus)
+    {
+        if (currentStatus is null || updatedStatus is null)
+        {
+            return;
+        }
+
+        bool isAllowed = currentStatus == updatedStatus ||
+            (currentStatus == LaboratoryResultStatus.Requested &&
+             updatedStatus is LaboratoryResultStatus.AwaitingResult or
+                 LaboratoryResultStatus.Resulted) ||
+            (currentStatus == LaboratoryResultStatus.AwaitingResult &&
+             updatedStatus == LaboratoryResultStatus.Resulted);
+
+        if (!isAllowed)
+        {
+            throw new ArgumentException(
+                $"A laboratory result cannot move backward from {currentStatus} to {updatedStatus}.");
+        }
+    }
+
     public static void Validate(LaboratoryResult laboratoryResult)
     {
         ArgumentNullException.ThrowIfNull(laboratoryResult);

@@ -32,7 +32,17 @@ public partial class LaboratoryResultEditViewModel : ObservableObject
     private string testName = string.Empty;
 
     [ObservableProperty]
-    private DateTime? testDate = DateTime.Today;
+    private LaboratoryResultStatus? status;
+
+    [ObservableProperty]
+    private IReadOnlyList<LaboratoryResultStatusOption> statusOptions =
+        LaboratoryResultStatusOption.All;
+
+    [ObservableProperty]
+    private DateTime? requestedDate;
+
+    [ObservableProperty]
+    private DateTime? testDate;
 
     [ObservableProperty]
     private string result = string.Empty;
@@ -51,6 +61,62 @@ public partial class LaboratoryResultEditViewModel : ObservableObject
 
     [ObservableProperty]
     private string statusMessage = string.Empty;
+
+    public bool IsTestDateEnabled =>
+        Status is LaboratoryResultStatus.AwaitingResult or
+            LaboratoryResultStatus.Resulted;
+
+    public bool IsResultEnabled =>
+        Status == LaboratoryResultStatus.Resulted;
+
+    public bool IsRequestedDateRequired =>
+        Status is LaboratoryResultStatus.Requested or
+            LaboratoryResultStatus.AwaitingResult;
+
+    public string RequestedDateLabel =>
+        IsRequestedDateRequired
+            ? "Requested Date (Required)"
+            : "Requested Date (Optional)";
+
+    public string RequestedDateHelpText
+    {
+        get
+        {
+            if (Status is null && RequestedDate is null)
+            {
+                return "This legacy record has no requested date. Enter one before selecting Requested or Awaiting Result.";
+            }
+
+            if (IsRequestedDateRequired && !RequestedDate.HasValue)
+            {
+                return "Enter a requested date before saving this status.";
+            }
+
+            return IsRequestedDateRequired
+                ? "Required for Requested and Awaiting Result."
+                : "Optional for Resulted.";
+        }
+    }
+
+    public string StatusHelpText =>
+        Status is null
+            ? "This legacy record has no status. Select a status explicitly; none is inferred."
+            : string.Empty;
+
+    partial void OnStatusChanged(LaboratoryResultStatus? value)
+    {
+        OnPropertyChanged(nameof(IsTestDateEnabled));
+        OnPropertyChanged(nameof(IsResultEnabled));
+        OnPropertyChanged(nameof(IsRequestedDateRequired));
+        OnPropertyChanged(nameof(RequestedDateLabel));
+        OnPropertyChanged(nameof(RequestedDateHelpText));
+        OnPropertyChanged(nameof(StatusHelpText));
+    }
+
+    partial void OnRequestedDateChanged(DateTime? value)
+    {
+        OnPropertyChanged(nameof(RequestedDateHelpText));
+    }
 
     public event Action? LaboratoryResultUpdated;
 
@@ -83,6 +149,12 @@ public partial class LaboratoryResultEditViewModel : ObservableObject
             }
 
             _existingLaboratoryResult = laboratoryResult;
+
+            Status = laboratoryResult.Status;
+            StatusOptions = LaboratoryResultStatusOption
+                .ForCurrentStatus(laboratoryResult.Status);
+            RequestedDate = laboratoryResult.RequestedDate?.ToDateTime(
+                TimeOnly.MinValue);
 
             PatientName =
                 $"{laboratoryResult.Patient.FirstName} {laboratoryResult.Patient.LastName}";
@@ -129,9 +201,10 @@ public partial class LaboratoryResultEditViewModel : ObservableObject
 
         try
         {
-            if (!TestDate.HasValue)
+            if (Status is null)
             {
-                throw new ArgumentException("Laboratory test date is required.");
+                throw new ArgumentException(
+                    "Select a laboratory status before saving this record.");
             }
 
             var updatedLaboratoryResult = new LaboratoryResult
@@ -139,10 +212,14 @@ public partial class LaboratoryResultEditViewModel : ObservableObject
                 Id = _existingLaboratoryResult.Id,
                 PatientId = _existingLaboratoryResult.PatientId,
                 PrenatalVisitId = _existingLaboratoryResult.PrenatalVisitId,
-                Status = _existingLaboratoryResult.Status,
-                RequestedDate = _existingLaboratoryResult.RequestedDate,
+                Status = Status,
+                RequestedDate = RequestedDate.HasValue
+                    ? DateOnly.FromDateTime(RequestedDate.Value)
+                    : null,
                 TestName = TestName,
-                TestDate = DateOnly.FromDateTime(TestDate.Value),
+                TestDate = TestDate.HasValue
+                    ? DateOnly.FromDateTime(TestDate.Value)
+                    : null,
                 Result = Result,
                 Unit = Unit,
                 ReferenceRange = ReferenceRange,
