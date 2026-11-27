@@ -256,6 +256,31 @@
 
 
 
+                    <!-- SMS Reminder Monitoring Navigation Button -->
+                    <Button x:Name="SmsReminderMonitoringButton"
+                            Content="SMS Reminder Monitoring"
+                            HorizontalAlignment="Stretch"
+                            Click="SmsReminderMonitoringButton_Click">
+
+                        <Button.Style>
+                            <Style TargetType="{x:Type Button}"
+                                   BasedOn="{StaticResource SidebarButtonStyle}">
+
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding CurrentPage}"
+                                                 Value="AppointmentSmsReminderMonitoringView">
+                                        <Setter Property="Background"
+                                                Value="#6554C0"/>
+                                        <Setter Property="Foreground"
+                                                Value="White"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+
+                            </Style>
+                        </Button.Style>
+                    </Button>
+
+
                     <!-- System Settings Navigation Button -->
                     <Button x:Name="SystemSettingsButton"
                             Content="System Settings"

@@ -53,6 +53,10 @@ public partial class DashboardWindow : Window
             ? Visibility.Visible
             : Visibility.Collapsed;
 
+        SmsReminderMonitoringButton.Visibility = user.IsAdmin
+            ? Visibility.Visible
+            : Visibility.Collapsed;
+
         SystemSettingsButton.Visibility = user.IsAdmin
             ? Visibility.Visible
             : Visibility.Collapsed;
@@ -638,6 +642,40 @@ public partial class DashboardWindow : Window
         };
 
         _navigationService.NavigateToView(view);
+    }
+
+    // SMS REMINDER MONITORING NAVIGATION
+
+    public void ShowSmsReminderMonitoring()
+    {
+        if (_sessionService.CurrentUser?.IsAdmin != true)
+        {
+            return;
+        }
+
+        var authorizationService = new AuthorizationService(
+            _sessionService);
+        var reminderRepository = new AppointmentSmsReminderRepository();
+        var monitoringService = new AppointmentSmsReminderMonitoringService(
+            reminderRepository,
+            authorizationService);
+        var viewModel = new AppointmentSmsReminderMonitoringViewModel(
+            monitoringService);
+        var view = new AppointmentSmsReminderMonitoringView(viewModel);
+
+        view.Loaded += async (_, _) =>
+        {
+            await viewModel.LoadCommand.ExecuteAsync(null);
+        };
+
+        _navigationService.NavigateToView(view);
+    }
+
+    private void SmsReminderMonitoringButton_Click(
+        object sender,
+        RoutedEventArgs e)
+    {
+        ShowSmsReminderMonitoring();
     }
 
     private void SystemSettingsButton_Click(

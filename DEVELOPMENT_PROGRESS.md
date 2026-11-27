@@ -241,6 +241,92 @@ Remaining Milestone 4D work includes the Admin-only monitoring page and navigati
 provider delivery-status lookup and operational workflow for ambiguous outcomes. Provider acceptance continues to mean
 acceptance by the provider, not confirmed delivery.
 
+## Completed Admin SMS reminder monitoring service (Milestone 4D.2.1)
+
+Added `IAppointmentSmsReminderMonitoringService` and `AppointmentSmsReminderMonitoringService` as the application
+service boundary for read-only reminder monitoring:
+
+- The service accepts `AppointmentSmsReminderRepository` and `AuthorizationService`. Both public data-returning
+  operations call `AuthorizationService.EnsureAdminAsync` before accessing the repository. Authorization failures
+  remain `UnauthorizedAccessException`.
+- `GetMonitoringPageAsync` forwards the existing query and cancellation token and returns the existing paged monitoring
+  DTO. `GetMonitoringStatusCountsAsync` forwards its cancellation token and returns the existing all-seven-status count
+  DTOs. Repository filtering, projection, pagination, sorting, and timestamp behavior are unchanged.
+- No ViewModel, WPF page, navigation, provider lookup, scheduling/dispatch/worker behavior, schema, or migration changed.
+  Tests use temporary SQLite databases only; no production database was accessed and no SMS was sent.
+
+Verification results:
+
+- **Focused monitoring tests:** 15 passed, 0 failed, and 0 skipped (12 repository tests and 3 service tests).
+- **Solution build:** succeeded with 0 errors and 10 existing CS0108 report-view `BorderBrush` warnings.
+
+### Monitoring service authorization test follow-up
+
+Strengthened the service tests to exercise both public operations independently with no session, a deactivated Admin,
+an Admin whose database role changed, and an Admin whose security stamp changed. Added a throwing context-factory check
+proving unauthorized calls do not reach the monitoring repository, and asserted that both cancellation exceptions
+carry the exact caller token. No production service or authorization logic changed.
+
+Verification results for this test-only follow-up:
+
+- **Focused monitoring and authorization tests:** 30 passed, 0 failed, and 0 skipped.
+- **Full solution tests:** 278 passed, 3 failed, and 0 skipped. The three failures were existing
+  `UniSmsCredentialServiceTests` cases that threw `IOException` while securely storing the API key; no monitoring or
+  authorization tests failed.
+- **Solution build:** succeeded with 0 warnings and 0 errors.
+- **Diff check:** `git diff --check` passed.
+
+Remaining 4D.2 work is the monitoring ViewModel, followed by the Admin WPF page and navigation. Provider delivery-status
+lookup and operational handling for ambiguous outcomes remain separate future work.
+
+## Completed SMS reminder monitoring ViewModel (Milestone 4D.2.2)
+
+Added `AppointmentSmsReminderMonitoringViewModel` using the existing monitoring service and DTO contracts:
+
+- Exposes observable reminder records, all seven status counts, search/status/type/date filters, page state, busy state,
+  and a user-facing error message. It does not transform appointment-local snapshots or UTC lifecycle timestamps.
+- Supports load, refresh, apply/clear filters, and bounded previous/next page commands. Search and other editable filters
+  are submitted only when applied; refresh and paging retain the last applied filter set. Invalid date ranges do not
+  call the service, and overlapping operations are ignored while busy.
+- Added deterministic fake-service tests for initial load, refresh, filter application/reset, pagination boundaries,
+  explicit search application, invalid ranges, service errors, busy-state cleanup, and overlapping requests.
+- No dashboard wiring, navigation, XAML, database, migration, SMS provider, scheduling, dispatch, or worker behavior
+  changed.
+
+Verification results:
+
+- **Focused monitoring ViewModel, service, and repository tests:** 34 passed, 0 failed, and 0 skipped. The test build
+  emitted 10 existing CS0108 report-view `BorderBrush` warnings (five for each WPF target).
+- **Solution build:** succeeded with 0 warnings and 0 errors.
+- **Diff check:** `git diff --check` passed.
+
+## Completed Admin dashboard SMS reminder monitoring page (Milestone 4D.2.3)
+
+Added the SMS Reminder Monitoring item to the Admin dashboard and routed it through the existing content host:
+
+- The navigation item follows the existing sidebar style and Admin visibility rule. The navigation method also checks
+  the current session role before constructing the page. The XAML owns the single Click hookup.
+- Dashboard composition creates the existing `AuthorizationService`, monitoring repository, monitoring service, and
+  `AppointmentSmsReminderMonitoringViewModel` manually. The new view receives that ViewModel and starts its existing
+  `LoadCommand` when loaded. `NavigationService` and the monitoring service authorization boundary are unchanged.
+- The initial page displays all seven status counts, patient first/last name and patient number, appointment-local
+  date/time, reminder type/status, and lifecycle timestamps formatted through `RegionalSettingsService`. It includes
+  search and status/type/date filters, apply/clear/refresh actions, pagination, and loading/error states. The lifecycle
+  formatter converts for display only; the stored UTC values are untouched. ProviderAccepted is described as provider
+  acceptance, not confirmed recipient delivery. The view exposes no phone, message body, provider reference/response,
+  credentials, or clinical data.
+- No reminder scheduling, dispatch, worker, UniSMS client, schema, or migration behavior changed. No production
+  database was accessed and no SMS was sent.
+
+Verification results:
+
+- **Focused monitoring ViewModel, service, and repository tests:** 34 passed, 0 failed, and 0 skipped.
+- **Solution build:** succeeded with 0 errors and 10 existing CS0108 report-view `BorderBrush` warnings.
+- **Diff check:** `git diff --check` passed.
+
+The next Milestone 4D work is review and visual verification of the monitoring page. Provider delivery-status lookup and
+operational handling for ambiguous outcomes remain separate future work.
+
 ## Remaining roadmap
 
 All items below are **pending**. Clinical policies and clinic workflow decisions remain subject to confirmation.
