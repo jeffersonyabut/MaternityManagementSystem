@@ -139,6 +139,144 @@ public class UniSmsClientTests
         Assert.DoesNotContain("fake-key", result.UserMessage);
     }
 
+    [Fact]
+    public async Task SendAppointmentReminderAsync_SendsMessageAndParsesReference()
+    {
+        const string content = "Your clinic appointment is coming up.";
+        var handler = new FakeHttpMessageHandler((request, _) =>
+        {
+            Assert.Equal(HttpMethod.Post, request.Method);
+            Assert.Equal("https://unismsapi.com/api/sms", request.RequestUri?.ToString());
+            return Task.FromResult(JsonResponse(
+                HttpStatusCode.Created,
+                "pending",
+                "msg_test-reference_123"));
+        });
+        await using var harness = await CreateClientAsync(
+            StaffRoles.Admin, handler, "fake-key");
+
+        UniSmsApiResult result = await harness.Client.SendAppointmentReminderAsync(
+            "09171234567", content);
+
+        Assert.Equal(UniSmsOutcome.Accepted, result.Outcome);
+        Assert.Equal("pending", result.ProviderStatus);
+        Assert.Equal("msg_test-reference_123", result.ProviderReferenceId);
+        Assert.Null(result.FailureCode);
+        JsonElement body = JsonDocument.Parse(handler.LastRequestBody!).RootElement;
+        Assert.Equal(content, body.GetProperty("content").GetString());
+        Assert.Equal("+639171234567", body.GetProperty("recipient").GetString());
+    }
+
+    [Fact]
+    public async Task SendAppointmentReminderAsync_MapsProviderRejectionSafely()
+    {
+        var handler = new FakeHttpMessageHandler((_, _) => Task.FromResult(
+            new HttpResponseMessage(HttpStatusCode.UnprocessableEntity)
+            {
+                Content = new StringContent("clinical content and secret response")
+            }));
+        await using var harness = await CreateClientAsync(
+            StaffRoles.Admin, handler, "fake-key");
+
+        UniSmsApiResult result = await harness.Client.SendAppointmentReminderAsync(
+            "09171234567", "private message content");
+
+        Assert.Equal(UniSmsOutcome.Rejected, result.Outcome);
+        Assert.Equal("request_rejected", result.FailureCode);
+        Assert.DoesNotContain("clinical", result.FailureCode);
+        Assert.DoesNotContain("private message", result.FailureCode);
+    }
+
+    [Theory]
+    [InlineData("not-json")]
+    [InlineData("{\"message\":{\"status\":\"unknown\",\"reference_id\":\"r1\"}}")]
+    [InlineData("{\"message\":{\"status\":\"pending\",\"reference_id\":\"../secret\"}}")]
+    public async Task SendAppointmentReminderAsync_MalformedResponseIsUnknown(string responseBody)
+    {
+        var handler = new FakeHttpMessageHandler((_, _) => Task.FromResult(
+            new HttpResponseMessage(HttpStatusCode.Created)
+            {
+                Content = new StringContent(responseBody)
+            }));
+        await using var harness = await CreateClientAsync(
+            StaffRoles.Admin, handler, "fake-key");
+
+        UniSmsApiResult result = await harness.Client.SendAppointmentReminderAsync(
+            "09171234567", "reminder");
+
+        Assert.Equal(UniSmsOutcome.Unknown, result.Outcome);
+        Assert.Equal("invalid_provider_response", result.FailureCode);
+        Assert.Null(result.ProviderReferenceId);
+    }
+
+    [Fact]
+    public async Task SendAppointmentReminderAsync_NetworkFailureIsUnknown()
+    {
+        var handler = new FakeHttpMessageHandler((_, _) =>
+            throw new HttpRequestException("secret and message must not escape"));
+        await using var harness = await CreateClientAsync(
+            StaffRoles.Admin, handler, "fake-key");
+
+        UniSmsApiResult result = await harness.Client.SendAppointmentReminderAsync(
+            "09171234567", "reminder content");
+
+        Assert.Equal(UniSmsOutcome.Unknown, result.Outcome);
+        Assert.Equal("network_error", result.FailureCode);
+    }
+
+    [Fact]
+    public async Task GetDeliveryStatusAsync_ParsesStatusAndUsesEscapedReferencePath()
+    {
+        var handler = new FakeHttpMessageHandler((request, _) =>
+        {
+            Assert.Equal(HttpMethod.Get, request.Method);
+            Assert.Equal("https://unismsapi.com/api/sms/msg_reference-123", request.RequestUri?.ToString());
+            return Task.FromResult(JsonResponse(HttpStatusCode.OK, "sent", "msg_reference-123"));
+        });
+        await using var harness = await CreateClientAsync(
+            StaffRoles.Admin, handler, "fake-key");
+
+        UniSmsApiResult result = await harness.Client.GetDeliveryStatusAsync(
+            "msg_reference-123");
+
+        Assert.Equal(UniSmsOutcome.Accepted, result.Outcome);
+        Assert.Equal("sent", result.ProviderStatus);
+        Assert.Equal("msg_reference-123", result.ProviderReferenceId);
+    }
+
+    [Fact]
+    public async Task GetDeliveryStatusAsync_WhenProviderRejectsLookupReturnsSafeFailure()
+    {
+        var handler = new FakeHttpMessageHandler((_, _) => Task.FromResult(
+            new HttpResponseMessage(HttpStatusCode.NotFound)
+            {
+                Content = new StringContent("response details")
+            }));
+        await using var harness = await CreateClientAsync(
+            StaffRoles.Admin, handler, "fake-key");
+
+        UniSmsApiResult result = await harness.Client.GetDeliveryStatusAsync(
+            "msg_reference-123");
+
+        Assert.Equal(UniSmsOutcome.Rejected, result.Outcome);
+        Assert.Equal("reference_not_found", result.FailureCode);
+    }
+
+    [Fact]
+    public async Task SendAppointmentReminderAsync_InvalidInputDoesNotSend()
+    {
+        var handler = new FakeHttpMessageHandler((_, _) =>
+            throw new InvalidOperationException("Must not send."));
+        await using var harness = await CreateClientAsync(
+            StaffRoles.Admin, handler, "fake-key");
+
+        UniSmsApiResult result = await harness.Client.SendAppointmentReminderAsync(
+            "invalid", "reminder");
+
+        Assert.Equal(UniSmsOutcome.InvalidRequest, result.Outcome);
+        Assert.Equal(0, handler.RequestCount);
+    }
+
     private static async Task<TestHarness> CreateClientAsync(
         string role,
         FakeHttpMessageHandler handler,
@@ -192,11 +330,12 @@ public class UniSmsClientTests
 
     private static HttpResponseMessage JsonResponse(
         HttpStatusCode statusCode,
-        string messageStatus)
+        string messageStatus,
+        string? referenceId = null)
     {
         string json = JsonSerializer.Serialize(new
         {
-            message = new { status = messageStatus }
+            message = new { status = messageStatus, reference_id = referenceId }
         });
 
         return new HttpResponseMessage(statusCode)

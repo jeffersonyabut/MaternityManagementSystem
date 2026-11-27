@@ -82,6 +82,33 @@ public class UniSmsCredentialServiceTests
     }
 
     [Fact]
+    public async Task GetApiKeyForWorkerAsync_DoesNotRequireInteractiveSession()
+    {
+        await using var database = await TestDatabase.CreateAsync();
+        using var directory = TemporaryDirectory.Create();
+        const string apiKey = "worker-only-test-key";
+        string credentialPath = Path.Combine(directory.Path, "unisms-api-key.dat");
+        var adminService = await CreateServiceAsync(
+            database, StaffRoles.Admin, credentialPath);
+        await adminService.SaveApiKeyAsync(apiKey);
+
+        var unauthenticatedAuthorization = new AuthorizationService(
+            new SessionService(),
+            new StaffRepository(database.Factory));
+        var workerCredentialService = new UniSmsCredentialService(
+            unauthenticatedAuthorization,
+            credentialPath);
+
+        Assert.Equal(
+            apiKey,
+            await workerCredentialService.GetApiKeyForWorkerAsync());
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(
+            () => workerCredentialService.GetApiKeyAsync());
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(
+            () => workerCredentialService.IsConfiguredAsync());
+    }
+
+    [Fact]
     public async Task GetApiKeyAsync_WhenEncryptedFileIsInvalid_ThrowsGenericError()
     {
         await using var database = await TestDatabase.CreateAsync();

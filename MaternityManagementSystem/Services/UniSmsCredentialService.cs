@@ -109,6 +109,28 @@ public sealed class UniSmsCredentialService
     {
         await _authorizationService.EnsureAdminAsync();
 
+        return await ReadApiKeyAsync(cancellationToken);
+    }
+
+    /// <summary>
+    /// Retrieves the credential for an application worker without requiring
+    /// an interactive Golddie session. The worker must run under the same
+    /// Windows user identity that saved the credential because DPAPI uses
+    /// <see cref="DataProtectionScope.CurrentUser"/>.
+    /// </summary>
+    /// <remarks>
+    /// Keep this method limited to trusted application worker code. It does
+    /// not log or otherwise expose the credential beyond its return value.
+    /// </remarks>
+    public Task<string?> GetApiKeyForWorkerAsync(
+        CancellationToken cancellationToken = default)
+    {
+        return ReadApiKeyAsync(cancellationToken);
+    }
+
+    private async Task<string?> ReadApiKeyAsync(
+        CancellationToken cancellationToken)
+    {
         byte[]? plaintextBytes = await ReadApiKeyBytesAsync(
             cancellationToken);
 
