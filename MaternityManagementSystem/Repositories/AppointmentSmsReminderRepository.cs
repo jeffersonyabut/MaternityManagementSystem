@@ -20,6 +20,156 @@ public sealed class AppointmentSmsReminderRepository
         _contextFactory = contextFactory;
     }
 
+    /// <summary>
+    /// Returns a patient-safe, no-tracking projection for administrative monitoring.
+    /// Appointment snapshots are clinic-local values; lifecycle timestamps are UTC.
+    /// </summary>
+    public async Task<AppointmentSmsReminderMonitoringPage> GetMonitoringPageAsync(
+        AppointmentSmsReminderMonitoringQuery query,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(query);
+        if (query.PageNumber < 1)
+        {
+            throw new ArgumentOutOfRangeException(nameof(query.PageNumber));
+        }
+
+        if (query.PageSize < 1)
+        {
+            throw new ArgumentOutOfRangeException(nameof(query.PageSize));
+        }
+
+        if (query.AppointmentDateFrom is DateOnly from &&
+            query.AppointmentDateTo is DateOnly to && from > to)
+        {
+            throw new ArgumentException(
+                "The appointment date range must be in ascending order.", nameof(query));
+        }
+
+        int pageSize = Math.Min(query.PageSize, 200);
+        int offset = checked((query.PageNumber - 1) * pageSize);
+
+        await using var context = await CreateDbContextAsync(cancellationToken);
+        IQueryable<AppointmentSmsReminder> reminders = context.AppointmentSmsReminders
+            .AsNoTracking();
+
+        if (query.Status.HasValue)
+        {
+            reminders = reminders.Where(reminder => reminder.Status == query.Status.Value);
+        }
+
+        if (query.ReminderType.HasValue)
+        {
+            reminders = reminders.Where(
+                reminder => reminder.ReminderType == query.ReminderType.Value);
+        }
+
+        if (query.AppointmentDateFrom is DateOnly appointmentDateFrom)
+        {
+            reminders = reminders.Where(
+                reminder => reminder.AppointmentDateSnapshot >= appointmentDateFrom);
+        }
+
+        if (query.AppointmentDateTo is DateOnly appointmentDateTo)
+        {
+            reminders = reminders.Where(
+                reminder => reminder.AppointmentDateSnapshot <= appointmentDateTo);
+        }
+
+        string search = query.SearchText?.Trim().ToLowerInvariant() ?? string.Empty;
+        if (search.Length > 0)
+        {
+            reminders = reminders.Where(reminder =>
+                (reminder.Appointment.Patient.FirstName + " " +
+                 reminder.Appointment.Patient.LastName).ToLower().Contains(search) ||
+                reminder.Appointment.Patient.FirstName.ToLower().Contains(search) ||
+                reminder.Appointment.Patient.LastName.ToLower().Contains(search) ||
+                reminder.Appointment.Patient.PatientNumber.ToLower().Contains(search));
+        }
+
+        int totalCount = await reminders.CountAsync(cancellationToken);
+
+        // Pending and Sending items are current queue work and sort by scheduled
+        // time. All other statuses are historical and sort newest status change
+        // first. Reminder ID breaks ties deterministically in either group.
+        List<AppointmentSmsReminderMonitoringRecord> page = await reminders
+            .OrderBy(reminder =>
+                reminder.Status == AppointmentSmsReminderStatus.Pending ||
+                reminder.Status == AppointmentSmsReminderStatus.Sending ? 0 : 1)
+            .ThenBy(reminder =>
+                reminder.Status == AppointmentSmsReminderStatus.Pending ||
+                reminder.Status == AppointmentSmsReminderStatus.Sending
+                    ? reminder.ScheduledAtUtc
+                    : DateTime.MaxValue)
+            .ThenByDescending(reminder =>
+                reminder.Status == AppointmentSmsReminderStatus.Pending ||
+                reminder.Status == AppointmentSmsReminderStatus.Sending
+                    ? DateTime.MinValue
+                    : reminder.StatusChangedAtUtc)
+            .ThenByDescending(reminder => reminder.Id)
+            .Skip(offset)
+            .Take(pageSize)
+            .Select(reminder => new AppointmentSmsReminderMonitoringRecord(
+                reminder.Id,
+                reminder.Appointment.Patient.FirstName,
+                reminder.Appointment.Patient.LastName,
+                reminder.Appointment.Patient.PatientNumber,
+                reminder.AppointmentDateSnapshot,
+                reminder.AppointmentStartTimeSnapshot,
+                reminder.ReminderType,
+                reminder.Status,
+                reminder.SanitizedOutcomeCode,
+                reminder.ProviderStatus,
+                reminder.ScheduledAtUtc,
+                reminder.CreatedAtUtc,
+                reminder.StatusChangedAtUtc,
+                reminder.AttemptStartedAtUtc,
+                reminder.FinalizedAtUtc))
+            .ToListAsync(cancellationToken);
+
+        // SQLite materializes DateTime values as Unspecified. Restore only the
+        // UTC kind metadata in memory; these are already UTC ticks and must not
+        // be converted. Appointment snapshots are clinic-local and stay intact.
+        for (int index = 0; index < page.Count; index++)
+        {
+            AppointmentSmsReminderMonitoringRecord record = page[index];
+            page[index] = record with
+            {
+                ScheduledAtUtc = SpecifyUtcKind(record.ScheduledAtUtc),
+                CreatedAtUtc = SpecifyUtcKind(record.CreatedAtUtc),
+                StatusChangedAtUtc = SpecifyUtcKind(record.StatusChangedAtUtc),
+                AttemptStartedAtUtc = SpecifyUtcKind(record.AttemptStartedAtUtc),
+                FinalizedAtUtc = SpecifyUtcKind(record.FinalizedAtUtc)
+            };
+        }
+
+        return new AppointmentSmsReminderMonitoringPage(
+            page, totalCount, query.PageNumber, pageSize);
+    }
+
+    /// <summary>Returns counts for all reminder statuses, including statuses with no rows.</summary>
+    public async Task<IReadOnlyList<AppointmentSmsReminderStatusCount>>
+        GetMonitoringStatusCountsAsync(CancellationToken cancellationToken = default)
+    {
+        await using var context = await CreateDbContextAsync(cancellationToken);
+        var groupedCounts = await context.AppointmentSmsReminders
+            .AsNoTracking()
+            .GroupBy(reminder => reminder.Status)
+            .Select(group => new
+            {
+                Status = group.Key,
+                Count = group.Count()
+            })
+            .ToListAsync(cancellationToken);
+
+        var countsByStatus = groupedCounts.ToDictionary(item => item.Status, item => item.Count);
+        return Enum.GetValues<AppointmentSmsReminderStatus>()
+            .Select(status => new AppointmentSmsReminderStatusCount(
+                status,
+                countsByStatus.GetValueOrDefault(status)))
+            .ToArray();
+    }
+
     private async Task<ClinicDbContext> CreateDbContextAsync(
         CancellationToken cancellationToken)
     {
@@ -454,6 +604,12 @@ public sealed class AppointmentSmsReminderRepository
             _ => value.ToUniversalTime()
         };
     }
+
+    private static DateTime SpecifyUtcKind(DateTime value) =>
+        DateTime.SpecifyKind(value, DateTimeKind.Utc);
+
+    private static DateTime? SpecifyUtcKind(DateTime? value) =>
+        value.HasValue ? DateTime.SpecifyKind(value.Value, DateTimeKind.Utc) : null;
 
     private static void NormalizeUtcFields(
         IEnumerable<AppointmentSmsReminder> reminders)

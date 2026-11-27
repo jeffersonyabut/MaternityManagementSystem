@@ -208,6 +208,39 @@ At inspection, git status reported the following 13 paths as modified. These wer
 
 Four paths had identical worktree and HEAD hashes during inspection despite being reported as modified by Git. This discrepancy is unexplained; it was not investigated or changed. No staged or untracked files were reported.
 
+## Completed SMS reminder monitoring data layer (Milestone 4D.1)
+
+Added a read-only monitoring projection and repository queries for appointment SMS reminders. The flat result contains
+only the patient first and last name, patient number, appointment date/time snapshots, reminder type and status,
+sanitized outcome code, provider status, and reminder lifecycle timestamps. It excludes patient contact/address data,
+clinical details, message content, provider references, credentials, raw provider responses, and EF entities.
+
+- Monitoring queries support status, reminder type, inclusive appointment-date range, and patient name/number filters,
+  plus total count and bounded pagination. Queries use EF Core `AsNoTracking()` and database projections.
+- Queue work (`Pending` and `Sending`) sorts by scheduled time; historical records sort by status-change time newest
+  first. Reminder ID provides deterministic tie-breaking. Grouped counts always include all seven statuses, including
+  zero-count statuses.
+- Appointment date/time snapshots remain clinic-local. After SQLite materialization, lifecycle timestamps have their
+  UTC `DateTimeKind` restored with a value-preserving operation; no timezone conversion occurs in the repository.
+  Null lifecycle timestamps remain null, and regional formatting/conversion stays at the presentation boundary.
+- No schema, scheduling, reconciliation, claiming, dispatch, worker, or provider lookup behavior changed. No production
+  database was accessed and no real SMS was sent. Existing migration tests in the full suite used temporary SQLite
+  databases only; no production migration was run.
+
+Verification results:
+
+- **Focused monitoring repository tests:** 12 passed, 0 failed, and 0 skipped, including UTC kind/value preservation,
+  nullable timestamp, and clinic-local snapshot checks.
+- **Existing reminder and UniSMS tests:** 99 passed, 0 failed, and 0 skipped under the loaded host Windows profile.
+- **Full solution tests:** 269 passed, 0 failed, and 0 skipped under the loaded host Windows profile. The sandbox
+  profile still cannot run the three DPAPI credential-storage tests because it has no loaded Windows user profile.
+- **Solution build:** succeeded with 0 warnings and 0 errors.
+- **Diff check:** `git diff --check` passed.
+
+Remaining Milestone 4D work includes the Admin-only monitoring page and navigation, followed by any separately approved
+provider delivery-status lookup and operational workflow for ambiguous outcomes. Provider acceptance continues to mean
+acceptance by the provider, not confirmed delivery.
+
 ## Remaining roadmap
 
 All items below are **pending**. Clinical policies and clinic workflow decisions remain subject to confirmation.
@@ -220,4 +253,4 @@ All items below are **pending**. Clinical policies and clinic workflow decisions
 - Review the StaffId foreign-key policy for audit logs and record versions.
 - Improve exception handling and internal logging.
 - Review role canonicalization and repository role invariants.
-- Review appointment SMS operational monitoring and manual handling of `Unknown` outcomes; automatic retries remain intentionally disabled.
+- Review manual handling of `Unknown` SMS outcomes; automatic retries remain intentionally disabled.
