@@ -127,6 +127,129 @@ public sealed class AppointmentSmsReminderRepository
         return reminders;
     }
 
+    /// <summary>
+    /// Atomically changes one due, currently eligible Pending reminder to
+    /// Sending. The conditional UPDATE is a single SQLite statement, so only
+    /// one independent context can observe an affected row. Its implicit
+    /// statement transaction ends before any provider request begins.
+    /// </summary>
+    public async Task<bool> TryClaimPendingReminderAsync(
+        int reminderId,
+        DateTime nowUtc,
+        DateOnly clinicToday,
+        TimeOnly clinicTime,
+        CancellationToken cancellationToken = default)
+    {
+        if (reminderId <= 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(reminderId));
+        }
+
+        nowUtc = TreatAsUtc(nowUtc);
+        await using var context = await CreateDbContextAsync(cancellationToken);
+
+        int claimed = await context.AppointmentSmsReminders
+            .Where(reminder =>
+                reminder.Id == reminderId &&
+                reminder.Status == AppointmentSmsReminderStatus.Pending &&
+                reminder.ScheduledAtUtc <= nowUtc &&
+                reminder.ScheduleRevision == reminder.Appointment.ScheduleRevision &&
+                reminder.ConsentGeneration ==
+                    reminder.Appointment.Patient.SmsReminderConsentGeneration &&
+                reminder.Appointment.Patient.HasSmsReminderConsent &&
+                !reminder.Appointment.IsArchived &&
+                (reminder.Appointment.Status == "Scheduled" ||
+                 reminder.Appointment.Status == "Confirmed") &&
+                (reminder.Appointment.AppointmentDate > clinicToday ||
+                 (reminder.Appointment.AppointmentDate == clinicToday &&
+                  reminder.Appointment.StartTime > clinicTime)))
+            .ExecuteUpdateAsync(update => update
+                .SetProperty(reminder => reminder.Status,
+                    AppointmentSmsReminderStatus.Sending)
+                .SetProperty(reminder => reminder.AttemptStartedAtUtc, nowUtc)
+                .SetProperty(reminder => reminder.StatusChangedAtUtc, nowUtc)
+                .SetProperty(reminder => reminder.FinalizedAtUtc, (DateTime?)null)
+                .SetProperty(reminder => reminder.SanitizedOutcomeCode, (string?)null),
+                cancellationToken);
+
+        return claimed == 1;
+    }
+
+    public async Task<AppointmentSmsReminder?> GetClaimedForDispatchAsync(
+        int reminderId,
+        CancellationToken cancellationToken = default)
+    {
+        await using var context = await CreateDbContextAsync(cancellationToken);
+        AppointmentSmsReminder? reminder = await context.AppointmentSmsReminders
+            .AsNoTracking()
+            .Include(item => item.Appointment)
+                .ThenInclude(appointment => appointment.Patient)
+            .FirstOrDefaultAsync(item =>
+                    item.Id == reminderId &&
+                    item.Status == AppointmentSmsReminderStatus.Sending,
+                cancellationToken);
+
+        if (reminder is not null)
+        {
+            NormalizeUtcFields([reminder]);
+        }
+
+        return reminder;
+    }
+
+    public async Task<bool> FinalizeClaimedReminderAsync(
+        int reminderId,
+        AppointmentSmsReminderStatus finalStatus,
+        DateTime changedAtUtc,
+        string sanitizedOutcomeCode,
+        string? providerReference = null,
+        string? providerStatus = null,
+        CancellationToken cancellationToken = default)
+    {
+        if (finalStatus is not (AppointmentSmsReminderStatus.ProviderAccepted or
+            AppointmentSmsReminderStatus.Failed or
+            AppointmentSmsReminderStatus.Unknown or
+            AppointmentSmsReminderStatus.Superseded or
+            AppointmentSmsReminderStatus.Skipped))
+        {
+            throw new ArgumentOutOfRangeException(nameof(finalStatus));
+        }
+
+        ValidateReasonCode(sanitizedOutcomeCode);
+        if (providerReference is { Length: > 200 })
+        {
+            throw new ArgumentException(
+                "Provider reference cannot exceed 200 characters.",
+                nameof(providerReference));
+        }
+
+        if (providerStatus is { Length: > 100 })
+        {
+            throw new ArgumentException(
+                "Provider status cannot exceed 100 characters.",
+                nameof(providerStatus));
+        }
+
+        changedAtUtc = TreatAsUtc(changedAtUtc);
+        await using var context = await CreateDbContextAsync(cancellationToken);
+
+        return await context.AppointmentSmsReminders
+            .Where(reminder =>
+                reminder.Id == reminderId &&
+                reminder.Status == AppointmentSmsReminderStatus.Sending)
+            .ExecuteUpdateAsync(update => update
+                .SetProperty(reminder => reminder.Status, finalStatus)
+                .SetProperty(reminder => reminder.StatusChangedAtUtc, changedAtUtc)
+                .SetProperty(reminder => reminder.FinalizedAtUtc, changedAtUtc)
+                .SetProperty(reminder => reminder.SanitizedOutcomeCode,
+                    sanitizedOutcomeCode)
+                .SetProperty(reminder => reminder.ProviderReference,
+                    providerReference)
+                .SetProperty(reminder => reminder.ProviderStatus,
+                    providerStatus),
+                cancellationToken) == 1;
+    }
+
     public async Task<int> SupersedePendingForOldRevisionsAsync(
         int appointmentId,
         int currentScheduleRevision,

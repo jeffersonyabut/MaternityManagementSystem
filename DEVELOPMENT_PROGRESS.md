@@ -116,8 +116,8 @@ Persistent appointment reminders are scheduled and reconciled locally without se
 - Eligible future Scheduled and Confirmed appointments with current patient consent and a usable Philippine mobile number receive pending reminders for their current schedule revision and consent generation. No recipient number, appointment purpose, pregnancy detail, or message content is stored in reminder rows.
 - Reconciliation is idempotent. A process-wide gate serializes overlapping passes, while the database unique key and duplicate-safe repository insertion protect reminder creation. Old schedule revisions are superseded; pending reminders are skipped when an appointment has passed, is archived/ineligible, lacks consent, or lacks a usable contact. Terminal and Sending rows are not reset.
 - If both reminders are overdue while settings are enabled, the advance reminder is superseded and the 24-hour reminder remains pending. A lone overdue advance reminder remains pending. Disabled global SMS settings retain pending work and suppress due candidates; a later reconciliation after re-enabling applies catch-up rules.
-- Reconciliation is hooked after appointment creation, edit/reschedule, status change, cancellation, archive, patient consent changes, and contact-number edits. A single startup reconciliation recovers pending work; there is no timer or background worker in this milestone.
-- Provider dispatch is separate and remains unimplemented. No UniSMS calls, network requests, retries, or automatic SMS sends are made.
+- Reconciliation is hooked after appointment creation, edit/reschedule, status change, cancellation, archive, patient consent changes, and contact-number edits. A single startup reconciliation recovers pending work; there is no timer or background polling worker.
+- Provider dispatch is implemented as a separate one-pass operation below and is not called by appointment workflows or startup polling.
 
 Verification results:
 
@@ -125,6 +125,27 @@ Verification results:
 - **Full test suite:** 217 passed, 0 failed, and 0 skipped.
 - **Solution build:** succeeded; 0 warnings and 0 errors.
 - **Database and messaging:** tests used temporary SQLite databases; no production database was accessed or migrated, and no SMS or network request occurred.
+
+## Completed appointment SMS reminder dispatch pipeline (Milestone 4B)
+
+The application can now process due reminder candidates through an explicit one-pass dispatch operation:
+
+- `AppointmentSmsReminderRepository.TryClaimPendingReminderAsync` conditionally changes an eligible due `Pending` row to `Sending` with its attempt timestamp using one atomic SQLite update. Separate contexts cannot both claim the same row. The statement completes before the provider request begins.
+- **Accepted dispatch authorization boundary:** the final eligibility validation immediately before dispatch authorizes the reminder request. It checks appointment status, archive state, future schedule and revision, explicit SMS consent and consent generation, contact number, and both global SMS settings. If any checked condition has changed before this validation, the reminder is suppressed and its status is finalized using the existing `Skipped` or `Superseded` status conventions.
+- Consent withdrawal and appointment detail changes continue to reconcile pending reminders through the existing workflow hooks. The atomic database claim is short-lived; external UniSMS HTTP requests run outside database transactions.
+- The dedicated message builder uses the clinic name, appointment date, and appointment time only. It produces a generic reminder and excludes patient identity and clinical details.
+- The service uses the Milestone 4A `IUniSmsClient` reminder-send contract. Provider acceptance becomes `ProviderAccepted`; explicit rejection or credential unavailability becomes `Failed`; ambiguous transport, response, or cancellation outcomes become `Unknown`. Provider references/statuses and sanitized outcome codes are persisted.
+- Unknown and stale Sending rows are terminal for automatic processing; dispatch only queries Pending rows and performs no automatic retry. No new status or schema change was needed.
+- This is not a background worker. No polling loop or application startup dispatch was added, and appointment create/edit/cancel workflows do not wait for UniSMS.
+- **Known limitation:** eligibility validation and the external UniSMS request are not atomic. Consent, appointment details, or SMS settings can change after final validation but before UniSMS receives the request. An in-flight or provider-accepted SMS cannot reliably be recalled. The system therefore does not guarantee cancellation of an SMS after dispatch authorization has begun.
+
+Verification results:
+
+- **Focused reminder scheduling/dispatch and UniSMS tests:** 70 passed, 0 failed, and 0 skipped.
+- **Full test suite:** 247 passed, 0 failed, and 0 skipped.
+- **Solution build:** succeeded; 0 warnings and 0 errors.
+- **Dispatch tests:** used fake HTTP handlers and temporary SQLite databases, including separate-context concurrent claims and SQLite-triggered last-second eligibility changes.
+- **Production database, migrations, and messaging:** no production database was accessed, no migration was applied, and no real SMS was sent.
 
 ## Baseline verification
 
@@ -178,3 +199,4 @@ All items below are **pending**. Clinical policies and clinic workflow decisions
 - Review the StaffId foreign-key policy for audit logs and record versions.
 - Improve exception handling and internal logging.
 - Review role canonicalization and repository role invariants.
+- Implement and lifecycle-manage the background reminder polling worker in the next appointment-SMS milestone.
