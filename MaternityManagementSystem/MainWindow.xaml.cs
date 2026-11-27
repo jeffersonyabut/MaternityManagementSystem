@@ -32,7 +32,13 @@ public partial class MainWindow : Window
 
     private void OnLoginSucceeded()
     {
-        var sessionService = ((App)Application.Current).SessionService;
+        var app = (App)Application.Current;
+        var sessionService = app.SessionService;
+
+        if (sessionService.CurrentUser is { } user)
+        {
+            app.ThemeService.LoadPreferenceForStaff(user.StaffId);
+        }
 
         var dashboard = new DashboardWindow(sessionService);
 

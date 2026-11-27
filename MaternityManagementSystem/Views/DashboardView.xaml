@@ -19,14 +19,14 @@
             <Setter Property="Width" Value="38"/>
             <Setter Property="Height" Value="38"/>
             <Setter Property="CornerRadius" Value="10"/>
-            <Setter Property="Background" Value="#F1EAF8"/>
+            <Setter Property="Background" Value="{DynamicResource AccentSurface}"/>
             <Setter Property="HorizontalAlignment" Value="Right"/>
             <Setter Property="VerticalAlignment" Value="Center"/>
         </Style>
 
         <Style x:Key="CardStyle" TargetType="Border">
-            <Setter Property="Background" Value="{StaticResource CardBackground}"/>
-            <Setter Property="BorderBrush" Value="{StaticResource CardBorder}"/>
+            <Setter Property="Background" Value="{DynamicResource SurfaceBackground}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource Border}"/>
             <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="CornerRadius" Value="14"/>
             <Setter Property="Padding" Value="20"/>
@@ -41,8 +41,8 @@
 
             <Style.Triggers>
                 <Trigger Property="IsMouseOver" Value="True">
-                    <Setter Property="Background" Value="#F7F3FC"/>
-                    <Setter Property="BorderBrush" Value="#B99AD9"/>
+                    <Setter Property="Background" Value="{DynamicResource InteractiveSurfaceHover}"/>
+                    <Setter Property="BorderBrush" Value="{DynamicResource PrimaryAccent}"/>
                 </Trigger>
             </Style.Triggers>
         </Style>
@@ -50,22 +50,22 @@
         <Style x:Key="SectionTitleStyle" TargetType="TextBlock">
             <Setter Property="FontSize" Value="16"/>
             <Setter Property="FontWeight" Value="SemiBold"/>
-            <Setter Property="Foreground" Value="{StaticResource MainText}"/>
+            <Setter Property="Foreground" Value="{DynamicResource PrimaryText}"/>
         </Style>
 
         <Style x:Key="SecondaryTextStyle" TargetType="TextBlock">
             <Setter Property="FontSize" Value="12"/>
-            <Setter Property="Foreground" Value="{StaticResource SecondaryText}"/>
+            <Setter Property="Foreground" Value="{DynamicResource SecondaryText}"/>
         </Style>
 
         <Style x:Key="MetricValueStyle" TargetType="TextBlock">
             <Setter Property="FontSize" Value="28"/>
             <Setter Property="FontWeight" Value="Bold"/>
-            <Setter Property="Foreground" Value="{StaticResource MainText}"/>
+            <Setter Property="Foreground" Value="{DynamicResource PrimaryText}"/>
         </Style>
 
         <Style x:Key="EmptyStateStyle" TargetType="TextBlock">
-            <Setter Property="Foreground" Value="{StaticResource SecondaryText}"/>
+            <Setter Property="Foreground" Value="{DynamicResource SecondaryText}"/>
             <Setter Property="FontSize" Value="12"/>
             <Setter Property="TextAlignment" Value="Center"/>
             <Setter Property="HorizontalAlignment" Value="Center"/>
@@ -76,7 +76,7 @@
 
     </UserControl.Resources>
 
-    <Grid Background="{StaticResource PageBackground}">
+    <Grid Background="{DynamicResource ContentBackground}">
 
         <!-- Main Dashboard Content -->
         <ScrollViewer VerticalScrollBarVisibility="Auto"
@@ -98,17 +98,17 @@
                         <TextBlock Text="GOLDDIE  ·  CLINIC MANAGEMENT"
                                    FontSize="10"
                                    FontWeight="SemiBold"
-                                   Foreground="{StaticResource PrimaryPurple}"/>
+                                   Foreground="{DynamicResource PrimaryAccent}"/>
 
                         <TextBlock Text="Dashboard"
                                    FontSize="28"
                                    FontWeight="Bold"
-                                   Foreground="{StaticResource MainText}"
+                                   Foreground="{DynamicResource PrimaryText}"
                                    Margin="0,5,0,0"/>
 
                         <TextBlock Text="Overview of your maternity clinic's activity."
                                    FontSize="13"
-                                   Foreground="{StaticResource SecondaryText}"
+                                   Foreground="{DynamicResource SecondaryText}"
                                    Margin="0,5,0,0"/>
 
                     </StackPanel>
@@ -118,7 +118,7 @@
                                 VerticalAlignment="Center"
                                 HorizontalAlignment="Right">
 
-                        <Border Background="#F1EAF8"
+                        <Border Background="{DynamicResource AccentSurface}"
                                 CornerRadius="8"
                                 Padding="14,8"
                                 HorizontalAlignment="Right">
@@ -126,7 +126,7 @@
                             <TextBlock Text="OVERVIEW"
                                        FontSize="10"
                                        FontWeight="SemiBold"
-                                       Foreground="{StaticResource PrimaryPurple}"/>
+                                       Foreground="{DynamicResource PrimaryAccent}"/>
 
                         </Border>
 
@@ -141,12 +141,12 @@
                             <ProgressBar IsIndeterminate="True"
                                          Width="55"
                                          Height="4"
-                                         Foreground="{StaticResource PrimaryPurple}"
+                                         Foreground="{DynamicResource PrimaryAccent}"
                                          VerticalAlignment="Center"/>
 
                             <TextBlock Text="Refreshing..."
                                        FontSize="11"
-                                       Foreground="{StaticResource SecondaryText}"
+                                       Foreground="{DynamicResource SecondaryText}"
                                        Margin="8,0,0,0"
                                        VerticalAlignment="Center"/>
 
@@ -203,7 +203,7 @@
                                     <TextBlock Text="&#xE77B;"
                                                FontFamily="Segoe MDL2 Assets"
                                                FontSize="17"
-                                               Foreground="{StaticResource PrimaryPurple}"
+                                               Foreground="{DynamicResource PrimaryAccent}"
                                                HorizontalAlignment="Center"
                                                VerticalAlignment="Center"/>
                                 </Border>
@@ -236,7 +236,7 @@
                                     <TextBlock Text="&#xE8D4;"
                                                FontFamily="Segoe MDL2 Assets"
                                                FontSize="17"
-                                               Foreground="{StaticResource PrimaryPurple}"
+                                               Foreground="{DynamicResource PrimaryAccent}"
                                                HorizontalAlignment="Center"
                                                VerticalAlignment="Center"/>
                                 </Border>
@@ -269,7 +269,7 @@
                                     <TextBlock Text="&#xE787;"
                                                FontFamily="Segoe MDL2 Assets"
                                                FontSize="17"
-                                               Foreground="{StaticResource PrimaryPurple}"
+                                               Foreground="{DynamicResource PrimaryAccent}"
                                                HorizontalAlignment="Center"
                                                VerticalAlignment="Center"/>
                                 </Border>
@@ -302,7 +302,7 @@
                                     <TextBlock Text="&#xE95E;"
                                                FontFamily="Segoe MDL2 Assets"
                                                FontSize="17"
-                                               Foreground="{StaticResource PrimaryPurple}"
+                                               Foreground="{DynamicResource PrimaryAccent}"
                                                HorizontalAlignment="Center"
                                                VerticalAlignment="Center"/>
                                 </Border>
@@ -568,12 +568,12 @@
                                             <Style.Triggers>
 
                                                 <Trigger Property="IsMouseOver" Value="True">
-                                                    <Setter Property="Background" Value="#F7F3FC"/>
+                                                    <Setter Property="Background" Value="{DynamicResource InteractiveSurfaceHover}"/>
                                                 </Trigger>
 
                                                 <Trigger Property="IsSelected" Value="True">
-                                                    <Setter Property="Background" Value="#EEE6F7"/>
-                                                    <Setter Property="Foreground" Value="#7952B3"/>
+                                                    <Setter Property="Background" Value="{DynamicResource SelectionBackground}"/>
+                                                    <Setter Property="Foreground" Value="{DynamicResource SelectionText}"/>
                                                 </Trigger>
 
                                             </Style.Triggers>
@@ -649,8 +649,8 @@
                                                 <DataTrigger Binding="{Binding IsSelected,
                                                     RelativeSource={RelativeSource AncestorType=DataGridRow}}"
                                                              Value="True">
-                                                    <Setter Property="Background" Value="#EEE6F7"/>
-                                                    <Setter Property="Foreground" Value="#7952B3"/>
+                                                    <Setter Property="Background" Value="{DynamicResource SelectionBackground}"/>
+                                                    <Setter Property="Foreground" Value="{DynamicResource SelectionText}"/>
                                                 </DataTrigger>
 
                                             </Style.Triggers>
@@ -725,7 +725,7 @@
 
         <!-- Initial Loading Overlay -->
         <Border Panel.ZIndex="10"
-                Background="#FFFFFF"
+                Background="{DynamicResource SurfaceBackground}"
                 Visibility="{Binding IsInitialLoading,
                     Converter={StaticResource BooleanToVisibilityConverter}}">
 
@@ -736,10 +736,10 @@
                 <ProgressBar IsIndeterminate="True"
                              Width="180"
                              Height="5"
-                             Foreground="{StaticResource PrimaryPurple}"/>
+                             Foreground="{DynamicResource PrimaryAccent}"/>
 
                 <TextBlock Text="Loading dashboard..."
-                           Foreground="{StaticResource SecondaryText}"
+                           Foreground="{DynamicResource SecondaryText}"
                            FontSize="13"
                            HorizontalAlignment="Center"
                            Margin="0,14,0,0"/>

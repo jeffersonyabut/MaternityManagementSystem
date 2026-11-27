@@ -327,6 +327,42 @@ Verification results:
 The next Milestone 4D work is review and visual verification of the monitoring page. Provider delivery-status lookup and
 operational handling for ambiguous outcomes remain separate future work.
 
+## Completed UI theme foundation (UI Redesign Stage 1)
+
+Added application-wide `Light`, `Dark`, and `System` theme preferences while preserving the existing MaterialDesign 3
+defaults and application shell:
+
+- Added matching Light and Dark resource dictionaries with semantic colors for shell surfaces, content, text, borders,
+  navigation, inputs, disabled text, validation, selection, and accent states. The active palette is replaced in the
+  application merged dictionaries, so existing and future `DynamicResource` consumers update immediately.
+- Added a theme service that applies explicit preferences or follows the Windows app theme. System mode reads the
+  current-user `AppsUseLightTheme` value, falls back to `SystemUsesLightTheme`, and listens for Windows user preference
+  change notifications. If Windows theme settings cannot be read, it falls back to Light.
+- Theme preference files are stored separately as
+  `%LocalAppData%\Golddie\Preferences\theme-{staffId}.json`. The store uses same-directory temporary files and
+  atomic replacement, contains only a theme name, and falls back to System for missing, malformed, or inaccessible
+  files. It does not use clinic SQLite or `SystemSettingRepository`.
+- After the existing login flow starts the session, `MainWindow` loads that session's staff ID preference before showing
+  the dashboard. A small Light/Dark/System selector in the existing dashboard top bar applies changes immediately and
+  saves them for the current staff account. Authentication, authorization, navigation, and session creation logic are
+  otherwise unchanged.
+- Migrated the shell and primary dashboard surfaces/text/selection states to semantic `DynamicResource` keys for
+  visual theme validation. Dashboard content, layout, navigation, bindings, commands, status meanings, report styling,
+  and other views remain unchanged.
+- No database schema, migration, production SQLite access, or SMS behavior changed.
+
+Verification results:
+
+- **Theme and authorization tests:** 15 passed, 0 failed, and 0 skipped (9 theme tests and 6 existing authorization
+  tests). The test build emitted 10 existing CS0108 report-view `BorderBrush` warnings.
+- **Solution build:** succeeded with 0 errors and 0 warnings on the final build.
+- **Diff check:** `git diff --check` passed.
+- **Manual WPF verification:** Light/Dark theme switching works in the running application without restarting.
+  Per-account preference restoration and live Windows System-theme detection were not manually verified.
+
+Remaining redesign work is the incremental migration of other workflow views and dialogs to shared semantic resources.
+Report/print styling remains separate from the application theme unless a later stage explicitly changes that scope.
+
 ## Remaining roadmap
 
 All items below are **pending**. Clinical policies and clinic workflow decisions remain subject to confirmation.

@@ -1,0 +1,35 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes">
+    <ResourceDictionary.MergedDictionaries>
+        <materialDesign:BundledTheme BaseTheme="Light"
+                                     PrimaryColor="DeepPurple"
+                                     SecondaryColor="DeepPurple" />
+    </ResourceDictionary.MergedDictionaries>
+
+    <SolidColorBrush x:Key="GolddieThemePaletteMarker" Color="#FFF5F6FA" />
+    <SolidColorBrush x:Key="AppBackground" Color="#FFF5F6FA" />
+    <SolidColorBrush x:Key="ContentBackground" Color="#FFF5F6FA" />
+    <SolidColorBrush x:Key="SurfaceBackground" Color="#FFFFFFFF" />
+    <SolidColorBrush x:Key="AccentSurface" Color="#FFF1EAF8" />
+    <SolidColorBrush x:Key="InteractiveSurfaceHover" Color="#FFF7F3FC" />
+    <SolidColorBrush x:Key="SelectionBackground" Color="#FFEEE6F7" />
+    <SolidColorBrush x:Key="SelectionText" Color="#FF7952B3" />
+    <SolidColorBrush x:Key="PrimaryText" Color="#FF25243A" />
+    <SolidColorBrush x:Key="SecondaryText" Color="#FF77758B" />
+    <SolidColorBrush x:Key="Border" Color="#FFE8E7EF" />
+    <SolidColorBrush x:Key="SidebarBackground" Color="#FF25243A" />
+    <SolidColorBrush x:Key="NavigationText" Color="#FFE4E2F0" />
+    <SolidColorBrush x:Key="NavigationSelectedBackground" Color="#FF6554C0" />
+    <SolidColorBrush x:Key="NavigationSelectedText" Color="#FFFFFFFF" />
+    <SolidColorBrush x:Key="NavigationHoverBackground" Color="#FF393750" />
+    <SolidColorBrush x:Key="NavigationPressedBackground" Color="#FF4A456B" />
+    <SolidColorBrush x:Key="PrimaryAccent" Color="#FF6554C0" />
+    <SolidColorBrush x:Key="InputBackground" Color="#FFFFFFFF" />
+    <SolidColorBrush x:Key="InputBorder" Color="#FFD6D5DF" />
+    <SolidColorBrush x:Key="DisabledText" Color="#FF9998A6" />
+    <SolidColorBrush x:Key="ValidationErrorBackground" Color="#FFFFF1F0" />
+    <SolidColorBrush x:Key="ValidationErrorBorder" Color="#FFF0C7C3" />
+    <SolidColorBrush x:Key="ValidationErrorText" Color="#FF9D3029" />
+    <SolidColorBrush x:Key="ValidationSuccessText" Color="#FF287A45" />
+</ResourceDictionary>

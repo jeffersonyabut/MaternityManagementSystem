@@ -1,17 +1,18 @@
 <Window x:Class="MaternityManagementSystem.Views.DashboardWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:themes="clr-namespace:MaternityManagementSystem.Themes"
         Title="Golddie | Clinic Management"
         Height="720"
         Width="1200"
         MinHeight="600"
         MinWidth="950"
         WindowStartupLocation="CenterScreen"
-        Background="#F5F6FA">
+        Background="{DynamicResource AppBackground}">
 
     <Window.Resources>
         <Style x:Key="SidebarButtonStyle" TargetType="{x:Type Button}">
-            <Setter Property="Foreground" Value="#E4E2F0"/>
+            <Setter Property="Foreground" Value="{DynamicResource NavigationText}"/>
             <Setter Property="Background" Value="Transparent"/>
             <Setter Property="BorderThickness" Value="0"/>
             <Setter Property="FontSize" Value="14"/>
@@ -40,13 +41,13 @@
                             <Trigger Property="IsMouseOver" Value="True">
                                 <Setter TargetName="ButtonBorder"
                                         Property="Background"
-                                        Value="#393750"/>
+                                        Value="{DynamicResource NavigationHoverBackground}"/>
                             </Trigger>
 
                             <Trigger Property="IsPressed" Value="True">
                                 <Setter TargetName="ButtonBorder"
                                         Property="Background"
-                                        Value="#4A456B"/>
+                                        Value="{DynamicResource NavigationPressedBackground}"/>
                             </Trigger>
 
                             <Trigger Property="IsEnabled" Value="False">
@@ -67,7 +68,7 @@
 
         <!-- Persistent Sidebar -->
         <Border Grid.Column="0"
-                Background="#25243A">
+                Background="{DynamicResource SidebarBackground}">
 
             <DockPanel LastChildFill="True">
 
@@ -84,7 +85,7 @@
                                Text="Maternity Clinic"
                                FontSize="10"
                                FontWeight="SemiBold"
-                               Foreground="#B9B7D1"
+                               Foreground="{DynamicResource SecondaryText}"
                                Margin="2,6,0,0"
                                TextWrapping="Wrap"/>
                 </StackPanel>
@@ -96,7 +97,7 @@
                     <TextBlock Text="WORKSPACE"
                                FontSize="11"
                                FontWeight="SemiBold"
-                               Foreground="#A7A5BF"
+                               Foreground="{DynamicResource SecondaryText}"
                                Margin="24,0,0,12"/>
 
                     <!-- Dashboard Navigation Button -->
@@ -112,9 +113,9 @@
                                     <DataTrigger Binding="{Binding CurrentPage}"
                                                  Value="DashboardView">
                                         <Setter Property="Background"
-                                                Value="#6554C0"/>
+                                                Value="{DynamicResource NavigationSelectedBackground}"/>
                                         <Setter Property="Foreground"
-                                                Value="White"/>
+                                                Value="{DynamicResource NavigationSelectedText}"/>
                                     </DataTrigger>
                                 </Style.Triggers>
 
@@ -135,9 +136,9 @@
                                     <DataTrigger Binding="{Binding CurrentPage}"
                                                  Value="PatientsView">
                                         <Setter Property="Background"
-                                                Value="#6554C0"/>
+                                                Value="{DynamicResource NavigationSelectedBackground}"/>
                                         <Setter Property="Foreground"
-                                                Value="White"/>
+                                                Value="{DynamicResource NavigationSelectedText}"/>
                                     </DataTrigger>
                                 </Style.Triggers>
 
@@ -161,18 +162,18 @@
                                     <DataTrigger Binding="{Binding CurrentPage}"
                                                  Value="AppointmentOverviewView">
                                         <Setter Property="Background"
-                                                Value="#6554C0"/>
+                                                Value="{DynamicResource NavigationSelectedBackground}"/>
                                         <Setter Property="Foreground"
-                                                Value="White"/>
+                                                Value="{DynamicResource NavigationSelectedText}"/>
                                     </DataTrigger>
 
                                     <!-- Highlight Appointment Registration -->
                                     <DataTrigger Binding="{Binding CurrentPage}"
                                                  Value="AppointmentRegistrationView">
                                         <Setter Property="Background"
-                                                Value="#6554C0"/>
+                                                Value="{DynamicResource NavigationSelectedBackground}"/>
                                         <Setter Property="Foreground"
-                                                Value="White"/>
+                                                Value="{DynamicResource NavigationSelectedText}"/>
                                     </DataTrigger>
 
                                 </Style.Triggers>
@@ -194,9 +195,9 @@
                                     <DataTrigger Binding="{Binding CurrentPage}"
                                                  Value="ReportsView">
                                         <Setter Property="Background"
-                                                Value="#6554C0"/>
+                                                Value="{DynamicResource NavigationSelectedBackground}"/>
                                         <Setter Property="Foreground"
-                                                Value="White"/>
+                                                Value="{DynamicResource NavigationSelectedText}"/>
                                     </DataTrigger>
                                 </Style.Triggers>
 
@@ -219,9 +220,9 @@
                                     <DataTrigger Binding="{Binding CurrentPage}"
                                                  Value="StaffManagementView">
                                         <Setter Property="Background"
-                                                Value="#6554C0"/>
+                                                Value="{DynamicResource NavigationSelectedBackground}"/>
                                         <Setter Property="Foreground"
-                                                Value="White"/>
+                                                Value="{DynamicResource NavigationSelectedText}"/>
                                     </DataTrigger>
                                 </Style.Triggers>
 
@@ -244,9 +245,9 @@
                                     <DataTrigger Binding="{Binding CurrentPage}"
                                                  Value="AuditLogManagementView">
                                         <Setter Property="Background"
-                                                Value="#6554C0"/>
+                                                Value="{DynamicResource NavigationSelectedBackground}"/>
                                         <Setter Property="Foreground"
-                                                Value="White"/>
+                                                Value="{DynamicResource NavigationSelectedText}"/>
                                     </DataTrigger>
                                 </Style.Triggers>
 
@@ -270,9 +271,9 @@
                                     <DataTrigger Binding="{Binding CurrentPage}"
                                                  Value="AppointmentSmsReminderMonitoringView">
                                         <Setter Property="Background"
-                                                Value="#6554C0"/>
+                                                Value="{DynamicResource NavigationSelectedBackground}"/>
                                         <Setter Property="Foreground"
-                                                Value="White"/>
+                                                Value="{DynamicResource NavigationSelectedText}"/>
                                     </DataTrigger>
                                 </Style.Triggers>
 
@@ -295,9 +296,9 @@
                                     <DataTrigger Binding="{Binding CurrentPage}"
                                                  Value="SystemSettingsView">
                                         <Setter Property="Background"
-                                                Value="#6554C0"/>
+                                                Value="{DynamicResource NavigationSelectedBackground}"/>
                                         <Setter Property="Foreground"
-                                                Value="White"/>
+                                                Value="{DynamicResource NavigationSelectedText}"/>
                                     </DataTrigger>
                                 </Style.Triggers>
 
@@ -356,14 +357,15 @@
 
             <!-- Top Bar -->
             <Border Grid.Row="0"
-                    Background="White"
+                    Background="{DynamicResource SurfaceBackground}"
                     Padding="28,0"
-                    BorderBrush="#E8E7EF"
+                    BorderBrush="{DynamicResource Border}"
                     BorderThickness="0,0,0,1">
 
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
 
@@ -371,10 +373,33 @@
                                Text="Clinic Management"
                                FontSize="18"
                                FontWeight="SemiBold"
-                               Foreground="#25243A"
+                               Foreground="{DynamicResource PrimaryText}"
                                VerticalAlignment="Center"/>
 
                     <StackPanel Grid.Column="1"
+                                Orientation="Horizontal"
+                                VerticalAlignment="Center"
+                                Margin="0,0,24,0">
+                        <TextBlock Text="Theme"
+                                   VerticalAlignment="Center"
+                                   Foreground="{DynamicResource SecondaryText}"
+                                   Margin="0,0,8,0"/>
+                        <ComboBox x:Name="ThemePreferenceComboBox"
+                                  Width="112"
+                                  Height="32"
+                                  VerticalContentAlignment="Center"
+                                  SelectedValuePath="Tag"
+                                  SelectionChanged="ThemePreferenceComboBox_SelectionChanged">
+                            <ComboBoxItem Content="System"
+                                          Tag="{x:Static themes:ThemePreference.System}"/>
+                            <ComboBoxItem Content="Light"
+                                          Tag="{x:Static themes:ThemePreference.Light}"/>
+                            <ComboBoxItem Content="Dark"
+                                          Tag="{x:Static themes:ThemePreference.Dark}"/>
+                        </ComboBox>
+                    </StackPanel>
+
+                    <StackPanel Grid.Column="2"
                                 VerticalAlignment="Center"
                                 HorizontalAlignment="Right">
 
@@ -382,12 +407,12 @@
                                    Text="Signed in"
                                    FontSize="13"
                                    FontWeight="SemiBold"
-                                   Foreground="#25243A"
+                                   Foreground="{DynamicResource PrimaryText}"
                                    HorizontalAlignment="Right"/>
 
                         <TextBlock Text="Active session"
                                    FontSize="11"
-                                   Foreground="#77758B"
+                                   Foreground="{DynamicResource SecondaryText}"
                                    HorizontalAlignment="Right"
                                    Margin="0,3,0,0"/>
 

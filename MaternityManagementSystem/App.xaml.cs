@@ -3,6 +3,7 @@ using MaternityManagementSystem.Services;
 using MaternityManagementSystem.Repositories;
 using MaternityManagementSystem.Views;
 using MaternityManagementSystem.Data;
+using MaternityManagementSystem.Themes;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Linq;
@@ -25,6 +26,8 @@ public partial class App : Application
 
     public SessionService SessionService { get; } = new();
 
+    public ThemeService ThemeService { get; private set; } = null!;
+
     public RegionalSettingsService RegionalSettings { get; } =
         new(new SystemSettingRepository());
 
@@ -38,6 +41,11 @@ public partial class App : Application
 
         try
         {
+            ThemeService = new ThemeService(
+                new ThemePreferenceStore(),
+                new WindowsSystemThemeMonitor(Dispatcher),
+                new WpfThemeResourceApplier(Resources));
+
             await InitializeDatabaseAsync();
 
             // Initialize missing system settings.
@@ -128,6 +136,8 @@ public partial class App : Application
 
     protected override void OnExit(ExitEventArgs e)
     {
+        ThemeService?.Dispose();
+
         bool workerStopped = true;
         if (_reminderWorkerCancellation is not null && _reminderWorkerTask is not null)
         {

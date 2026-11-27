@@ -8,6 +8,7 @@ using MaternityManagementSystem.Navigation;
 using MaternityManagementSystem.Repositories;
 using MaternityManagementSystem.Services;
 using MaternityManagementSystem.Services.Reports;
+using MaternityManagementSystem.Themes;
 using MaternityManagementSystem.ViewModels;
 using MaternityManagementSystem.ViewModels.Reports;
 using MaternityManagementSystem.Views;
@@ -18,6 +19,8 @@ namespace MaternityManagementSystem.Views;
 public partial class DashboardWindow : Window
 {
     private readonly SessionService _sessionService;
+    private readonly ThemeService _themeService;
+    private bool _isInitializingThemeSelector = true;
 
     private readonly NavigationService _navigationService =
         new NavigationService();
@@ -31,6 +34,10 @@ public partial class DashboardWindow : Window
         InitializeComponent();
 
         _sessionService = sessionService;
+        _themeService = ((App)Application.Current).ThemeService;
+
+        ThemePreferenceComboBox.SelectedValue = _themeService.Preference;
+        _isInitializingThemeSelector = false;
 
         _sessionService.SessionExpired += SessionService_SessionExpired;
         Closed += DashboardWindow_Closed;
@@ -676,6 +683,19 @@ public partial class DashboardWindow : Window
         RoutedEventArgs e)
     {
         ShowSmsReminderMonitoring();
+    }
+
+    private void ThemePreferenceComboBox_SelectionChanged(
+        object sender,
+        SelectionChangedEventArgs e)
+    {
+        if (_isInitializingThemeSelector ||
+            ThemePreferenceComboBox.SelectedValue is not ThemePreference preference)
+        {
+            return;
+        }
+
+        _themeService.SetPreference(preference);
     }
 
     private void SystemSettingsButton_Click(
