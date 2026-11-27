@@ -82,10 +82,22 @@ public sealed class AppointmentSmsReminderDispatchService
             }
 
             claimedCount++;
-            await DispatchClaimedReminderAsync(
-                candidate.Id,
-                nowUtc,
-                cancellationToken);
+            try
+            {
+                await DispatchClaimedReminderAsync(
+                    candidate.Id,
+                    nowUtc,
+                    cancellationToken);
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                throw;
+            }
+            catch (Exception)
+            {
+                // A failed reminder does not prevent other due reminders
+                // from being considered during this pass.
+            }
         }
 
         return claimedCount;
@@ -94,6 +106,58 @@ public sealed class AppointmentSmsReminderDispatchService
     private async Task DispatchClaimedReminderAsync(
         int reminderId,
         DateTime? validationTimeOverrideUtc,
+        CancellationToken cancellationToken)
+    {
+        bool requestMayHaveStarted = false;
+        try
+        {
+            await DispatchClaimedReminderCoreAsync(
+                reminderId,
+                validationTimeOverrideUtc,
+                () => requestMayHaveStarted = true,
+                cancellationToken);
+        }
+        catch (OperationCanceledException)
+        {
+            if (requestMayHaveStarted)
+            {
+                await PersistOutcomeAsync(
+                    reminderId,
+                    new UniSmsApiResult(
+                        UniSmsOutcome.Unknown,
+                        FailureCode: "request_interrupted"),
+                    CancellationToken.None);
+            }
+            else
+            {
+                await _reminderRepository.ReleaseClaimedReminderBeforeRequestAsync(
+                    reminderId,
+                    DateTime.UtcNow,
+                    CancellationToken.None);
+            }
+
+            throw;
+        }
+        catch (Exception)
+        {
+            if (requestMayHaveStarted)
+            {
+                await PersistOutcomeAsync(
+                    reminderId,
+                    new UniSmsApiResult(
+                        UniSmsOutcome.Unknown,
+                        FailureCode: "dispatch_error"),
+                    CancellationToken.None);
+            }
+
+            throw;
+        }
+    }
+
+    private async Task DispatchClaimedReminderCoreAsync(
+        int reminderId,
+        DateTime? validationTimeOverrideUtc,
+        Action requestStarting,
         CancellationToken cancellationToken)
     {
         AppointmentSmsReminder? reminder =
@@ -166,32 +230,14 @@ public sealed class AppointmentSmsReminderDispatchService
             reminder.Appointment.AppointmentDate,
             reminder.Appointment.StartTime);
 
-        UniSmsApiResult result;
-        try
-        {
-            // No database context or transaction is open across this call.
-            result = await _uniSmsClient.SendAppointmentReminderAsync(
-                reminder.Appointment.Patient.ContactNumber!,
-                content,
-                cancellationToken);
-        }
-        catch (OperationCanceledException)
-        {
-            await PersistOutcomeAsync(
-                reminder.Id,
-                new UniSmsApiResult(
-                    UniSmsOutcome.Unknown,
-                    FailureCode: "request_interrupted"),
-                cancellationToken: CancellationToken.None);
-
-            throw;
-        }
-        catch (Exception)
-        {
-            result = new UniSmsApiResult(
-                UniSmsOutcome.Unknown,
-                FailureCode: "dispatch_error");
-        }
+        // No database context or transaction is open across this call. The
+        // callback marks the conservative request-start boundary immediately
+        // before HttpClient.SendAsync is invoked by UniSmsClient.
+        UniSmsApiResult result = await _uniSmsClient.SendAppointmentReminderAsync(
+            reminder.Appointment.Patient.ContactNumber!,
+            content,
+            cancellationToken,
+            requestStarting);
 
         await PersistOutcomeAsync(
             reminder.Id,

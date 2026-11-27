@@ -18,7 +18,8 @@ public interface IUniSmsClient
     Task<UniSmsApiResult> SendAppointmentReminderAsync(
         string recipient,
         string content,
-        CancellationToken cancellationToken = default);
+        CancellationToken cancellationToken = default,
+        Action? requestStarting = null);
 
     Task<UniSmsApiResult> GetDeliveryStatusAsync(
         string referenceId,
@@ -56,11 +57,11 @@ public sealed class UniSmsClient : IUniSmsClient
     private static readonly JsonSerializerOptions JsonOptions =
         new(JsonSerializerDefaults.Web);
 
-    private readonly UniSmsCredentialService _credentialService;
+    private readonly IUniSmsCredentialProvider _credentialService;
     private readonly HttpClient _httpClient;
 
     public UniSmsClient(
-        UniSmsCredentialService credentialService,
+        IUniSmsCredentialProvider credentialService,
         HttpClient? httpClient = null)
     {
         ArgumentNullException.ThrowIfNull(credentialService);
@@ -112,6 +113,7 @@ public sealed class UniSmsClient : IUniSmsClient
                 recipient,
                 TestMessage,
                 requireReferenceId: false,
+                requestStarting: null,
                 cancellationToken);
             return MapTestResult(result);
         }
@@ -124,7 +126,8 @@ public sealed class UniSmsClient : IUniSmsClient
     public async Task<UniSmsApiResult> SendAppointmentReminderAsync(
         string recipient,
         string content,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        Action? requestStarting = null)
     {
         if (!IsPhilippineMobileNumber(recipient))
         {
@@ -171,6 +174,7 @@ public sealed class UniSmsClient : IUniSmsClient
                 recipient,
                 content,
                 requireReferenceId: true,
+                requestStarting,
                 cancellationToken);
         }
         finally
@@ -264,6 +268,7 @@ public sealed class UniSmsClient : IUniSmsClient
         string recipient,
         string content,
         bool requireReferenceId,
+        Action? requestStarting,
         CancellationToken cancellationToken)
     {
         try
@@ -275,6 +280,8 @@ public sealed class UniSmsClient : IUniSmsClient
                 Encoding.UTF8,
                 "application/json");
 
+            cancellationToken.ThrowIfCancellationRequested();
+            requestStarting?.Invoke();
             using HttpResponseMessage response = await _httpClient.SendAsync(
                 request,
                 HttpCompletionOption.ResponseHeadersRead,

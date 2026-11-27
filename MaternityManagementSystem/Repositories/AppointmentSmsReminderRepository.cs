@@ -250,6 +250,31 @@ public sealed class AppointmentSmsReminderRepository
                 cancellationToken) == 1;
     }
 
+    public async Task<bool> ReleaseClaimedReminderBeforeRequestAsync(
+        int reminderId,
+        DateTime changedAtUtc,
+        CancellationToken cancellationToken = default)
+    {
+        changedAtUtc = TreatAsUtc(changedAtUtc);
+        await using var context = await CreateDbContextAsync(cancellationToken);
+
+        return await context.AppointmentSmsReminders
+            .Where(reminder =>
+                reminder.Id == reminderId &&
+                reminder.Status == AppointmentSmsReminderStatus.Sending)
+            .ExecuteUpdateAsync(update => update
+                .SetProperty(reminder => reminder.Status,
+                    AppointmentSmsReminderStatus.Pending)
+                .SetProperty(reminder => reminder.AttemptStartedAtUtc,
+                    (DateTime?)null)
+                .SetProperty(reminder => reminder.StatusChangedAtUtc, changedAtUtc)
+                .SetProperty(reminder => reminder.FinalizedAtUtc, (DateTime?)null)
+                .SetProperty(reminder => reminder.SanitizedOutcomeCode, (string?)null)
+                .SetProperty(reminder => reminder.ProviderReference, (string?)null)
+                .SetProperty(reminder => reminder.ProviderStatus, (string?)null),
+                cancellationToken) == 1;
+    }
+
     public async Task<int> SupersedePendingForOldRevisionsAsync(
         int appointmentId,
         int currentScheduleRevision,

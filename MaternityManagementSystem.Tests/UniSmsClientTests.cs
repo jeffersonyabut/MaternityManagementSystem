@@ -284,48 +284,15 @@ public class UniSmsClientTests
     {
         var database = await TestDatabase.CreateAsync();
         var directory = TemporaryDirectory.Create();
-        int staffId;
-        string securityStamp;
-        string username = $"unisms-client-test-{Guid.NewGuid():N}";
-
-        await using (var context = await database.Factory.CreateDbContextAsync())
-        {
-            var staff = new Staff
-            {
-                Username = username,
-                NormalizedUsername = UsernameNormalizer.Normalize(username),
-                PasswordHash = "unused-test-hash",
-                Role = role,
-                IsActive = true
-            };
-
-            context.StaffMembers.Add(staff);
-            await context.SaveChangesAsync();
-            staffId = staff.Id;
-            securityStamp = staff.SecurityStamp;
-        }
-
-        var session = new SessionService();
-        session.StartSession(new UserSession(staffId, username, role, securityStamp));
-        var authorization = new AuthorizationService(
-            session,
-            new StaffRepository(database.Factory));
-        var credentials = new UniSmsCredentialService(
-            authorization,
-            Path.Combine(directory.Path, "unisms-api-key.dat"));
-
-        if (apiKey is not null && role == StaffRoles.Admin)
-        {
-            await credentials.SaveApiKeyAsync(apiKey);
-        }
-
         var httpClient = new HttpClient(handler);
 
         return new TestHarness(
             database,
             directory,
             httpClient,
-            new UniSmsClient(credentials, httpClient));
+            new UniSmsClient(
+                new FakeCredentialProvider(apiKey, role == StaffRoles.Admin),
+                httpClient));
     }
 
     private static HttpResponseMessage JsonResponse(
@@ -361,6 +328,28 @@ public class UniSmsClientTests
                 : await request.Content.ReadAsStringAsync(cancellationToken);
 
             return await responseFactory(request, cancellationToken);
+        }
+    }
+
+    private sealed class FakeCredentialProvider(string? apiKey, bool isAdmin)
+        : IUniSmsCredentialProvider
+    {
+        public Task<string?> GetApiKeyAsync(
+            CancellationToken cancellationToken = default)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            if (!isAdmin)
+            {
+                throw new UnauthorizedAccessException();
+            }
+            return Task.FromResult(apiKey);
+        }
+
+        public Task<string?> GetApiKeyForWorkerAsync(
+            CancellationToken cancellationToken = default)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            return Task.FromResult(apiKey);
         }
     }
 

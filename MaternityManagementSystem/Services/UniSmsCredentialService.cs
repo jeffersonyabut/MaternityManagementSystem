@@ -4,7 +4,13 @@ using System.Text;
 
 namespace MaternityManagementSystem.Services;
 
-public sealed class UniSmsCredentialService
+public interface IUniSmsCredentialProvider
+{
+    Task<string?> GetApiKeyAsync(CancellationToken cancellationToken = default);
+    Task<string?> GetApiKeyForWorkerAsync(CancellationToken cancellationToken = default);
+}
+
+public sealed class UniSmsCredentialService : IUniSmsCredentialProvider
 {
     private static readonly byte[] Entropy =
         Encoding.UTF8.GetBytes("Golddie.UniSMS.ApiKey.v1");

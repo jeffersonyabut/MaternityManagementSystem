@@ -7,12 +7,16 @@ using Microsoft.EntityFrameworkCore;
 using System;
 using System.Linq;
 using System.Threading.Tasks;
+using System.Threading;
 using System.Windows;
 
 namespace MaternityManagementSystem;
 
 public partial class App : Application
 {
+    private static readonly TimeSpan WorkerShutdownTimeout = TimeSpan.FromSeconds(5);
+    private CancellationTokenSource? _reminderWorkerCancellation;
+    private Task? _reminderWorkerTask;
     private const string NormalizedUsernameColumnMigration =
         "20261125035926_AddNormalizedUsernameColumn";
 
@@ -44,15 +48,8 @@ public partial class App : Application
 
             // Run a single catch-up reconciliation at startup. This schedules
             // and suppresses local records only; it does not contact UniSMS.
-            try
-            {
-                await ReminderService.ReconcileAllAsync();
-            }
-            catch (Exception)
-            {
-                System.Diagnostics.Debug.WriteLine(
-                    "Appointment reminder reconciliation will be retried at the next application startup.");
-            }
+            Task reminderReconciliation = ReconcileRemindersSafelyAsync();
+            await reminderReconciliation;
 
             // Check whether an administrator/staff account exists.
             var repository = new StaffRepository();
@@ -76,6 +73,8 @@ public partial class App : Application
 
             MainWindow = mainWindow;
             mainWindow.Show();
+
+            StartReminderWorker(reminderReconciliation);
         }
         catch (Exception ex)
         {
@@ -87,6 +86,62 @@ public partial class App : Application
 
             Shutdown();
         }
+    }
+
+    private async Task ReconcileRemindersSafelyAsync()
+    {
+        try
+        {
+            await ReminderService.ReconcileAllAsync();
+        }
+        catch (Exception)
+        {
+            System.Diagnostics.Debug.WriteLine(
+                "Appointment reminder reconciliation will be retried at the next application startup.");
+        }
+    }
+
+    private void StartReminderWorker(Task reminderReconciliation)
+    {
+        var contextFactory = new ClinicDbContextFactory();
+        var reminderRepository = new AppointmentSmsReminderRepository(contextFactory);
+        var settingsRepository = new SystemSettingRepository(contextFactory);
+        var schedulingService = new AppointmentSmsReminderService(
+            reminderRepository,
+            settingsRepository);
+        var authorizationService = new AuthorizationService(
+            SessionService,
+            new StaffRepository());
+        var credentialService = new UniSmsCredentialService(authorizationService);
+        var dispatchService = new AppointmentSmsReminderDispatchService(
+            schedulingService,
+            reminderRepository,
+            settingsRepository,
+            new UniSmsClient(credentialService));
+
+        _reminderWorkerCancellation = new CancellationTokenSource();
+        var worker = new AppointmentSmsReminderWorker(dispatchService);
+        _reminderWorkerTask = Task.Run(() => worker.RunAfterReconciliationAsync(
+            reminderReconciliation,
+            _reminderWorkerCancellation.Token));
+    }
+
+    protected override void OnExit(ExitEventArgs e)
+    {
+        bool workerStopped = true;
+        if (_reminderWorkerCancellation is not null && _reminderWorkerTask is not null)
+        {
+            workerStopped = AppointmentSmsReminderWorker.Stop(
+                _reminderWorkerCancellation,
+                _reminderWorkerTask,
+                WorkerShutdownTimeout);
+        }
+
+        if (workerStopped)
+        {
+            _reminderWorkerCancellation?.Dispose();
+        }
+        base.OnExit(e);
     }
 
     private static async Task InitializeDatabaseAsync()

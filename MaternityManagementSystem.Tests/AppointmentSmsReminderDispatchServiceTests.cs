@@ -277,6 +277,114 @@ public class AppointmentSmsReminderDispatchServiceTests
     }
 
     [Fact]
+    public async Task DispatchDue_CancellationBeforeRequestStartReleasesReminderForRetry()
+    {
+        using var cancellation = new CancellationTokenSource();
+        var client = new BoundaryCancellationUniSmsClient(
+            cancellation,
+            markRequestStarted: false);
+        await using var fixture = await DispatchFixture.CreateAsync();
+        await fixture.CreateDueReminderAsync();
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
+            fixture.CreateDispatchService(client).DispatchDueRemindersAsync(
+                NowUtc,
+                cancellation.Token));
+
+        await using var context = await fixture.Database.Factory.CreateDbContextAsync();
+        Assert.Equal(AppointmentSmsReminderStatus.Pending,
+            (await context.AppointmentSmsReminders.SingleAsync(
+                item => item.ReminderType == AppointmentSmsReminderType.Advance3Day)).Status);
+        Assert.Equal(0, client.RequestStartedCount);
+    }
+
+    [Fact]
+    public async Task DispatchDue_CancellationAfterRequestStartPersistsUnknown()
+    {
+        using var cancellation = new CancellationTokenSource();
+        var client = new BoundaryCancellationUniSmsClient(
+            cancellation,
+            markRequestStarted: true);
+        await using var fixture = await DispatchFixture.CreateAsync();
+        await fixture.CreateDueReminderAsync();
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
+            fixture.CreateDispatchService(client).DispatchDueRemindersAsync(
+                NowUtc,
+                cancellation.Token));
+        await fixture.CreateDispatchService(new FakeUniSmsClient())
+            .DispatchDueRemindersAsync(NowUtc.AddMinutes(1));
+
+        await using var context = await fixture.Database.Factory.CreateDbContextAsync();
+        Assert.Equal(AppointmentSmsReminderStatus.Unknown,
+            (await context.AppointmentSmsReminders.SingleAsync(
+                item => item.ReminderType == AppointmentSmsReminderType.Advance3Day)).Status);
+        Assert.Equal(1, client.RequestStartedCount);
+    }
+
+    [Fact]
+    public async Task DispatchDue_CancellationDuringResponseReadPersistsUnknown()
+    {
+        var requestHandled = new TaskCompletionSource(
+            TaskCreationOptions.RunContinuationsAsynchronously);
+        using var handler = new FakeHttpMessageHandler((_, _) =>
+        {
+            requestHandled.TrySetResult();
+            return Task.FromResult(new HttpResponseMessage(HttpStatusCode.Created)
+            {
+                Content = new StreamContent(new BlockingReadStream())
+            });
+        });
+        await using var fixture = await DispatchFixture.CreateAsync();
+        await fixture.CreateDueReminderAsync();
+        using var httpClient = new HttpClient(handler);
+        UniSmsClient client = await fixture.CreateUniSmsClientAsync(httpClient);
+        using var cancellation = new CancellationTokenSource();
+
+        Task dispatch = fixture.CreateDispatchService(client)
+            .DispatchDueRemindersAsync(NowUtc, cancellation.Token);
+        await requestHandled.Task;
+        cancellation.Cancel();
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => dispatch);
+
+        await using var context = await fixture.Database.Factory.CreateDbContextAsync();
+        var reminder = await context.AppointmentSmsReminders.SingleAsync(
+            item => item.ReminderType == AppointmentSmsReminderType.Advance3Day);
+        Assert.Equal(AppointmentSmsReminderStatus.Unknown, reminder.Status);
+        Assert.Equal("request_interrupted", reminder.SanitizedOutcomeCode);
+    }
+
+    [Fact]
+    public async Task DispatchDue_FailedOutcomePersistenceLeavesSendingNonRetryable()
+    {
+        var client = new FakeUniSmsClient();
+        await using var fixture = await DispatchFixture.CreateAsync();
+        await fixture.CreateDueReminderAsync();
+        await using (var context = await fixture.Database.Factory.CreateDbContextAsync())
+        {
+            await context.Database.ExecuteSqlRawAsync(
+                """
+                CREATE TRIGGER FailReminderFinalization
+                BEFORE UPDATE OF Status ON AppointmentSmsReminders
+                WHEN OLD.Status = 'Sending' AND NEW.Status <> 'Sending'
+                BEGIN
+                    SELECT RAISE(ABORT, 'simulated persistence failure');
+                END;
+                """);
+        }
+
+        var service = fixture.CreateDispatchService(client);
+        await service.DispatchDueRemindersAsync(NowUtc);
+        await service.DispatchDueRemindersAsync(NowUtc.AddMinutes(1));
+
+        Assert.Equal(1, client.SendCount);
+        await using var verify = await fixture.Database.Factory.CreateDbContextAsync();
+        Assert.Equal(AppointmentSmsReminderStatus.Sending,
+            (await verify.AppointmentSmsReminders.SingleAsync(
+                item => item.ReminderType == AppointmentSmsReminderType.Advance3Day)).Status);
+    }
+
+    [Fact]
     public async Task DispatchDue_ConcurrentPassesSendOnlyOneRequest()
     {
         var client = new FakeUniSmsClient();
@@ -406,13 +514,49 @@ public class AppointmentSmsReminderDispatchServiceTests
         public Task<UniSmsApiResult> SendAppointmentReminderAsync(
             string recipient,
             string content,
-            CancellationToken cancellationToken = default)
+            CancellationToken cancellationToken = default,
+            Action? requestStarting = null)
         {
+            cancellationToken.ThrowIfCancellationRequested();
+            requestStarting?.Invoke();
             Interlocked.Increment(ref _sendCount);
             return Task.FromResult(result ?? new UniSmsApiResult(
                 UniSmsOutcome.Accepted,
                 "msg_fake_123",
                 "pending"));
+        }
+
+        public Task<UniSmsApiResult> GetDeliveryStatusAsync(
+            string referenceId,
+            CancellationToken cancellationToken = default) =>
+            throw new NotSupportedException();
+    }
+
+    private sealed class BoundaryCancellationUniSmsClient(
+        CancellationTokenSource cancellation,
+        bool markRequestStarted) : IUniSmsClient
+    {
+        public int RequestStartedCount { get; private set; }
+
+        public Task<UniSmsSendResult> SendTestSmsAsync(
+            string recipient,
+            CancellationToken cancellationToken = default) =>
+            throw new NotSupportedException();
+
+        public Task<UniSmsApiResult> SendAppointmentReminderAsync(
+            string recipient,
+            string content,
+            CancellationToken cancellationToken = default,
+            Action? requestStarting = null)
+        {
+            if (markRequestStarted)
+            {
+                requestStarting?.Invoke();
+                RequestStartedCount++;
+            }
+
+            cancellation.Cancel();
+            throw new OperationCanceledException(cancellationToken);
         }
 
         public Task<UniSmsApiResult> GetDeliveryStatusAsync(
@@ -436,6 +580,42 @@ public class AppointmentSmsReminderDispatchServiceTests
                 : await request.Content.ReadAsStringAsync(cancellationToken);
             return await response(request, cancellationToken);
         }
+    }
+
+    private sealed class BlockingReadStream : Stream
+    {
+        public override bool CanRead => true;
+        public override bool CanSeek => false;
+        public override bool CanWrite => false;
+        public override long Length => throw new NotSupportedException();
+        public override long Position
+        {
+            get => throw new NotSupportedException();
+            set => throw new NotSupportedException();
+        }
+        public override void Flush() => throw new NotSupportedException();
+        public override int Read(byte[] buffer, int offset, int count) =>
+            throw new NotSupportedException();
+        public override long Seek(long offset, SeekOrigin origin) =>
+            throw new NotSupportedException();
+        public override void SetLength(long value) => throw new NotSupportedException();
+        public override void Write(byte[] buffer, int offset, int count) =>
+            throw new NotSupportedException();
+
+        public override async ValueTask<int> ReadAsync(
+            Memory<byte> buffer,
+            CancellationToken cancellationToken = default)
+        {
+            await Task.Delay(Timeout.InfiniteTimeSpan, cancellationToken);
+            return 0;
+        }
+
+        public override Task<int> ReadAsync(
+            byte[] buffer,
+            int offset,
+            int count,
+            CancellationToken cancellationToken) =>
+            ReadAsync(buffer.AsMemory(offset, count), cancellationToken).AsTask();
     }
 
     private sealed class DispatchFixture : IAsyncDisposable
@@ -610,20 +790,10 @@ public class AppointmentSmsReminderDispatchServiceTests
 
         public async Task<UniSmsClient> CreateUniSmsClientAsync(HttpClient httpClient)
         {
-            var session = new SessionService();
-            session.StartSession(new UserSession(
-                _staffId,
-                _username,
-                StaffRoles.Admin,
-                _securityStamp));
-            var authorization = new AuthorizationService(
-                session,
-                new StaffRepository(Database.Factory));
-            var credentials = new UniSmsCredentialService(
-                authorization,
-                Path.Combine(_tempDirectory, "unisms-api-key.dat"));
-            await credentials.SaveApiKeyAsync(FakeApiKey);
-            return new UniSmsClient(credentials, httpClient);
+            await Task.CompletedTask;
+            return new UniSmsClient(
+                new FakeCredentialProvider(FakeApiKey),
+                httpClient);
         }
 
         private static SystemSetting Setting(string key, string value) => new()
@@ -640,6 +810,24 @@ public class AppointmentSmsReminderDispatchServiceTests
             {
                 Directory.Delete(_tempDirectory, recursive: true);
             }
+        }
+    }
+
+    private sealed class FakeCredentialProvider(string apiKey)
+        : IUniSmsCredentialProvider
+    {
+        public Task<string?> GetApiKeyAsync(
+            CancellationToken cancellationToken = default)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            return Task.FromResult<string?>(apiKey);
+        }
+
+        public Task<string?> GetApiKeyForWorkerAsync(
+            CancellationToken cancellationToken = default)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            return Task.FromResult<string?>(apiKey);
         }
     }
 }

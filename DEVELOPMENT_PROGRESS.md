@@ -147,6 +147,27 @@ Verification results:
 - **Dispatch tests:** used fake HTTP handlers and temporary SQLite databases, including separate-context concurrent claims and SQLite-triggered last-second eligibility changes.
 - **Production database, migrations, and messaging:** no production database was accessed, no migration was applied, and no real SMS was sent.
 
+## Completed appointment SMS background reminder worker (Milestone 4C)
+
+Appointment reminder dispatch now runs in a cancellable polling worker owned by the WPF application. Automatic appointment SMS reminders are processed only while the Golddie WPF application is running; there is no independent Windows Service or always-on background process.
+
+- Startup reconciliation completes before the worker is allowed to run. The worker starts after the main window is shown and polls immediately, then waits one minute between sequential cycles. Cycles cannot overlap; a failed reminder does not prevent other candidates from being considered, and unexpected cycle errors are contained so later polling continues.
+- WPF application exit cancels the worker and waits up to five seconds for termination. A provider request already in progress receives cancellation; the shutdown wait remains bounded.
+- The UniSMS client signals the request-start boundary immediately before `HttpClient.SendAsync`. Cancellation before that boundary conditionally releases a claimed `Sending` reminder to `Pending`. Once the boundary is crossed, cancellation is persisted as `Unknown` using a non-cancelled token. If outcome persistence fails, the row remains `Sending`; neither `Unknown` nor stale `Sending` is automatically retried.
+- The existing atomic claim, last-second eligibility checks, both SMS settings, consent-generation and schedule-revision checks, generic message content, and provider-accepted status semantics remain in force. A provider outage is isolated from appointment and patient workflows.
+- `IUniSmsCredentialProvider` allows HTTP tests to use fake credentials without invoking Windows DPAPI. Production continues to use `UniSmsCredentialService` and its existing DPAPI-protected credential file.
+- Tests use temporary SQLite databases and fake HTTP handlers. No production database was accessed, no migration was run, and no real SMS was sent.
+
+Verification results:
+
+- **Focused worker, dispatch, and UniSMS client tests:** 49 passed, 0 failed, and 0 skipped.
+- **Reminder and UniSMS tests:** 87 passed, 0 failed, and 0 skipped under the loaded host Windows user profile.
+- **UniSmsCredentialServiceTests:** 5 passed, 0 failed, and 0 skipped. The three DPAPI credential-storage tests that previously failed passed under the loaded host Windows user profile. Those earlier failures were caused by the sandbox identity lacking a loaded Windows user profile; no application regression was confirmed.
+- **Full solution tests:** 257 passed, 0 failed, and 0 skipped under the loaded host Windows user profile.
+- **Solution build:** succeeded with 0 errors and 0 warnings. The test build emitted 10 existing CS0108 warnings (five report-view `BorderBrush` warnings emitted for both WPF targets).
+- **Diff check:** `git diff --check` passed; Git printed only line-ending normalization notices.
+- **Limitations:** WPF shutdown can wait no longer than five seconds. If an operation outlives that bound, an unresolved attempt may remain `Sending`; ambiguous `Sending` and `Unknown` attempts are not automatically retried. Eligibility and provider request initiation still cannot be made atomic with changes by another staff action.
+
 ## Baseline verification
 
 Baseline commands were run against the solution:
@@ -199,4 +220,4 @@ All items below are **pending**. Clinical policies and clinic workflow decisions
 - Review the StaffId foreign-key policy for audit logs and record versions.
 - Improve exception handling and internal logging.
 - Review role canonicalization and repository role invariants.
-- Implement and lifecycle-manage the background reminder polling worker in the next appointment-SMS milestone.
+- Review appointment SMS operational monitoring and manual handling of `Unknown` outcomes; automatic retries remain intentionally disabled.
